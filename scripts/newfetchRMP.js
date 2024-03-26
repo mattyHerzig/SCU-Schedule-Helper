@@ -89,7 +89,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
     // Check if teacher is from SCU.
     if (
       teacherData.school.__ref == schoolId &&
-      teacherData.wouldTakeAgainPercent != -1
+      (teacherData.wouldTakeAgainPercent != -1 || teacherData.avgRating != 0.0)
     )
       teachers.push(teacherData);
     // Find next teacher.
@@ -142,6 +142,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   data =
     data == null ? await scrapeRmpRatings(lastName, debuggingEnabled) : data;
   let entry = null;
+  console.log("Received " + JSON.stringify(data));
   if (data.length == 1) entry = data[0];
   if (data.length > 1) {
     if (debuggingEnabled) console.log("Error: too much data!");
