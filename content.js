@@ -67,10 +67,10 @@ function modifyScuFindCourseSectionsGrid(visibleGrid) {
                         // ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" class="fade-in">Score: <span>${score.toFixed(1)}/5.0</span></a>`; 
                         ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;">Score: ${score.toFixed(1)}/5.0</a>`; 
                     } else {
-                        const index = instructorDiv.textContent.includes("|")
-                            ? instructorDiv.textContent.lastIndexOf("|") - 1
-                            : instructorDiv.textContent.length;
-                        const firstInstructorName = instructorDiv.textContent.substring(0, index);
+                        const index = instructorName.includes("|")
+                            ? instructorName.lastIndexOf("|") - 1
+                            : instructorName.length;
+                        const firstInstructorName = instructorName.substring(0, index);
                         url = `https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}`;
                         // ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" class="fade-in">Score: <span>🔍</span></a>`;
                         ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;">Score: 🔍</a>`;
@@ -106,8 +106,8 @@ function checkForScuFindCourseSectionsGrid() {
     const isLoading = loadingPanel ? loadingPanel.getAttribute('data-automation-loadingpanelhidden') === 'false' : false;
     if (isLoading)
         return;
-    const ScuFindCourseSections = document.querySelector('div[title="SCU Find Course Sections"]')
-    if (!ScuFindCourseSections)
+    const scuFindCourseSections = document.querySelector('div[title="SCU Find Course Sections"]')
+    if (!scuFindCourseSections)
         return;
     const visibleGrid = document.querySelector('.WMNO');
     if (!visibleGrid)
