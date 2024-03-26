@@ -1,9 +1,9 @@
 let edgecases;
-fetch(chrome.runtime.getURL('scripts/edgecases.json'))
-    .then(response => response.json())
-    .then(json => {
-        edgecases = json;
-    }); 
+fetch(chrome.runtime.getURL("scripts/edgecases.json"))
+  .then((response) => response.json())
+  .then((json) => {
+    edgecases = json;
+  });
 // const edgecases = require("./edgecases.json");
 
 // module.exports = { getRmpRatings };
@@ -14,13 +14,8 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   let teachers = [];
   if (debuggingEnabled) console.log("Querying " + url + "...");
 
-  let html;
-  chrome.runtime.sendMessage({url: url}, response => {
-    html = response;
-  });
-  while (html === undefined) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
+  let html = await chrome.runtime.sendMessage({ url: url });
+
   // const response = await fetch(url);
   // const html = await response.text();
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
