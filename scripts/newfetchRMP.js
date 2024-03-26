@@ -1,17 +1,32 @@
 // TODO: transfer oldfetchRMP.js stuff over
+const edgecases = {
+  not_mismatches: [
+    "dongsoo shin",
+    "gaby greenlee",
+    "tom blackburn",
+    "alexander field",
+    "sean okeefe",
+    "william stevens",
+    "margaret hunter",
+    "charles gabbe",
+    "jacquelyn hendricks",
+    "wenxin xie",
+    ". sunwolf",
+  ],
+  name_transformations: [
+    { realFirst: "hsin-i", realLast: "cheng", rmp: "hsin cheng" },
+    { realFirst: "alexander", realLast: "field", rmp: "alexandar field" },
+    { realFirst: "gaby", realLast: "greenlee", rmp: "gabrielle greenlee" },
+  ],
+};
 
-const edgecases = require("./edgecases.json");
-const fs = require("fs");
-let cached_ids = require("./cached_ids.json");
-
-module.exports = { getRmpRatings };
+//module.exports = { getRmpRatings };
 
 async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   const url = `https://www.ratemyprofessors.com/professor/${profId}`;
   if (debuggingEnabled) console.log("Querying " + url + "...");
 
-  const response = await fetch(url);
-  const html = await response.text();
+  const html = await chrome.runtime.sendMessage({ url: url });
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let openingBraceIndex = html.lastIndexOf("{", indexOfTeacher);
   // Find closing brace that matches the opening brace
@@ -37,8 +52,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   let teachers = [];
   if (debuggingEnabled) console.log("Querying " + url + "...");
 
-  const response = await fetch(url);
-  const html = await response.text();
+  const html = await chrome.runtime.sendMessage({ url: url });
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let indexOfSchool = html.indexOf('"__typename":"School"');
   // Find SCU school id.
@@ -96,11 +110,12 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
     .substring(profName.lastIndexOf(" "))
     .trim()
     .toLowerCase();
-  
+
   // If realFirst + lastName is a key in cached_ids, return the cached data.
-  
-  if (cached_ids[realFirstName + lastName] != null) {
-    return scrapeProfessorPage(cached_ids[realFirstName + lastName], debuggingEnabled);
+  let key = realFirstName + lastName;
+  let cachedId = await chrome.storage.local.get([key]);
+  if (cachedId[key]) {
+    return scrapeProfessorPage(cachedId[key], debuggingEnabled);
   }
   // Find preferred first name, if it exists.
   let preferredFirstName = "";
@@ -237,10 +252,8 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
       entry = null;
     }
   }
-  if(entry != null) {
-    cached_ids[realFirstName + lastName] = entry.legacyId;
-    fs.writeFileSync("cached_ids.json", JSON.stringify(cached_ids));
+  if (entry != null) {
+    chrome.storage.local.set({ [key]: entry.legacyId });
   }
   return entry;
 }
-
