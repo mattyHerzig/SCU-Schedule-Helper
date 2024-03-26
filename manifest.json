@@ -20,7 +20,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [ "scripts/edgecases.json" ],
+      "resources": [ "scripts/edgecases.json", "scripts/cached_ids.json" ],
       "matches": ["<all_urls>"] // TODO
     }
   ],
