@@ -1,12 +1,35 @@
-let edgecases;
-fetch(chrome.runtime.getURL('scripts/edgecases.json'))
-    .then(response => response.json())
-    .then(json => {
-        edgecases = json;
-    }); 
-// const edgecases = require("./edgecases.json");
+// TODO: transfer oldfetchRMP.js stuff over
 
-// module.exports = { getRmpRatings };
+const edgecases = require("./edgecases.json");
+const fs = require("fs");
+let cached_ids = require("./cached_ids.json");
+
+module.exports = { getRmpRatings };
+
+async function scrapeProfessorPage(profId, debuggingEnabled = false) {
+  const url = `https://www.ratemyprofessors.com/professor/${profId}`;
+  if (debuggingEnabled) console.log("Querying " + url + "...");
+
+  const response = await fetch(url);
+  const html = await response.text();
+  let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
+  let openingBraceIndex = html.lastIndexOf("{", indexOfTeacher);
+  // Find closing brace that matches the opening brace
+  let closingBraceIndex = indexOfTeacher;
+  let braceCount = 1;
+  while (braceCount > 0) {
+    closingBraceIndex++;
+    if (html[closingBraceIndex] == "{") braceCount++;
+    if (html[closingBraceIndex] == "}") braceCount--;
+  }
+  let teacherInfoString = html.substring(
+    openingBraceIndex,
+    closingBraceIndex + 1
+  );
+  let teacherData = JSON.parse(teacherInfoString);
+  if (debuggingEnabled) console.log(teacherData);
+  return teacherData;
+}
 
 async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   profName = profName.replace(" ", "%20");
@@ -14,15 +37,8 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   let teachers = [];
   if (debuggingEnabled) console.log("Querying " + url + "...");
 
-  let html;
-  chrome.runtime.sendMessage({url: url}, response => {
-    html = response;
-  });
-  while (html === undefined) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  // const response = await fetch(url);
-  // const html = await response.text();
+  const response = await fetch(url);
+  const html = await response.text();
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let indexOfSchool = html.indexOf('"__typename":"School"');
   // Find SCU school id.
@@ -57,7 +73,11 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
     let teacherData = JSON.parse(teacherInfoString);
     if (debuggingEnabled) console.log(teacherData);
     // Check if teacher is from SCU.
-    if (teacherData.school.__ref == schoolId) teachers.push(teacherData);
+    if (
+      teacherData.school.__ref == schoolId &&
+      teacherData.wouldTakeAgainPercent != -1
+    )
+      teachers.push(teacherData);
     // Find next teacher.
     indexOfTeacher = html.indexOf('"__typename":"Teacher"', indexOfTeacher + 1);
   }
@@ -76,6 +96,12 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
     .substring(profName.lastIndexOf(" "))
     .trim()
     .toLowerCase();
+  
+  // If realFirst + lastName is a key in cached_ids, return the cached data.
+  
+  if (cached_ids[realFirstName + lastName] != null) {
+    return scrapeProfessorPage(cached_ids[realFirstName + lastName], debuggingEnabled);
+  }
   // Find preferred first name, if it exists.
   let preferredFirstName = "";
   let barIndex = profName.indexOf("|");
@@ -211,5 +237,10 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
       entry = null;
     }
   }
+  if(entry != null) {
+    cached_ids[realFirstName + lastName] = entry.legacyId;
+    fs.writeFileSync("cached_ids.json", JSON.stringify(cached_ids));
+  }
   return entry;
 }
+

@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "SCU Schedule Helper",
+  "version": "1.0",
+  "description": "", // TODO
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.myworkday.com/scu/*",
+    "https://www.ratemyprofessors.com/*",
+    "https://your-database-url.com/*" // TODO
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.myworkday.com/scu/*"],
+      "js": ["scripts/fetchRMP.js", "content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [ "scripts/edgecases.json" ],
+      "matches": ["<all_urls>"] // TODO
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "persistent": false
+  },
+  "action": {
+    "default_icon": { // TODO
+    //   "16": "images/icon-16.png",
+    //   "32": "images/icon-32.png",
+    //   "48": "images/icon-48.png",
+    //   "128": "images/icon-128.png"
+    }
+  },
+  "icons": { // TODO
+    // "16": "images/icon-16.png",
+    // "32": "images/icon-32.png",
+    // "48": "images/icon-48.png",
+    // "128": "images/icon-128.png"
+  }
+}
+
+  
