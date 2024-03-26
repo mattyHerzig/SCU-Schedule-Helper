@@ -87,8 +87,14 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
     let teacherData = JSON.parse(teacherInfoString);
     if (debuggingEnabled) console.log(teacherData);
     // Check if teacher is from SCU.
-    if (teacherData.school.__ref == schoolId && teacherData.numRatings != 0)
-      teachers.push(teacherData);
+    if (teacherData.school.__ref == schoolId) {
+      // Get the most updated data for the teacher.
+      teacherData = await scrapeProfessorPage(
+        teacherData.legacyId,
+        debuggingEnabled
+      );
+    }
+    if (teacherData.numRatings > 0) teachers.push(teacherData);
     // Find next teacher.
     indexOfTeacher = html.indexOf('"__typename":"Teacher"', indexOfTeacher + 1);
   }
