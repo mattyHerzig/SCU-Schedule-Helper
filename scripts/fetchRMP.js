@@ -1,12 +1,50 @@
-let edgecases;
-fetch(chrome.runtime.getURL("scripts/edgecases.json"))
-  .then((response) => response.json())
-  .then((json) => {
-    edgecases = json;
-  });
-// const edgecases = require("./edgecases.json");
+// TODO: transfer oldfetchRMP.js stuff over
+const edgecases = {
+  not_mismatches: [
+    "dongsoo shin",
+    "gaby greenlee",
+    "tom blackburn",
+    "alexander field",
+    "sean okeefe",
+    "william stevens",
+    "margaret hunter",
+    "charles gabbe",
+    "jacquelyn hendricks",
+    "wenxin xie",
+    ". sunwolf",
+  ],
+  name_transformations: [
+    { realFirst: "hsin-i", realLast: "cheng", rmp: "hsin cheng" },
+    { realFirst: "alexander", realLast: "field", rmp: "alexandar field" },
+    { realFirst: "gaby", realLast: "greenlee", rmp: "gabrielle greenlee" },
+  ],
+};
 
-// module.exports = { getRmpRatings };
+//module.exports = { getRmpRatings };
+
+async function scrapeProfessorPage(profId, debuggingEnabled = false) {
+  const url = `https://www.ratemyprofessors.com/professor/${profId}`;
+  if (debuggingEnabled) console.log("Querying " + url + "...");
+
+  const html = await chrome.runtime.sendMessage({ url: url });
+  let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
+  let openingBraceIndex = html.lastIndexOf("{", indexOfTeacher);
+  // Find closing brace that matches the opening brace
+  let closingBraceIndex = indexOfTeacher;
+  let braceCount = 1;
+  while (braceCount > 0) {
+    closingBraceIndex++;
+    if (html[closingBraceIndex] == "{") braceCount++;
+    if (html[closingBraceIndex] == "}") braceCount--;
+  }
+  let teacherInfoString = html.substring(
+    openingBraceIndex,
+    closingBraceIndex + 1
+  );
+  let teacherData = JSON.parse(teacherInfoString);
+  if (debuggingEnabled) console.log(teacherData);
+  return teacherData;
+}
 
 async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   profName = profName.replace(" ", "%20");
@@ -14,10 +52,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   let teachers = [];
   if (debuggingEnabled) console.log("Querying " + url + "...");
 
-  let html = await chrome.runtime.sendMessage({ url: url });
-
-  // const response = await fetch(url);
-  // const html = await response.text();
+  const html = await chrome.runtime.sendMessage({ url: url });
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let indexOfSchool = html.indexOf('"__typename":"School"');
   // Find SCU school id.
@@ -52,7 +87,14 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
     let teacherData = JSON.parse(teacherInfoString);
     if (debuggingEnabled) console.log(teacherData);
     // Check if teacher is from SCU.
-    if (teacherData.school.__ref == schoolId) teachers.push(teacherData);
+    if (teacherData.school.__ref == schoolId) {
+      // Get the most updated data for the teacher.
+      teacherData = await scrapeProfessorPage(
+        teacherData.legacyId,
+        debuggingEnabled
+      );
+    }
+    if (teacherData.numRatings > 0) teachers.push(teacherData);
     // Find next teacher.
     indexOfTeacher = html.indexOf('"__typename":"Teacher"', indexOfTeacher + 1);
   }
@@ -71,6 +113,13 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
     .substring(profName.lastIndexOf(" "))
     .trim()
     .toLowerCase();
+
+  // If realFirst + lastName is a key in cached_ids, return the cached data.
+  let key = realFirstName + lastName;
+  let cachedId = await chrome.storage.local.get([key]);
+  if (cachedId[key]) {
+    return scrapeProfessorPage(cachedId[key], debuggingEnabled);
+  }
   // Find preferred first name, if it exists.
   let preferredFirstName = "";
   let barIndex = profName.indexOf("|");
@@ -96,6 +145,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   data =
     data == null ? await scrapeRmpRatings(lastName, debuggingEnabled) : data;
   let entry = null;
+  if (debuggingEnabled) console.log("Received " + JSON.stringify(data));
   if (data.length == 1) entry = data[0];
   if (data.length > 1) {
     if (debuggingEnabled) console.log("Error: too much data!");
@@ -205,6 +255,9 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
         );
       entry = null;
     }
+  }
+  if (entry != null) {
+    chrome.storage.local.set({ [key]: entry.legacyId });
   }
   return entry;
 }
