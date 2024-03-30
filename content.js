@@ -79,9 +79,7 @@ function modifyScuFindCourseSectionsGrid(visibleGrid) {
           cell.style.transition = "background-color 0.5s ease";
           cell.style.backgroundColor = color;
         });
-        const lockedTableRow = lockedTable.querySelector(
-          `tr[rowid="${rowid}"]`
-        );
+        const lockedTableRow = lockedTable.querySelector(`tr[rowid="${rowid}"]`);
         if (!lockedTableRow) return;
         lockedTableRow.querySelectorAll("td").forEach((cell) => {
           cell.style.transition = "background-color 0.5s ease";
