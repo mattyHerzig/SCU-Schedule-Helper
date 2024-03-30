@@ -91,17 +91,12 @@ function modifyScuFindCourseSectionsGrid(visibleGrid) {
 }
 
 function checkForScuFindCourseSectionsGrid() {
-  const loadingPanel = document.querySelector(
-    "[data-automation-loadingpanelhidden]"
-  );
+  const loadingPanel = document.querySelector("[data-automation-loadingpanelhidden]");
   const isLoading = loadingPanel
-    ? loadingPanel.getAttribute("data-automation-loadingpanelhidden") ===
-      "false"
+    ? loadingPanel.getAttribute("data-automation-loadingpanelhidden") === "false"
     : false;
   if (isLoading) return;
-  const scuFindCourseSections = document.querySelector(
-    'div[title="SCU Find Course Sections"]'
-  );
+  const scuFindCourseSections = document.querySelector('div[title="SCU Find Course Sections"]');
   if (!scuFindCourseSections) return;
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
   if (!visibleGrid) return;
