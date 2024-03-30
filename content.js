@@ -18,30 +18,20 @@ tempRatingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decora
 const ratingDivMaxHeight = tempRatingDiv.offsetHeight;
 
 function modifyScuFindCourseSectionsGrid(visibleGrid) {
-  const mainTables = visibleGrid.querySelectorAll(
-    '[data-automation-id^="MainTable-"]'
-  );
+  const mainTables = visibleGrid.querySelectorAll('[data-automation-id^="MainTable-"]');
   mainTables.forEach((mainTable) => {
     if (mainTable.classList.contains("modified")) return;
-    const mainTableRows = mainTable.querySelectorAll(
-      '.WLWG tr:not([data-automation-id="ghostRow"])'
-    );
+    const mainTableRows = mainTable.querySelectorAll('.mainTable tr:not([data-automation-id="ghostRow"])');
     const dataAutomationId = mainTable.getAttribute("data-automation-id");
     const mainTableId = dataAutomationId.split("-")[1];
-    const lockedTable = visibleGrid.querySelector(
-      `[data-automation-id="LockedTable-${mainTableId}"]`
-    );
+    const lockedTable = visibleGrid.querySelector(`[data-automation-id="LockedTable-${mainTableId}"]`);
     if (!lockedTable) return;
     mainTable.classList.add("modified");
     mainTableRows.forEach((mainTableRow) => {
       const rowid = mainTableRow.getAttribute("rowid");
-      const instructorsTd = mainTableRow.querySelector(
-        'td[headers^="columnheader6"]'
-      );
+      const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       if (!instructorsTd) return;
-      const instructorsDiv = instructorsTd.querySelector(".WPOR");
-      if (!instructorsDiv) return;
-      const instructorDivs = instructorsDiv.querySelectorAll(".WOFP.WHEP");
+      const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id="promptOption"]');
       let totalScore = 0;
       let validRatingsCount = 0;
       let ratingPromises = [];
@@ -115,7 +105,7 @@ function checkForScuFindCourseSectionsGrid() {
     'div[title="SCU Find Course Sections"]'
   );
   if (!scuFindCourseSections) return;
-  const visibleGrid = document.querySelector(".WMNO");
+  const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
   if (!visibleGrid) return;
   modifyScuFindCourseSectionsGrid(visibleGrid);
 }
