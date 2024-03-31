@@ -14,8 +14,11 @@
 // Can use map to keep track of if I've already gotten a prof's RMP (assuming we don't switch to class-specific)
 
 const tempRatingDiv = document.createElement("div");
+tempRatingDiv.style.visibility = "hidden";
+document.body.appendChild(tempRatingDiv);
 tempRatingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Score: 🔍</a>`;
 const ratingDivMaxHeight = tempRatingDiv.offsetHeight;
+document.body.removeChild(tempRatingDiv);
 
 function modifyScuFindCourseSectionsGrid(visibleGrid) {
   const mainTables = visibleGrid.querySelectorAll('[data-automation-id^="MainTable-"]');
@@ -31,7 +34,7 @@ function modifyScuFindCourseSectionsGrid(visibleGrid) {
       const rowid = mainTableRow.getAttribute("rowid");
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       if (!instructorsTd) return;
-      const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id="promptOption"]');
+      const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
       let totalScore = 0;
       let validRatingsCount = 0;
       let ratingPromises = [];
@@ -54,9 +57,7 @@ function modifyScuFindCourseSectionsGrid(visibleGrid) {
             validRatingsCount++;
             url = `https://www.ratemyprofessors.com/professor/${rating["legacyId"]}`;
             // ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" class="fade-in">Score: <span>${score.toFixed(1)}/5.0</span></a>`;
-            ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;">Score: ${score.toFixed(
-              1
-            )}/5.0</a>`;
+            ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">Score: ${score.toFixed(1)}/5.0</a>`;
           } else {
             const index = instructorName.includes("|")
               ? instructorName.lastIndexOf("|") - 1
@@ -64,7 +65,7 @@ function modifyScuFindCourseSectionsGrid(visibleGrid) {
             const firstInstructorName = instructorName.substring(0, index);
             url = `https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}`;
             // ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" class="fade-in">Score: <span>🔍</span></a>`;
-            ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;">Score: 🔍</a>`;
+            ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">Score: 🔍</a>`;
           }
         });
         ratingPromises.push(promise);
