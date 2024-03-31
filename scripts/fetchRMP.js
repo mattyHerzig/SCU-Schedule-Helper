@@ -1,6 +1,6 @@
 // TODO: transfer oldfetchRMP.js stuff over
 const edgecases = {
-  not_mismatches: [
+  not_mismatches: new Set([
     "dongsoo shin",
     "gaby greenlee",
     "tom blackburn",
@@ -12,15 +12,14 @@ const edgecases = {
     "jacquelyn hendricks",
     "wenxin xie",
     ". sunwolf",
-  ],
-  name_transformations: [
-    { realFirst: "hsin-i", realLast: "cheng", rmp: "hsin cheng" },
-    { realFirst: "alexander", realLast: "field", rmp: "alexandar field" },
-    { realFirst: "gaby", realLast: "greenlee", rmp: "gabrielle greenlee" },
-  ],
+  ]),
+  name_transformations: new Map([
+    ["hsin-i" + "cheng", "hsin cheng"],
+    ["alexander" + "field", "alexandar field"],
+    ["gaby" + "greenlee", "gabrielle greenlee"],
+  ]),
+  actual_mismatches: new Set(["eun park"]),
 };
-
-//module.exports = { getRmpRatings };
 
 async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   const url = `https://www.ratemyprofessors.com/professor/${profId}`;
@@ -132,13 +131,8 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   let data = null;
 
   // If this is a special case, query instead by the special name in the edge cases file.
-  for (const transformation of edgecases.name_transformations) {
-    if (
-      realFirstName == transformation.realFirst &&
-      lastName == transformation.realLast
-    ) {
-      data = await scrapeRmpRatings(transformation.rmp, debuggingEnabled);
-    }
+  if (edgecases.name_transformations.has(realFirstName + lastName)) {
+    data = await scrapeRmpRatings(transformation.rmp, debuggingEnabled);
   }
 
   // Otherwise, query first by last name.
@@ -224,7 +218,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
         (preferredFirstName != "" &&
           !firstNameReceived.includes(preferredFirstName) &&
           !preferredFirstName.includes(firstNameReceived))) &&
-      !edgecases.not_mismatches.includes(realFirstName + " " + lastName)
+      !edgecases.not_mismatches.has(realFirstName + " " + lastName)
     ) {
       if (debuggingEnabled)
         console.log(
@@ -241,7 +235,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
     if (
       !lastNameReceived.includes(lastName) &&
       !lastName.includes(lastNameReceived) &&
-      !edgecases.not_mismatches.includes(realFirstName + " " + lastName)
+      !edgecases.not_mismatches.has(realFirstName + " " + lastName)
     ) {
       if (debuggingEnabled)
         console.log(
@@ -253,6 +247,9 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
           firstNameReceived,
           lastNameReceived
         );
+      entry = null;
+    }
+    if (edgecases.actual_mismatches.has(realFirstName + " " + lastName)) {
       entry = null;
     }
   }
