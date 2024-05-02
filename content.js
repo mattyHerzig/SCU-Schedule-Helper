@@ -7,10 +7,6 @@
 
 // TODO: better organize code eg comments, parent wrapper folder eg for crx, pem? Need to reconfigure VS Code, npm?
 
-// List of future optimizations that I shouldn't worry about right now e.g.
-// O(n^2) -> O(n) by matching rowid's at same time rather than separate O (n^2) of matching lockedTableRow and mainTableRow
-// (not lockedTable and mainTable considering later can load before earlier) (see Mar 25 screenshot for copilot suggestion) (or at least don't implement until I decide if I'm going to highlight entire row or what)
-// Can use map or two pointer approach for O(1) space complexity
 // Can use map to keep track of if I've already gotten a prof's RMP (assuming we don't switch to class-specific)
 
 const tempRatingDiv = document.createElement("div");
@@ -20,78 +16,73 @@ tempRatingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decora
 const ratingDivMaxHeight = tempRatingDiv.offsetHeight;
 document.body.removeChild(tempRatingDiv);
 
-function modifyScuFindCourseSectionsGrid(visibleGrid) {
+
+
+function changeColor(instructorsTd, ratings) {
+  if (ratings.validRatingsCount === 0) return;
+  const averageScore = ratings.totalScore / ratings.validRatingsCount;
+  const red = Math.floor((255 * (5 - averageScore)) / 4);
+  const green = Math.floor((255 * (averageScore - 1)) / 4);
+  const color = `rgba(${red}, ${green}, 0, 0.5)`;
+  instructorsTd.style.transition = "background-color 0.5s ease";
+  instructorsTd.style.backgroundColor = color;
+}
+
+function getRatingDivInnerHtml(validRating, ratings, avgRating, legacyId, instructorName) {
+  let url, score;
+  if (validRating) {
+    ratings.totalScore += avgRating;
+    ratings.validRatingsCount++;
+    url = `https://www.ratemyprofessors.com/professor/${legacyId}`;
+    score = avgRating.toFixed(1) + "/5.0";
+  } else {
+    const index = instructorName.includes("|")
+      ? instructorName.lastIndexOf("|") - 1
+      : instructorName.length;
+    const firstInstructorName = instructorName.substring(0, index);
+    url = `https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}`;
+    score = "🔍";
+  }
+  return `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">Score: ${score}</a>`;
+}
+
+function insertRating(instructorDiv, ratings) {
+  const instructorName = instructorDiv.textContent;
+  const ratingDiv = document.createElement("div");
+  ratingDiv.style.height = `${ratingDivMaxHeight}px`;
+  ratingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Score: </a>`;
+  instructorDiv.appendChild(ratingDiv);
+  let promise = getRmpRatings(instructorName).then((rating) => {
+    const validRating = rating !== null;
+    const avgRating = validRating ? rating["avgRating"] : 0;
+    const legacyId = validRating ? rating["legacyId"] : 0;
+    ratingDiv.innerHTML = getRatingDivInnerHtml(validRating, ratings, avgRating, legacyId, instructorName);
+  });
+  ratings.ratingPromises.push(promise);
+}
+
+function handleGrid(visibleGrid) {
   const mainTables = visibleGrid.querySelectorAll('[data-automation-id^="MainTable-"]');
   mainTables.forEach((mainTable) => {
     if (mainTable.classList.contains("modified")) return;
-    const mainTableRows = mainTable.querySelectorAll('.mainTable tr:not([data-automation-id="ghostRow"])');
-    const dataAutomationId = mainTable.getAttribute("data-automation-id");
-    const mainTableId = dataAutomationId.split("-")[1];
-    const lockedTable = visibleGrid.querySelector(`[data-automation-id="LockedTable-${mainTableId}"]`);
-    if (!lockedTable) return;
     mainTable.classList.add("modified");
+    const mainTableRows = mainTable.querySelectorAll('.mainTable tr:not([data-automation-id="ghostRow"])');
     mainTableRows.forEach((mainTableRow) => {
-      const rowid = mainTableRow.getAttribute("rowid");
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       if (!instructorsTd) return;
+      let ratings = {
+        totalScore: 0,
+        validRatingsCount: 0,
+        ratingPromises: []
+      };
       const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
-      let totalScore = 0;
-      let validRatingsCount = 0;
-      let ratingPromises = [];
-      instructorDivs.forEach((instructorDiv) => {
-        const instructorName = instructorDiv.textContent;
-        const ratingDiv = document.createElement("div");
-        ratingDiv.style.height = `${ratingDivMaxHeight}px`;
-        ratingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Score: </a>`;
-        instructorDiv.appendChild(ratingDiv);
-        let promise = getRmpRatings(instructorName).then((rating) => {
-          validRating = true;
-          let score = 0;
-          if (rating === null) {
-            validRating = false;
-          } else {
-            score = rating["avgRating"];
-          }
-          if (validRating) {
-            totalScore += score;
-            validRatingsCount++;
-            url = `https://www.ratemyprofessors.com/professor/${rating["legacyId"]}`;
-            // ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" class="fade-in">Score: <span>${score.toFixed(1)}/5.0</span></a>`;
-            ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">Score: ${score.toFixed(1)}/5.0</a>`;
-          } else {
-            const index = instructorName.includes("|")
-              ? instructorName.lastIndexOf("|") - 1
-              : instructorName.length;
-            const firstInstructorName = instructorName.substring(0, index);
-            url = `https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}`;
-            // ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" class="fade-in">Score: <span>🔍</span></a>`;
-            ratingDiv.innerHTML = `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">Score: 🔍</a>`;
-          }
-        });
-        ratingPromises.push(promise);
-      });
-      Promise.all(ratingPromises).then(() => {
-        if (validRatingsCount === 0) return;
-        const averageScore = totalScore / validRatingsCount;
-        const red = Math.floor((255 * (5 - averageScore)) / 4);
-        const green = Math.floor((255 * (averageScore - 1)) / 4);
-        const color = `rgba(${red}, ${green}, 0, 0.5)`;
-        mainTableRow.querySelectorAll("td").forEach((cell) => {
-          cell.style.transition = "background-color 0.5s ease";
-          cell.style.backgroundColor = color;
-        });
-        const lockedTableRow = lockedTable.querySelector(`tr[rowid="${rowid}"]`);
-        if (!lockedTableRow) return;
-        lockedTableRow.querySelectorAll("td").forEach((cell) => {
-          cell.style.transition = "background-color 0.5s ease";
-          cell.style.backgroundColor = color;
-        });
-      });
+      instructorDivs.forEach((instructorDiv) => insertRating(instructorDiv, ratings));
+      Promise.all(ratings.ratingPromises).then(() => changeColor(instructorsTd, ratings));
     });
   });
 }
 
-function checkForScuFindCourseSectionsGrid() {
+function checkForGrid() {
   const loadingPanel = document.querySelector("[data-automation-loadingpanelhidden]");
   const isLoading = loadingPanel
     ? loadingPanel.getAttribute("data-automation-loadingpanelhidden") === "false"
@@ -101,9 +92,9 @@ function checkForScuFindCourseSectionsGrid() {
   if (!scuFindCourseSections) return;
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
   if (!visibleGrid) return;
-  modifyScuFindCourseSectionsGrid(visibleGrid);
+  handleGrid(visibleGrid);
 }
 
-const observer = new MutationObserver(checkForScuFindCourseSectionsGrid);
+const observer = new MutationObserver(checkForGrid);
 observer.observe(document.documentElement, { childList: true, subtree: true });
-checkForScuFindCourseSectionsGrid(); // Initial check in case the page is already loaded
+checkForGrid(); // Initial check in case the page is already loaded
