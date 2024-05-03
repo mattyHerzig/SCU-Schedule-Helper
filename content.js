@@ -5,58 +5,85 @@
 
 // Select highlight issue
 
-// TODO: better organize code eg comments, parent wrapper folder eg for crx, pem? Need to reconfigure VS Code, npm?
+// Better organize code eg comments, parent wrapper folder eg for crx, pem? Need to reconfigure VS Code, npm?
 
-// Can use map to keep track of if I've already gotten a prof's RMP (assuming we don't switch to class-specific)
+// Can use map to keep track of if I've already gotten a prof's RMP (assuming we don't switch to class-specific)?
 
-const tempRatingDiv = document.createElement("div");
-tempRatingDiv.style.visibility = "hidden";
-document.body.appendChild(tempRatingDiv);
-tempRatingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Score: 🔍</a>`;
-const ratingDivMaxHeight = tempRatingDiv.offsetHeight;
-document.body.removeChild(tempRatingDiv);
+const tempQualityDiv = document.createElement("div");
+const tempDifficultyDiv = document.createElement("div");
+tempQualityDiv.style.visibility = "hidden";
+tempDifficultyDiv.style.visibility = "hidden";
+document.body.appendChild(tempQualityDiv);
+document.body.appendChild(tempDifficultyDiv);
+tempQualityDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Quality: 🔍</a>`;
+tempDifficultyDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Difficulty: 🔍</a>`;
+const qualityDivMaxHeight = tempQualityDiv.offsetHeight;
+const difficultyDivMaxHeight = tempDifficultyDiv.offsetHeight;
+document.body.removeChild(tempQualityDiv);
+document.body.removeChild(tempDifficultyDiv);
 
+const colorMax = 255;
+const blue = (0 / 255) * colorMax;
 
-
-function changeColor(instructorsTd, ratings) {
-  if (ratings.validRatingsCount === 0) return;
-  const averageScore = ratings.totalScore / ratings.validRatingsCount;
-  const red = Math.floor((255 * (5 - averageScore)) / 4);
-  const green = Math.floor((255 * (averageScore - 1)) / 4);
-  const color = `rgba(${red}, ${green}, 0, 0.5)`;
-  instructorsTd.style.transition = "background-color 0.5s ease";
-  instructorsTd.style.backgroundColor = color;
-}
-
-function getRatingDivInnerHtml(validRating, ratings, avgRating, legacyId, instructorName) {
-  let url, score;
-  if (validRating) {
-    ratings.totalScore += avgRating;
-    ratings.validRatingsCount++;
-    url = `https://www.ratemyprofessors.com/professor/${legacyId}`;
-    score = avgRating.toFixed(1) + "/5.0";
+function changeColor(td, avgRating, reversed) {
+  let red, green;
+  if (avgRating >= 3) {
+    green = colorMax;
+    red = colorMax * (5 - avgRating) / 2;
   } else {
-    const index = instructorName.includes("|")
-      ? instructorName.lastIndexOf("|") - 1
-      : instructorName.length;
-    const firstInstructorName = instructorName.substring(0, index);
-    url = `https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}`;
-    score = "🔍";
+    green = colorMax * (avgRating - 1) / 2;
+    red = colorMax;
   }
-  return `<a href="${url}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">Score: ${score}</a>`;
+  // red = colorMax * (5 - avgRating) / 4;
+  // green = colorMax * (avgRating - 1) / 4;
+  if (reversed) {
+    const temp = red;
+    red = green;
+    green = temp;
+  }
+  const color = `rgba(${red}, ${green}, ${blue}, 0.5)`;
+  td.style.transition = "background-color 0.5s ease";
+  td.style.backgroundColor = color;
+  td.style.setProperty("background-color", color, "important");
 }
 
-function insertRating(instructorDiv, ratings) {
+function getInvalidRatingDivInnerHtml(ratingType, includeMagnifyingGlass, instructorName) {
+  const index = instructorName.includes("|")
+    ? instructorName.lastIndexOf("|") - 1
+    : instructorName.length;
+  const firstInstructorName = instructorName.substring(0, index);
+  return `<a href="https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">${ratingType}: ${includeMagnifyingGlass ? '🔍' : ''}</a>`;
+}
+
+function getValidRatingDivInnerHtml(ratingType, avgRating, legacyId) {
+  return `<a href="https://www.ratemyprofessors.com/professor/${legacyId}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">${ratingType}: ${avgRating.toFixed(1) + "/5.0"}</a>`;
+}
+
+function getEmptyRatingDivInnerHtml(ratingType) {
+  return `<a target="_blank" style="color: #005dba; text-decoration: none;">${ratingType}: </a>`;
+}
+
+function insertRatings(instructorDiv, unitsDiv, ratings) {
   const instructorName = instructorDiv.textContent;
-  const ratingDiv = document.createElement("div");
-  ratingDiv.style.height = `${ratingDivMaxHeight}px`;
-  ratingDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Score: </a>`;
-  instructorDiv.appendChild(ratingDiv);
+  const qualityDiv = document.createElement("div");
+  const difficultyDiv = document.createElement("div");
+  qualityDiv.style.height = `${qualityDivMaxHeight}px`;
+  difficultyDiv.style.height = `${difficultyDivMaxHeight}px`;
+  qualityDiv.innerHTML = getEmptyRatingDivInnerHtml("Quality");
+  difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
+  instructorDiv.appendChild(qualityDiv);
+  unitsDiv.appendChild(difficultyDiv);
   let promise = getRmpRatings(instructorName).then((rating) => {
-    const validRating = rating !== null;
-    const avgRating = validRating ? rating["avgRating"] : 0;
-    const legacyId = validRating ? rating["legacyId"] : 0;
-    ratingDiv.innerHTML = getRatingDivInnerHtml(validRating, ratings, avgRating, legacyId, instructorName);
+    if (rating !== null) {
+      ratings.validRatingsCount++;
+      ratings.totalQuality += rating["avgRating"];
+      ratings.totalDifficulty += rating["avgDifficulty"];
+      qualityDiv.innerHTML = getValidRatingDivInnerHtml("Quality", rating["avgRating"], rating["legacyId"]);
+      difficultyDiv.innerHTML = getValidRatingDivInnerHtml("Difficulty", rating["avgDifficulty"], rating["legacyId"]);
+    } else {
+      qualityDiv.innerHTML = getInvalidRatingDivInnerHtml("Quality", true, instructorName);
+      difficultyDiv.innerHTML = getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
+    }
   });
   ratings.ratingPromises.push(promise);
 }
@@ -69,18 +96,35 @@ function handleGrid(visibleGrid) {
     const mainTableRows = mainTable.querySelectorAll('.mainTable tr:not([data-automation-id="ghostRow"])');
     mainTableRows.forEach((mainTableRow) => {
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
+      const unitsTd = mainTableRow.querySelector('td[headers^="columnheader7"]');
       if (!instructorsTd) return;
       let ratings = {
-        totalScore: 0,
+        totalQuality: 0,
+        totalDifficulty: 0,
         validRatingsCount: 0,
         ratingPromises: []
       };
       const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
-      instructorDivs.forEach((instructorDiv) => insertRating(instructorDiv, ratings));
-      Promise.all(ratings.ratingPromises).then(() => changeColor(instructorsTd, ratings));
+      const unitsDiv = unitsTd.querySelector('[role="presentation"]');
+      instructorDivs.forEach((instructorDiv) => insertRatings(instructorDiv, unitsDiv, ratings));
+      Promise.all(ratings.ratingPromises).then(() => {
+        if (ratings.validRatingsCount !== 0) {
+          changeColor(instructorsTd, ratings.totalQuality / ratings.validRatingsCount, false);
+          changeColor(unitsTd, ratings.totalDifficulty / ratings.validRatingsCount, true);
+        }
+      });
     });
   });
 }
+
+// function widenUnitsColumn(visibleGrid) {
+//   const styleElements = Array.from(document.head.querySelectorAll('style[type="text/css"]'));
+//   const widthStyleElements = styleElements.filter(style => style.textContent.includes('width:'));
+//   if (widthStyleElements.length < 9) return;
+//   visibleGrid.classList.add("modified");
+//   let unitsColumnStyle = widthStyleElements[8];
+//   unitsColumnStyle.textContent = unitsColumnStyle.textContent.replace(/width:\d+PX;/, "width:120PX;");
+// }
 
 function checkForGrid() {
   const loadingPanel = document.querySelector("[data-automation-loadingpanelhidden]");
@@ -92,6 +136,7 @@ function checkForGrid() {
   if (!scuFindCourseSections) return;
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
   if (!visibleGrid) return;
+  // if (!visibleGrid.classList.contains("modified")) widenUnitsColumn(visibleGrid);
   handleGrid(visibleGrid);
 }
 
