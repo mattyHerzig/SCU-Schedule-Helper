@@ -6,7 +6,7 @@ const includeColor2Default             = true;
 const color1Default                    = "#00FF00";
 const color2Default                    = "#FFFF00";
 const color3Default                    = "#FF0000";
-const opacityDefault                   = 50;
+const opacityDefault                   = 50; // 0-100
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // console.log("background.js received message:", request);

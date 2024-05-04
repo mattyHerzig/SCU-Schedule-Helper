@@ -10,6 +10,31 @@ let restoreDefaultsButton             = document.getElementById('restoreDefaults
 let opacitySlider                     = document.getElementById('opacitySlider'                    );
 let opacityValue                      = document.getElementById('opacityValue'                     );
 
+document.addEventListener('DOMContentLoaded', function() {
+    opacitySlider.oninput = function() {
+        opacityValue.value = opacitySlider.value;
+    }
+    opacityValue.oninput = function() {
+        let value = parseInt(opacityValue.value, 10);
+        if (isNaN(value)) {
+            value = defaults.opacity !== undefined ? defaults.opacity : 50;
+        } else if (value < 0) {
+            value = 0;
+        } else if (value > 100) {
+            value = 100;
+        }
+        opacityValue.value = value;
+        opacitySlider.value = value;
+    }
+    includeColor2Checkbox.onchange = function() {
+        if (includeColor2Checkbox.checked) {
+            color2Selector.disabled = false;
+        } else {
+            color2Selector.disabled = true;
+        }
+    }
+});
+
 let defaults;
 
 async function getDefaults() {
@@ -45,31 +70,6 @@ function loadSettings() {
 
 async function setupSettings() {
     defaults = await getDefaults();
-
-    document.addEventListener('DOMContentLoaded', function() {
-        opacitySlider.oninput = function() {
-            opacityValue.value = opacitySlider.value;
-        }
-        opacityValue.oninput = function() {
-            let value = parseInt(opacityValue.value, 10);
-            if (isNaN(value)) {
-                value = defaults.opacity;
-            } else if (value < 0) {
-                value = 0;
-            } else if (value > 100) {
-                value = 100;
-            }
-            opacityValue.value = value;
-            opacitySlider.value = value;
-        }
-        includeColor2Checkbox.onchange = function() {
-            if (includeColor2Checkbox.checked) {
-                color2Selector.disabled = false;
-            } else {
-                color2Selector.disabled = true;
-            }
-        }
-    });
 
     loadSettings();
 
