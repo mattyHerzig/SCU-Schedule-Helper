@@ -15,7 +15,6 @@
 
 let extendColorHorizontally;
 let individualDifficultyColor;
-let reverseColor;
 let includeColor2;
 let color1;
 let color2;
@@ -45,7 +44,7 @@ function reloadVisuals() {
 }
 
 function loadSettings() {
-  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'reverseColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function (data) {
+  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function (data) {
     // console.log('data', data);
     // console.log('defaults', defaults);
 
@@ -62,7 +61,6 @@ function loadSettings() {
 
     extendColorHorizontally   = checkAndAssign(extendColorHorizontally,   data.extendColorHorizontally,   defaults.extendColorHorizontally  );
     individualDifficultyColor = checkAndAssign(individualDifficultyColor, data.individualDifficultyColor, defaults.individualDifficultyColor);
-    reverseColor              = checkAndAssign(reverseColor,              data.reverseColor,              defaults.reverseColor             );
     includeColor2             = checkAndAssign(includeColor2,             data.includeColor2,             defaults.includeColor2            );
     color1                    = checkAndAssign(color1,                    data.color1,                    defaults.color1                   );
     color2                    = checkAndAssign(color2,                    data.color2,                    defaults.color2                   );
@@ -122,9 +120,6 @@ function hexToRgb(hex) {
 }
 
 function changeColor(td, avgRating, reversed) {
-  if (reverseColor) {
-    reversed = !reversed;
-  }
   let red, green, blue;
   let color1RGB = hexToRgb(reversed ? color3 : color1);
   let color2RGB = hexToRgb(color2);

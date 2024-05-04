@@ -2,7 +2,6 @@
 
 let extendColorHorizontallyCheckbox   = document.getElementById('extendColorHorizontallyCheckbox'  );
 let individualDifficultyColorCheckbox = document.getElementById('individualDifficultyColorCheckbox');
-let reverseColorCheckbox              = document.getElementById('reverseColorCheckbox'             );
 let includeColor2Checkbox             = document.getElementById('includeColor2Checkbox'            );
 let color1Selector                    = document.getElementById('color1Selector'                   );
 let color2Selector                    = document.getElementById('color2Selector'                   );
@@ -27,6 +26,13 @@ document.addEventListener('DOMContentLoaded', function() {
         opacityValue.value = value;
         opacitySlider.value = value;
     }
+    includeColor2Checkbox.onchange = function() {
+        if (includeColor2Checkbox.checked) {
+            color2Selector.disabled = false;
+        } else {
+            color2Selector.disabled = true;
+        }
+    }
 });
 
 let defaults;
@@ -44,13 +50,12 @@ async function getDefaults() {
 }
 
 function loadSettings() {
-    chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'reverseColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function(data) {
+    chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function(data) {
         // console.log('data', data);
         // console.log('defaults', defaults);
 
         extendColorHorizontallyCheckbox.checked   = data.extendColorHorizontally   !== undefined ? data.extendColorHorizontally   : defaults.extendColorHorizontally;
         individualDifficultyColorCheckbox.checked = data.individualDifficultyColor !== undefined ? data.individualDifficultyColor : defaults.individualDifficultyColor;
-        reverseColorCheckbox.checked              = data.reverseColor              !== undefined ? data.reverseColor              : defaults.reverseColor;
         includeColor2Checkbox.checked             = data.includeColor2             !== undefined ? data.includeColor2             : defaults.includeColor2;
         color1Selector.value                      = data.color1                    !== undefined ? data.color1                    : defaults.color1;
         color2Selector.value                      = data.color2                    !== undefined ? data.color2                    : defaults.color2;
@@ -58,6 +63,7 @@ function loadSettings() {
         opacitySlider.value                       = data.opacity                   !== undefined ? data.opacity                   : defaults.value;
         opacityValue.value                        = data.opacity                   !== undefined ? data.opacity                   : defaults.value;
 
+        color2Selector.disabled                   = !includeColor2Checkbox.checked;
         // console.log('Loaded settings:', extendColorHorizontally, individualDifficultyColor, includeColor2, color1, color2, color3);
     });
 }
@@ -77,14 +83,10 @@ async function setupSettings() {
         chrome.storage.sync.set({individualDifficultyColor: this.checked});
         chrome.runtime.sendMessage('settingsChanged');
     });
-
-    reverseColorCheckbox.addEventListener('change', function() {
-        chrome.storage.sync.set({reverseColor: this.checked});
-        chrome.runtime.sendMessage('settingsChanged');
-    });
     
     includeColor2Checkbox.addEventListener('change', function() {
         includeColor2 = this.checked;
+        color2Selector.disabled = !includeColor2;
         chrome.storage.sync.set({includeColor2: includeColor2});
         chrome.runtime.sendMessage('settingsChanged');
     });
@@ -123,7 +125,6 @@ async function setupSettings() {
         chrome.storage.sync.set({
             extendColorHorizontally:   defaults.extendColorHorizontally,
             individualDifficultyColor: defaults.individualDifficultyColor,
-            reverseColor:              defaults.reverseColor,
             includeColor2:             defaults.includeColor2,
             color1:                    defaults.color1,
             color2:                    defaults.color2,

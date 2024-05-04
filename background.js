@@ -2,7 +2,6 @@
 
 const extendColorHorizontallyDefault   = false;
 const individualDifficultyColorDefault = true;
-const reverseColorDefault              = false;
 const includeColor2Default             = true;
 const color1Default                    = "#00FF00";
 const color2Default                    = "#FFFF00";
@@ -36,7 +35,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({
             extendColorHorizontally:   extendColorHorizontallyDefault,
             individualDifficultyColor: individualDifficultyColorDefault,
-            reverseColor:              reverseColorDefault,
             includeColor2:             includeColor2Default,
             color1:                    color1Default,
             color2:                    color2Default,
@@ -61,7 +59,6 @@ chrome.runtime.onInstalled.addListener(function(details) {
         chrome.storage.sync.set({
             extendColorHorizontally:   extendColorHorizontallyDefault,
             individualDifficultyColor: individualDifficultyColorDefault,
-            reverseColor:              reverseColorDefault,
             includeColor2:             includeColor2Default,
             color1:                    color1Default,
             color2:                    color2Default,
