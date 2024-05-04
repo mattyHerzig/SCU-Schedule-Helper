@@ -26,13 +26,13 @@ let defaults;
 
 async function getDefaults() {
   return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage('getDefaults', function(response) {
-          if (chrome.runtime.lastError) {
-              reject(chrome.runtime.lastError);
-          } else {
-              resolve(response);
-          }
-      });
+    chrome.runtime.sendMessage('getDefaults', function (response) {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve(response);
+      }
+    });
   });
 }
 
@@ -45,22 +45,7 @@ function reloadVisuals() {
 }
 
 function loadSettings() {
-<<<<<<< Updated upstream
-    chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3'], function(data) {
-        // console.log('data', data);
-        // console.log('defaults', defaults);
-
-        extendColorHorizontally = data.extendColorHorizontally || defaults.extendColorHorizontallyDefault;
-        individualDifficultyColor = data.individualDifficultyColor || defaults.individualDifficultyColorDefault;
-        includeColor2 = data.includeColor2 || defaults.includeColor2Default;
-        color1 = data.color1 || defaults.color1Default;
-        color2 = data.color2 || defaults.color2Default;
-        color3 = data.color3 || defaults.color3Default;
-
-        // console.log('Loaded settings:', extendColorHorizontally, individualDifficultyColor, includeColor2, color1, color2, color3);
-    });
-=======
-  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'reverseColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function (data) {
+  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'reverseColor', 'includeColor2', 'color1', 'color2', 'color3'], function (data) {
     // console.log('data', data);
     // console.log('defaults', defaults);
 
@@ -82,7 +67,6 @@ function loadSettings() {
     color1                    = checkAndAssign(color1,                    data.color1,                    defaults.color1                   );
     color2                    = checkAndAssign(color2,                    data.color2,                    defaults.color2                   );
     color3                    = checkAndAssign(color3,                    data.color3,                    defaults.color3                   );
-    opacity                   = checkAndAssign(opacity,                   data.opacity,                   defaults.opacity                  );
 
     if (settingsChanged) {
       reloadVisuals();
@@ -90,32 +74,20 @@ function loadSettings() {
 
     
   });
->>>>>>> Stashed changes
 }
 
 async function setupSettings() {
   defaults = await getDefaults();
 
-<<<<<<< Updated upstream
-  loadSettings();
-
-  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-=======
   chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
->>>>>>> Stashed changes
     // console.log("content.js received message:", request);
     if (request === 'settingsChanged') {
       loadSettings();
     }
   });
-<<<<<<< Updated upstream
-  
-  chrome.runtime.sendMessage({contentLoaded: true});
-=======
 
   loadSettings();
   // chrome.runtime.sendMessage({ contentLoaded: true });
->>>>>>> Stashed changes
 }
 
 setupSettings();
@@ -142,19 +114,10 @@ function lerp(a, b, t) {
 }
 
 function hexToRgb(hex) {
-<<<<<<< Updated upstream
-  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-  } : null;
-=======
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return { r, g, b };
->>>>>>> Stashed changes
 }
 
 function changeColor(td, avgRating, reversed) {
@@ -165,26 +128,6 @@ function changeColor(td, avgRating, reversed) {
   let color1RGB = hexToRgb(reversed ? color3 : color1);
   let color2RGB = hexToRgb(color2);
   let color3RGB = hexToRgb(reversed ? color1 : color3);
-<<<<<<< Updated upstream
-  
-  if (includeColor2) {
-      if (avgRating >= 3) {
-          let t = (avgRating - 3) / 2; // normalize to 0-1
-          red = lerp(color1RGB.r, color2RGB.r, 1 - t);
-          green = lerp(color1RGB.g, color2RGB.g, 1 - t);
-          blue = lerp(color1RGB.b, color2RGB.b, 1 - t);
-      } else {
-          let t = (avgRating - 1) / 2; // normalize to 0-1
-          red = lerp(color2RGB.r, color3RGB.r, 1 - t);
-          green = lerp(color2RGB.g, color3RGB.g, 1 - t);
-          blue = lerp(color2RGB.b, color3RGB.b, 1 - t);
-      }
-  } else {
-      let t = (avgRating - 1) / 4; // normalize to 0-1
-      red = lerp(color1RGB.r, color3RGB.r, 1 - t);
-      green = lerp(color1RGB.g, color3RGB.g, 1 - t);
-      blue = lerp(color1RGB.b, color3RGB.b, 1 - t);
-=======
   if (includeColor2) {
     if (avgRating >= 3) {
       let t = (avgRating - 3) / 2; // normalize to 0-1
@@ -202,7 +145,6 @@ function changeColor(td, avgRating, reversed) {
     red   = lerp(color1RGB.r, color3RGB.r, t);
     green = lerp(color1RGB.g, color3RGB.g, t);
     blue  = lerp(color1RGB.b, color3RGB.b, t);
->>>>>>> Stashed changes
   }
   const color = `rgba(${red}, ${green}, ${blue}, ${opacity / 100})`;
   td.style.transition = "background-color 0.5s ease";
@@ -210,8 +152,6 @@ function changeColor(td, avgRating, reversed) {
   td.style.setProperty("background-color", color, "important");
 }
 
-<<<<<<< Updated upstream
-=======
 function removeColor(td) {
   td.style.transition = "background-color 0.5s ease";
   td.style.backgroundColor = "";
@@ -278,7 +218,6 @@ function colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instr
   }
 }
 
->>>>>>> Stashed changes
 function getInvalidRatingDivInnerHtml(ratingType, includeMagnifyingGlass, instructorName) {
   const index = instructorName.includes("|")
     ? instructorName.lastIndexOf("|") - 1
@@ -296,6 +235,8 @@ function getEmptyRatingDivInnerHtml(ratingType) {
 }
 
 function insertRatings(instructorDiv, unitsDiv, ratings) {
+  if (instructorDiv.classList.contains("modified")) return; // TODO
+  instructorDiv.classList.add("modified");
   const instructorName = instructorDiv.textContent;
   const qualityDiv = document.createElement("div");
   const difficultyDiv = document.createElement("div");
@@ -303,6 +244,8 @@ function insertRatings(instructorDiv, unitsDiv, ratings) {
   difficultyDiv.style.height = `${difficultyDivMaxHeight}px`;
   qualityDiv.innerHTML = getEmptyRatingDivInnerHtml("Quality");
   difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
+  // instructorDiv.firstChild ? instructorDiv.replaceChild(qualityDiv, instructorDiv.firstChild) : instructorDiv.appendChild(qualityDiv);
+  // unitsDiv.firstChild ? unitsDiv.replaceChild(difficultyDiv, unitsDiv.firstChild) : unitsDiv.appendChild(difficultyDiv);
   instructorDiv.appendChild(qualityDiv);
   unitsDiv.appendChild(difficultyDiv);
   let promise = getRmpRatings(instructorName).then((rating) => {
@@ -329,53 +272,13 @@ function handleGrid(visibleGrid) {
     const dataAutomationId = mainTable.getAttribute('data-automation-id');
     const mainTableId = dataAutomationId.split('-')[1];
     const lockedTable = visibleGrid.querySelector(`[data-automation-id="LockedTable-${mainTableId}"]`);
-<<<<<<< Updated upstream
-    if (!lockedTable) return;
-=======
     // if (!lockedTable) return;
->>>>>>> Stashed changes
     mainTableRows.forEach((mainTableRow) => {
       const rowid = mainTableRow.getAttribute('rowid');
+      const lockedTableRow = lockedTable.querySelector(`tr[rowid="${rowid}"]`);
+      // if (!lockedTableRow) return;
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       const unitsTd = mainTableRow.querySelector('td[headers^="columnheader7"]');
-<<<<<<< Updated upstream
-      if (!instructorsTd) return;
-      let ratings = {
-        totalQuality: 0,
-        totalDifficulty: 0,
-        validRatingsCount: 0,
-        ratingPromises: []
-      };
-      const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
-      const unitsDiv = unitsTd.querySelector('[role="presentation"]');
-      instructorDivs.forEach((instructorDiv) => insertRatings(instructorDiv, unitsDiv, ratings));
-      Promise.all(ratings.ratingPromises).then(() => {
-        if (ratings.validRatingsCount !== 0) {
-          let avgQuality = ratings.totalQuality / ratings.validRatingsCount;
-          let avgDifficulty = ratings.totalDifficulty / ratings.validRatingsCount;
-          if (extendColorHorizontally) {
-            let passedInstructorsTd = false;
-            mainTableRow.querySelectorAll('td').forEach(td => {
-              if (passedInstructorsTd && individualDifficultyColor) {
-                changeColor(td, avgDifficulty, true);
-              } else {
-                changeColor(td, avgQuality, false);
-              }
-              if (td === instructorsTd) {
-                passedInstructorsTd = true;
-              }
-            });
-            const lockedTableRow = lockedTable.querySelector(`tr[rowid="${rowid}"]`);
-            lockedTableRow.querySelectorAll('td').forEach(td => changeColor(td, avgQuality, false));
-          } else {
-            changeColor(instructorsTd, avgQuality, false);
-            if (individualDifficultyColor) {
-              changeColor(unitsTd, avgDifficulty, true);
-            }
-          }
-        }
-      });
-=======
       // if (!instructorsTd) return;
       const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
       const unitsDiv = unitsTd.querySelector('[role="presentation"]');
@@ -402,7 +305,6 @@ function handleGrid(visibleGrid) {
           // instructorsTd.classList.remove("processing");
         });
       }
->>>>>>> Stashed changes
     });
   });
 }

@@ -1,13 +1,3 @@
-<<<<<<< Updated upstream
-const extendColorHorizontallyDefault = false;
-const individualDifficultyColorDefault = false;
-const includeColor2Default = true;
-const color1Default = "#00FF00";
-const color2Default = "#FFFF00";
-const color3Default = "#FF0000";
-
-=======
->>>>>>> Stashed changes
 // console.log("background.js");
 
 const extendColorHorizontallyDefault   = false;
