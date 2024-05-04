@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "SCU Schedule Helper",
   "version": "1.0",
-  "description": "Helps you make a schedule with course professor color coding.",
+  "description": "Course/professor rating and color coding for SCU Find Course Sections.",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://www.myworkday.com/scu/*",
