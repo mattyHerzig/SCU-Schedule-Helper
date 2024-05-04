@@ -1,4 +1,4 @@
-const { getRmpRatings } = require("./fetchRMP.js");
+const { getRmpRatings } = require("../scripts/fetchRMP.js");
 const fs = require("fs");
 
 (async () => {
