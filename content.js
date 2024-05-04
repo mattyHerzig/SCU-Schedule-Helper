@@ -67,7 +67,7 @@ function loadSettings() {
     color1                    = checkAndAssign(color1,                    data.color1,                    defaults.color1                   );
     color2                    = checkAndAssign(color2,                    data.color2,                    defaults.color2                   );
     color3                    = checkAndAssign(color3,                    data.color3,                    defaults.color3                   );
-    opacity                  = checkAndAssign(opacity,                   data.opacity,                   defaults.opacity                  );
+    opacity                   = checkAndAssign(opacity,                   data.opacity,                   defaults.opacity                  );
 
     if (settingsChanged) {
       reloadVisuals();
