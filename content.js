@@ -15,10 +15,12 @@
 
 let extendColorHorizontally;
 let individualDifficultyColor;
+let reverseColor;
 let includeColor2;
 let color1;
 let color2;
 let color3;
+let opacity;
 
 let defaults;
 
@@ -34,7 +36,16 @@ async function getDefaults() {
   });
 }
 
+function reloadVisuals() {
+  const mainTables = document.querySelectorAll('[data-automation-id^="MainTable-"]');
+    mainTables.forEach((mainTable) => {
+      mainTable.classList.remove("modified");
+  });
+  checkForGrid();
+}
+
 function loadSettings() {
+<<<<<<< Updated upstream
     chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3'], function(data) {
         // console.log('data', data);
         // console.log('defaults', defaults);
@@ -48,21 +59,63 @@ function loadSettings() {
 
         // console.log('Loaded settings:', extendColorHorizontally, individualDifficultyColor, includeColor2, color1, color2, color3);
     });
+=======
+  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'reverseColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function (data) {
+    // console.log('data', data);
+    // console.log('defaults', defaults);
+
+    let settingsChanged = false;
+
+    const checkAndAssign = (currentValue, newValue, defaultValue) => {
+      const finalValue = newValue !== undefined ? newValue : defaultValue;
+      if (currentValue !== finalValue) {
+        settingsChanged = true;
+        return finalValue;
+      }
+      return currentValue;
+    };
+
+    extendColorHorizontally   = checkAndAssign(extendColorHorizontally,   data.extendColorHorizontally,   defaults.extendColorHorizontally  );
+    individualDifficultyColor = checkAndAssign(individualDifficultyColor, data.individualDifficultyColor, defaults.individualDifficultyColor);
+    reverseColor              = checkAndAssign(reverseColor,              data.reverseColor,              defaults.reverseColor             );
+    includeColor2             = checkAndAssign(includeColor2,             data.includeColor2,             defaults.includeColor2            );
+    color1                    = checkAndAssign(color1,                    data.color1,                    defaults.color1                   );
+    color2                    = checkAndAssign(color2,                    data.color2,                    defaults.color2                   );
+    color3                    = checkAndAssign(color3,                    data.color3,                    defaults.color3                   );
+    opacity                   = checkAndAssign(opacity,                   data.opacity,                   defaults.opacity                  );
+
+    if (settingsChanged) {
+      reloadVisuals();
+    }
+
+    
+  });
+>>>>>>> Stashed changes
 }
 
 async function setupSettings() {
   defaults = await getDefaults();
 
+<<<<<<< Updated upstream
   loadSettings();
 
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+=======
+  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+>>>>>>> Stashed changes
     // console.log("content.js received message:", request);
     if (request === 'settingsChanged') {
       loadSettings();
     }
   });
+<<<<<<< Updated upstream
   
   chrome.runtime.sendMessage({contentLoaded: true});
+=======
+
+  loadSettings();
+  // chrome.runtime.sendMessage({ contentLoaded: true });
+>>>>>>> Stashed changes
 }
 
 setupSettings();
@@ -84,30 +137,35 @@ document.body.removeChild(tempDifficultyDiv);
 
 
 
-const colorMax = 255;
-const blue = (0 / 255) * colorMax;
-const opacity = 0.5;
-
-// Linear interpolation function
 function lerp(a, b, t) {
-  return a * (1 - t) + b * t;
+  return a * t + b * (1 - t);
 }
 
-// Function to convert hex color to RGB
 function hexToRgb(hex) {
+<<<<<<< Updated upstream
   let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
       r: parseInt(result[1], 16),
       g: parseInt(result[2], 16),
       b: parseInt(result[3], 16)
   } : null;
+=======
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
+>>>>>>> Stashed changes
 }
 
 function changeColor(td, avgRating, reversed) {
+  if (reverseColor) {
+    reversed = !reversed;
+  }
   let red, green, blue;
   let color1RGB = hexToRgb(reversed ? color3 : color1);
   let color2RGB = hexToRgb(color2);
   let color3RGB = hexToRgb(reversed ? color1 : color3);
+<<<<<<< Updated upstream
   
   if (includeColor2) {
       if (avgRating >= 3) {
@@ -126,32 +184,101 @@ function changeColor(td, avgRating, reversed) {
       red = lerp(color1RGB.r, color3RGB.r, 1 - t);
       green = lerp(color1RGB.g, color3RGB.g, 1 - t);
       blue = lerp(color1RGB.b, color3RGB.b, 1 - t);
+=======
+  if (includeColor2) {
+    if (avgRating >= 3) {
+      let t = (avgRating - 3) / 2; // normalize to 0-1
+      red   = lerp(color1RGB.r, color2RGB.r, t);
+      green = lerp(color1RGB.g, color2RGB.g, t);
+      blue  = lerp(color1RGB.b, color2RGB.b, t);
+    } else {
+      let t = (avgRating - 1) / 2; // normalize to 0-1
+      red   = lerp(color2RGB.r, color3RGB.r, t);
+      green = lerp(color2RGB.g, color3RGB.g, t);
+      blue  = lerp(color2RGB.b, color3RGB.b, t);
+    }
+  } else {
+    let t = (avgRating - 1) / 4; // normalize to 0-1
+    red   = lerp(color1RGB.r, color3RGB.r, t);
+    green = lerp(color1RGB.g, color3RGB.g, t);
+    blue  = lerp(color1RGB.b, color3RGB.b, t);
+>>>>>>> Stashed changes
   }
-
-  const color = `rgba(${red}, ${green}, ${blue}, ${opacity})`;
-
-
-  // let red, green;
-  // if (avgRating >= 3) {
-  //   green = colorMax;
-  //   red = colorMax * (5 - avgRating) / 2;
-  // } else {
-  //   green = colorMax * (avgRating - 1) / 2;
-  //   red = colorMax;
-  // }
-  // // red = colorMax * (5 - avgRating) / 4;
-  // // green = colorMax * (avgRating - 1) / 4;
-  // if (reversed) {
-  //   const temp = red;
-  //   red = green;
-  //   green = temp;
-  // }
-  // const color = `rgba(${red}, ${green}, ${blue}, ${opacity})`;
+  const color = `rgba(${red}, ${green}, ${blue}, ${opacity / 100})`;
   td.style.transition = "background-color 0.5s ease";
   td.style.backgroundColor = color;
   td.style.setProperty("background-color", color, "important");
 }
 
+<<<<<<< Updated upstream
+=======
+function removeColor(td) {
+  td.style.transition = "background-color 0.5s ease";
+  td.style.backgroundColor = "";
+  td.style.setProperty("background-color", "", "important");
+}
+
+function colorTdsExtendAndIndividual(tds, avgQuality, avgDifficulty, instructorsTd) {
+  let passedInstructorsTd = false;
+  for (let td of tds) {
+    if (!passedInstructorsTd) {
+      changeColor(td, avgQuality, false);
+      if (td === instructorsTd) {
+        passedInstructorsTd = true;
+      }
+    } else {
+      changeColor(td, avgDifficulty, true);
+    }
+  }
+}
+
+function colorTdsExtend(tds, avgQuality) {
+  for (let td of tds) {
+    changeColor(td, avgQuality, false);
+  }
+}
+
+function colorTdsIndividual(tds, avgQuality, avgDifficulty, instructorsTd, unitsTd) {
+  for (let td of tds) {
+    if (td === instructorsTd) {
+      changeColor(td, avgQuality, false);
+    } else if (td === unitsTd) {
+      changeColor(td, avgDifficulty, true);
+    } else {
+      removeColor(td);
+    }
+  }
+}
+
+function colorTdsDefault(tds, avgQuality, instructorsTd) {
+  for (let td of tds) {
+    if (td === instructorsTd) {
+      changeColor(td, avgQuality, false);
+    } else {
+      removeColor(td);
+    }
+  }
+}
+
+function colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd) {
+  const lockedTds = Array.from(lockedTableRow.querySelectorAll('td'));
+  const mainTds = Array.from(mainTableRow.querySelectorAll('td'));
+  if (extendColorHorizontally && individualDifficultyColor) {
+    colorTdsExtendAndIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd);
+    colorTdsExtendAndIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd);
+  } else if (extendColorHorizontally && !individualDifficultyColor) {
+    colorTdsExtend(lockedTds, avgQuality);
+    colorTdsExtend(mainTds,   avgQuality);
+  } else if (!extendColorHorizontally && individualDifficultyColor) {
+    colorTdsIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd, unitsTd);
+    colorTdsIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd, unitsTd);
+  } else {
+    colorTdsDefault(lockedTds, avgQuality, instructorsTd);
+    colorTdsDefault(mainTds,   avgQuality, instructorsTd);
+  }
+}
+
+>>>>>>> Stashed changes
 function getInvalidRatingDivInnerHtml(ratingType, includeMagnifyingGlass, instructorName) {
   const index = instructorName.includes("|")
     ? instructorName.lastIndexOf("|") - 1
@@ -202,11 +329,16 @@ function handleGrid(visibleGrid) {
     const dataAutomationId = mainTable.getAttribute('data-automation-id');
     const mainTableId = dataAutomationId.split('-')[1];
     const lockedTable = visibleGrid.querySelector(`[data-automation-id="LockedTable-${mainTableId}"]`);
+<<<<<<< Updated upstream
     if (!lockedTable) return;
+=======
+    // if (!lockedTable) return;
+>>>>>>> Stashed changes
     mainTableRows.forEach((mainTableRow) => {
       const rowid = mainTableRow.getAttribute('rowid');
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       const unitsTd = mainTableRow.querySelector('td[headers^="columnheader7"]');
+<<<<<<< Updated upstream
       if (!instructorsTd) return;
       let ratings = {
         totalQuality: 0,
@@ -243,6 +375,34 @@ function handleGrid(visibleGrid) {
           }
         }
       });
+=======
+      // if (!instructorsTd) return;
+      const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
+      const unitsDiv = unitsTd.querySelector('[role="presentation"]');
+      // if (instructorsTd.classList.contains("processing")) return;
+      // instructorsTd.classList.add("processing");
+      if (instructorsTd.hasAttribute('avg-quality') && unitsTd.hasAttribute('avg-difficulty')) {
+        colorTds(lockedTableRow, mainTableRow, instructorsTd.getAttribute('avg-quality'), unitsTd.getAttribute('avg-difficulty'), instructorsTd, unitsTd);
+      } else {
+        let ratings = {
+          totalQuality: 0,
+          totalDifficulty: 0,
+          validRatingsCount: 0,
+          ratingPromises: []
+        };
+        instructorDivs.forEach((instructorDiv) => insertRatings(instructorDiv, unitsDiv, ratings));
+        Promise.all(ratings.ratingPromises).then(() => {
+          if (ratings.validRatingsCount !== 0) {
+            let avgQuality = ratings.totalQuality / ratings.validRatingsCount;
+            let avgDifficulty = ratings.totalDifficulty / ratings.validRatingsCount;
+            instructorsTd.setAttribute('avg-quality', avgQuality);
+            unitsTd.setAttribute('avg-difficulty', avgDifficulty);
+            colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd);
+          }
+          // instructorsTd.classList.remove("processing");
+        });
+      }
+>>>>>>> Stashed changes
     });
   });
 }

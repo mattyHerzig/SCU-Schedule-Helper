@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 const extendColorHorizontallyDefault = false;
 const individualDifficultyColorDefault = false;
 const includeColor2Default = true;
@@ -5,7 +6,18 @@ const color1Default = "#00FF00";
 const color2Default = "#FFFF00";
 const color3Default = "#FF0000";
 
+=======
+>>>>>>> Stashed changes
 // console.log("background.js");
+
+const extendColorHorizontallyDefault   = false;
+const individualDifficultyColorDefault = true;
+const reverseColorDefault              = false;
+const includeColor2Default             = true;
+const color1Default                    = "#00FF00";
+const color2Default                    = "#FFFF00";
+const color3Default                    = "#FF0000";
+const opacityDefault                   = 50;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // console.log("background.js received message:", request);
@@ -18,52 +30,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
-    else if (request === 'contentLoaded' || request === 'settingsChanged') {
-        chrome.windows.getCurrent({populate: true}, function(window) {
-            let currentTab = window.tabs.find(tab => tab.active);
-            if (currentTab) {
-                chrome.tabs.sendMessage(currentTab.id, 'settingsChanged');
-            }
-        });
-
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            if (tabs[0]) {
-                chrome.tabs.sendMessage(tabs[0].id, 'settingsChanged');
-            }
-        });
-
-        chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs) {
-            if (tabs[0]) {
-                chrome.tabs.sendMessage(tabs[0].id, 'settingsChanged');
+    else if (request === 'settingsChanged'/* || request === 'contentLoaded'*/) {
+        chrome.tabs.query({}, function(tabs) {
+            for (let tab of tabs) {
+                if (tab.url && tab.url.startsWith('https://www.myworkday.com/scu/')) {
+                    chrome.tabs.sendMessage(tab.id, 'settingsChanged', function(response) {
+                        if (chrome.runtime.lastError) {} // ignore
+                    });
+                }
             }
         });
     }
 
     else if (request === "getDefaults") {
         sendResponse({
-            extendColorHorizontally: extendColorHorizontallyDefault,
+            extendColorHorizontally:   extendColorHorizontallyDefault,
             individualDifficultyColor: individualDifficultyColorDefault,
-            includeColor2: includeColor2Default,
-            color1: color1Default,
-            color2: color2Default,
-            color3: color3Default
+            reverseColor:              reverseColorDefault,
+            includeColor2:             includeColor2Default,
+            color1:                    color1Default,
+            color2:                    color2Default,
+            color3:                    color3Default,
+            opacity:                   opacityDefault
         });
     }
 });
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
-    chrome.tabs.sendMessage(activeInfo.tabId, 'settingsChanged');
+    chrome.tabs.get(activeInfo.tabId, function(tab) {
+        if (tab.url && tab.url.startsWith('https://www.myworkday.com/scu/')) {
+            chrome.tabs.sendMessage(activeInfo.tabId, 'settingsChanged', function(response) {
+                if (chrome.runtime.lastError) {} // ignore
+            });
+        }
+    });
 });
 
 chrome.runtime.onInstalled.addListener(function(details) {
     if (details.reason == "install") {
         chrome.storage.sync.set({
-            extendColorHorizontally: extendColorHorizontallyDefault,
+            extendColorHorizontally:   extendColorHorizontallyDefault,
             individualDifficultyColor: individualDifficultyColorDefault,
-            includeColor2: includeColor2Default,
-            color1: color1Default,
-            color2: color2Default,
-            color3: color3Default
+            reverseColor:              reverseColorDefault,
+            includeColor2:             includeColor2Default,
+            color1:                    color1Default,
+            color2:                    color2Default,
+            color3:                    color3Default,
+            opacity:                   opacityDefault
         });
     }
     // else if (details.reason == "update") {}
