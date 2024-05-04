@@ -6,7 +6,7 @@ let includeColor2Checkbox             = document.getElementById('includeColor2Ch
 let color1Selector                    = document.getElementById('color1Selector'                   );
 let color2Selector                    = document.getElementById('color2Selector'                   );
 let color3Selector                    = document.getElementById('color3Selector'                   );
-let restoreToDefaultsButton           = document.getElementById('restoreToDefaultsButton'          );
+let restoreDefaultsButton             = document.getElementById('restoreDefaultsButton'            );
 let opacitySlider                     = document.getElementById('opacitySlider'                    );
 let opacityValue                      = document.getElementById('opacityValue'                     );
 
@@ -119,7 +119,7 @@ async function setupSettings() {
         chrome.runtime.sendMessage('settingsChanged');
     });
 
-    restoreToDefaultsButton.addEventListener('click', function() {
+    restoreDefaultsButton.addEventListener('click', function() {
         // console.log('Restoring to defaults');
         // console.log(defaults);
         chrome.storage.sync.set({

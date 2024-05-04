@@ -1,16 +1,3 @@
-// TODO:
-// Make it look good e.g. color choice, RMP logo, etc.
-// Popup, etc. other stuff whatever
-// Handle errors at top of extensions list
-
-// Better organize code eg comments, parent wrapper folder eg for crx, pem? Need to reconfigure VS Code, npm?
-
-// Can use map to keep track of if I've already gotten a prof's RMP (assuming we don't switch to class-specific)?
-
-
-
-// chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3'], function(data) {console.log(data)});
-
 // console.log('content.js');
 
 let extendColorHorizontally;

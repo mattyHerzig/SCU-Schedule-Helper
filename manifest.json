@@ -2,29 +2,26 @@
   "manifest_version": 3,
   "name": "SCU Schedule Helper",
   "version": "1.0",
-  "description": "Helps you make a schedule with course professor color coding.", // TODO
+  "description": "Helps you make a schedule with course professor color coding.",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://www.myworkday.com/scu/*",
-    "https://www.ratemyprofessors.com/*",
-    "https://your-database-url.com/*" // TODO
+    "https://www.ratemyprofessors.com/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://www.myworkday.com/scu/*"],
       "js": ["scripts/fetchRMP.js", "content.js"]
-      // "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [],
-      "matches": ["<all_urls>"] // TODO
+      "matches": ["<all_urls>"]
     }
   ],
   "background": {
     "service_worker": "background.js"
-    //"persistent": false
   },
   "action": {
     "default_icon": {
