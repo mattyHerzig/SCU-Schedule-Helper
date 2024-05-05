@@ -24,14 +24,6 @@ async function getDefaults() {
 
 function reloadVisuals() {
   const mainTables = document.querySelectorAll('[data-automation-id^="MainTable-"]');
-  mainTables.forEach((mainTable) => {
-    mainTable.classList.remove("modified");
-  });
-  checkForGrid();
-}
-
-function reloadVisuals() {
-  const mainTables = document.querySelectorAll('[data-automation-id^="MainTable-"]');
     mainTables.forEach((mainTable) => {
       mainTable.classList.remove("modified");
   });
