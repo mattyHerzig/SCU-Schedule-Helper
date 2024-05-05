@@ -88,18 +88,18 @@ setupSettings();
 
 
 
-// const tempQualityDiv = document.createElement("div");
-// const tempDifficultyDiv = document.createElement("div");
-// tempQualityDiv.style.visibility = "hidden";
-// tempDifficultyDiv.style.visibility = "hidden";
-// document.body.appendChild(tempQualityDiv);
-// document.body.appendChild(tempDifficultyDiv);
-// tempQualityDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Quality: 🔍</a>`;
-// tempDifficultyDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Difficulty: 🔍</a>`;
-// const qualityDivMaxHeight = tempQualityDiv.offsetHeight;
-// const difficultyDivMaxHeight = tempDifficultyDiv.offsetHeight;
-// document.body.removeChild(tempQualityDiv);
-// document.body.removeChild(tempDifficultyDiv);
+const tempQualityDiv = document.createElement("div");
+const tempDifficultyDiv = document.createElement("div");
+tempQualityDiv.style.visibility = "hidden";
+tempDifficultyDiv.style.visibility = "hidden";
+document.body.appendChild(tempQualityDiv);
+document.body.appendChild(tempDifficultyDiv);
+tempQualityDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Quality: 🔍</a>`;
+tempDifficultyDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Difficulty: 🔍</a>`;
+const qualityDivMaxHeight = tempQualityDiv.offsetHeight;
+const difficultyDivMaxHeight = tempDifficultyDiv.offsetHeight;
+document.body.removeChild(tempQualityDiv);
+document.body.removeChild(tempDifficultyDiv);
 
 
 
@@ -211,7 +211,7 @@ function colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instr
 
 function getInvalidRatingDivInnerHtml(ratingType, includeMagnifyingGlass, instructorName) {
   const index = instructorName.includes("|")
-    ? instructorName.lastIndexOf("|") - 1
+    ? instructorName.indexOf("|") - 1
     : instructorName.length;
   const firstInstructorName = instructorName.substring(0, index);
   return `<a href="https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">${ratingType}: ${includeMagnifyingGlass ? '🔍' : ''}</a>`;
@@ -237,8 +237,8 @@ function insertRatings(instructorLi, unitsDiv, ratings, index) {
   const instructorName = instructorDiv.textContent;
   const qualityDiv = document.createElement("div");
   const difficultyDiv = document.createElement("div");
-  // qualityDiv.style.height = `${qualityDivMaxHeight}px`;
-  // difficultyDiv.style.height = `${difficultyDivMaxHeight}px`;
+  qualityDiv.style.height = `${qualityDivMaxHeight}px`;
+  difficultyDiv.style.height = `${difficultyDivMaxHeight}px`;
   qualityDiv.innerHTML = getEmptyRatingDivInnerHtml("Quality");
   difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
   instructorLi.appendChild(qualityDiv);
@@ -285,7 +285,7 @@ function handleGrid(visibleGrid) {
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       const unitsTd = mainTableRow.querySelector('td[headers^="columnheader7"]');
       // if (!instructorsTd) return;
-      const instructorDivs = instructorsTd.querySelectorAll('[data-automation-id^="selectedItem_"]');
+      const instructorLis = instructorsTd.querySelectorAll('li[role="presentation"]');
       const unitsDiv = unitsTd.querySelector('[role="presentation"]');
       // if (instructorsTd.classList.contains("processing")) return;
       // instructorsTd.classList.add("processing");
@@ -314,15 +314,15 @@ function handleGrid(visibleGrid) {
   });
 }
 
-function widenUnitsColumn(visibleGrid) {
-  const styleElements = Array.from(document.head.querySelectorAll('style[type="text/css"]'));
-  const widthStyleElements = styleElements.filter(style => style.textContent.includes('width:'));
-  if (widthStyleElements.length < 9) return;
-  if (visibleGrid.classList.contains("modified")) return;
-  visibleGrid.classList.add("modified");
-  let unitsColumnStyle = widthStyleElements[8];
-  unitsColumnStyle.textContent = unitsColumnStyle.textContent.replace(/width:\d+PX;/, "width:120PX;");
-}
+// function widenUnitsColumn(visibleGrid) {
+//   const styleElements = Array.from(document.head.querySelectorAll('style[type="text/css"]'));
+//   const widthStyleElements = styleElements.filter(style => style.textContent.includes('width:'));
+//   if (widthStyleElements.length < 9) return;
+//   if (visibleGrid.classList.contains("modified")) return;
+//   visibleGrid.classList.add("modified");
+//   let unitsColumnStyle = widthStyleElements[8];
+//   unitsColumnStyle.textContent = unitsColumnStyle.textContent.replace(/width:\d+PX;/, "width:120PX;");
+// }
 
 function checkForGrid() {
   const loadingPanel = document.querySelector("[data-automation-loadingpanelhidden]");
@@ -334,7 +334,7 @@ function checkForGrid() {
   if (!scuFindCourseSections) return;
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
   if (!visibleGrid) return;
-  if (!visibleGrid.classList.contains("modified")) widenUnitsColumn(visibleGrid);
+  // if (!visibleGrid.classList.contains("modified")) widenUnitsColumn(visibleGrid);
   handleGrid(visibleGrid);
 }
 
