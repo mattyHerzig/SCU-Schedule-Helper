@@ -24,6 +24,14 @@ async function getDefaults() {
 
 function reloadVisuals() {
   const mainTables = document.querySelectorAll('[data-automation-id^="MainTable-"]');
+  mainTables.forEach((mainTable) => {
+    mainTable.classList.remove("modified");
+  });
+  checkForGrid();
+}
+
+function reloadVisuals() {
+  const mainTables = document.querySelectorAll('[data-automation-id^="MainTable-"]');
     mainTables.forEach((mainTable) => {
       mainTable.classList.remove("modified");
   });
@@ -80,18 +88,18 @@ setupSettings();
 
 
 
-const tempQualityDiv = document.createElement("div");
-const tempDifficultyDiv = document.createElement("div");
-tempQualityDiv.style.visibility = "hidden";
-tempDifficultyDiv.style.visibility = "hidden";
-document.body.appendChild(tempQualityDiv);
-document.body.appendChild(tempDifficultyDiv);
-tempQualityDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Quality: 🔍</a>`;
-tempDifficultyDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Difficulty: 🔍</a>`;
-const qualityDivMaxHeight = tempQualityDiv.offsetHeight;
-const difficultyDivMaxHeight = tempDifficultyDiv.offsetHeight;
-document.body.removeChild(tempQualityDiv);
-document.body.removeChild(tempDifficultyDiv);
+// const tempQualityDiv = document.createElement("div");
+// const tempDifficultyDiv = document.createElement("div");
+// tempQualityDiv.style.visibility = "hidden";
+// tempDifficultyDiv.style.visibility = "hidden";
+// document.body.appendChild(tempQualityDiv);
+// document.body.appendChild(tempDifficultyDiv);
+// tempQualityDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Quality: 🔍</a>`;
+// tempDifficultyDiv.innerHTML = `<a target="_blank" style="color: #005dba; text-decoration: none;">Difficulty: 🔍</a>`;
+// const qualityDivMaxHeight = tempQualityDiv.offsetHeight;
+// const difficultyDivMaxHeight = tempDifficultyDiv.offsetHeight;
+// document.body.removeChild(tempQualityDiv);
+// document.body.removeChild(tempDifficultyDiv);
 
 
 
@@ -217,19 +225,23 @@ function getEmptyRatingDivInnerHtml(ratingType) {
   return `<a target="_blank" style="color: #005dba; text-decoration: none;">${ratingType}: </a>`;
 }
 
-function insertRatings(instructorDiv, unitsDiv, ratings) {
-  if (instructorDiv.classList.contains("modified")) return; // TODO
-  instructorDiv.classList.add("modified");
+function insertRatings(instructorLi, unitsDiv, ratings, index) {
+  if (instructorLi.classList.contains("modified")) return; // TODO
+  instructorLi.classList.add("modified");
+  instructorDiv = instructorLi.querySelector(`[data-automation-id^="selectedItem_"]`);
+  if (!instructorDiv) return;
+  instructorDiv.style.paddingBottom = "0";
+  if (index > 0) {
+    instructorDiv.style.marginTop = '6px';
+  }
   const instructorName = instructorDiv.textContent;
   const qualityDiv = document.createElement("div");
   const difficultyDiv = document.createElement("div");
-  qualityDiv.style.height = `${qualityDivMaxHeight}px`;
-  difficultyDiv.style.height = `${difficultyDivMaxHeight}px`;
+  // qualityDiv.style.height = `${qualityDivMaxHeight}px`;
+  // difficultyDiv.style.height = `${difficultyDivMaxHeight}px`;
   qualityDiv.innerHTML = getEmptyRatingDivInnerHtml("Quality");
   difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
-  // instructorDiv.firstChild ? instructorDiv.replaceChild(qualityDiv, instructorDiv.firstChild) : instructorDiv.appendChild(qualityDiv);
-  // unitsDiv.firstChild ? unitsDiv.replaceChild(difficultyDiv, unitsDiv.firstChild) : unitsDiv.appendChild(difficultyDiv);
-  instructorDiv.appendChild(qualityDiv);
+  instructorLi.appendChild(qualityDiv);
   unitsDiv.appendChild(difficultyDiv);
   let promise = getRmpRatings(instructorName).then((rating) => {
     if (rating !== null) {
@@ -237,10 +249,20 @@ function insertRatings(instructorDiv, unitsDiv, ratings) {
       ratings.totalQuality += rating["avgRating"];
       ratings.totalDifficulty += rating["avgDifficulty"];
       qualityDiv.innerHTML = getValidRatingDivInnerHtml("Quality", rating["avgRating"], rating["legacyId"]);
-      difficultyDiv.innerHTML = getValidRatingDivInnerHtml("Difficulty", rating["avgDifficulty"], rating["legacyId"]);
+      if (index > 0) {
+        difficultyDiv.style.marginTop = '6px';
+        difficultyDiv.innerHTML = "<br>" + getValidRatingDivInnerHtml("Difficulty", rating["avgDifficulty"], rating["legacyId"]);
+      } else {
+        difficultyDiv.innerHTML = getValidRatingDivInnerHtml("Difficulty", rating["avgDifficulty"], rating["legacyId"]);
+      }
     } else {
       qualityDiv.innerHTML = getInvalidRatingDivInnerHtml("Quality", true, instructorName);
-      difficultyDiv.innerHTML = getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
+      if (index > 0) {
+        difficultyDiv.style.marginTop = '6px';
+        difficultyDiv.innerHTML = "<br>" + getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
+      } else {
+        difficultyDiv.innerHTML = getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
+      }
     }
   });
   ratings.ratingPromises.push(promise);
@@ -276,7 +298,7 @@ function handleGrid(visibleGrid) {
           validRatingsCount: 0,
           ratingPromises: []
         };
-        instructorDivs.forEach((instructorDiv) => insertRatings(instructorDiv, unitsDiv, ratings));
+        instructorLis.forEach((instructorLi, index) => insertRatings(instructorLi, unitsDiv, ratings, index));
         Promise.all(ratings.ratingPromises).then(() => {
           if (ratings.validRatingsCount !== 0) {
             let avgQuality = ratings.totalQuality / ratings.validRatingsCount;
@@ -292,14 +314,15 @@ function handleGrid(visibleGrid) {
   });
 }
 
-// function widenUnitsColumn(visibleGrid) {
-//   const styleElements = Array.from(document.head.querySelectorAll('style[type="text/css"]'));
-//   const widthStyleElements = styleElements.filter(style => style.textContent.includes('width:'));
-//   if (widthStyleElements.length < 9) return;
-//   visibleGrid.classList.add("modified");
-//   let unitsColumnStyle = widthStyleElements[8];
-//   unitsColumnStyle.textContent = unitsColumnStyle.textContent.replace(/width:\d+PX;/, "width:120PX;");
-// }
+function widenUnitsColumn(visibleGrid) {
+  const styleElements = Array.from(document.head.querySelectorAll('style[type="text/css"]'));
+  const widthStyleElements = styleElements.filter(style => style.textContent.includes('width:'));
+  if (widthStyleElements.length < 9) return;
+  if (visibleGrid.classList.contains("modified")) return;
+  visibleGrid.classList.add("modified");
+  let unitsColumnStyle = widthStyleElements[8];
+  unitsColumnStyle.textContent = unitsColumnStyle.textContent.replace(/width:\d+PX;/, "width:120PX;");
+}
 
 function checkForGrid() {
   const loadingPanel = document.querySelector("[data-automation-loadingpanelhidden]");
@@ -311,7 +334,7 @@ function checkForGrid() {
   if (!scuFindCourseSections) return;
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
   if (!visibleGrid) return;
-  // if (!visibleGrid.classList.contains("modified")) widenUnitsColumn(visibleGrid);
+  if (!visibleGrid.classList.contains("modified")) widenUnitsColumn(visibleGrid);
   handleGrid(visibleGrid);
 }
 
