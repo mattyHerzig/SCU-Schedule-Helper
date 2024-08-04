@@ -27,11 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
         opacitySlider.value = value;
     }
     includeColor2Checkbox.onchange = function() {
-        if (includeColor2Checkbox.checked) {
-            color2Selector.disabled = false;
-        } else {
-            color2Selector.disabled = true;
-        }
+        color2Selector.disabled = !includeColor2Checkbox.checked;
     }
 });
 

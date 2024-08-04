@@ -1,12 +1,14 @@
 // console.log("background.js");
 
-const extendColorHorizontallyDefault   = false;
-const individualDifficultyColorDefault = true;
-const includeColor2Default             = true;
-const color1Default                    = "#00FF00";
-const color2Default                    = "#FFFF00";
-const color3Default                    = "#FF0000";
-const opacityDefault                   = 50; // 0-100
+const defaults = {
+    extendColorHorizontally: false,
+    individualDifficultyColor: true,
+    includeColor2: true,
+    color1: "#00FF00",
+    color2: "#FFFF00",
+    color3: "#FF0000",
+    opacity: 50 // 0-100
+};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // console.log("background.js received message:", request);
@@ -32,15 +34,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     else if (request === "getDefaults") {
-        sendResponse({
-            extendColorHorizontally:   extendColorHorizontallyDefault,
-            individualDifficultyColor: individualDifficultyColorDefault,
-            includeColor2:             includeColor2Default,
-            color1:                    color1Default,
-            color2:                    color2Default,
-            color3:                    color3Default,
-            opacity:                   opacityDefault
-        });
+        sendResponse(defaults);
     }
 });
 
@@ -56,15 +50,7 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 
 chrome.runtime.onInstalled.addListener(function(details) {
     if (details.reason == "install") {
-        chrome.storage.sync.set({
-            extendColorHorizontally:   extendColorHorizontallyDefault,
-            individualDifficultyColor: individualDifficultyColorDefault,
-            includeColor2:             includeColor2Default,
-            color1:                    color1Default,
-            color2:                    color2Default,
-            color3:                    color3Default,
-            opacity:                   opacityDefault
-        });
+        chrome.storage.sync.set(defaults);
     }
     // else if (details.reason == "update") {}
 });
