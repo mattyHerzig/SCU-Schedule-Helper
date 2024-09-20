@@ -13,11 +13,6 @@ async function getEvalsRatings(instructor, subject, number) {
             // if (!rating) {
             //     return resolve({ qualityAvg: null, difficultyAvg: null });
             // }
-            // const qualitySum = courseEvals.reduce((sum, eval) => sum + eval.quality_avg, 0);
-            // const difficultySum = courseEvals.reduce((sum, eval) => sum + eval.difficulty_avg, 0);
-            // const count = courseEvals.length;
-            // const qualityAvg = qualitySum / count;
-            // const difficultyAvg = difficultySum / count;
             resolve(rating === null ? null : { avgRating: rating.quality_avg, avgDifficulty: rating.difficulty_avg });
         });
     });

@@ -68,8 +68,8 @@ async function getDefaults() {
 
 function loadSettings() {
     chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity', 'useEvals', 'oauth_token'], function(data) {
-        // console.log('data', data);
-        // console.log('defaults', defaults);
+        // console.log('data', data); // DEBUG
+        // console.log('defaults', defaults); // DEBUG
 
         extendColorHorizontallyCheckbox.checked   = data.extendColorHorizontally   !== undefined ? data.extendColorHorizontally   : defaults.extendColorHorizontally;
         individualDifficultyColorCheckbox.checked = data.individualDifficultyColor !== undefined ? data.individualDifficultyColor : defaults.individualDifficultyColor;
@@ -84,7 +84,7 @@ function loadSettings() {
         color2Selector.disabled                   = !includeColor2Checkbox.checked;
         authorizationButton.disabled              = data.oauth_token !== undefined;
         useEvalsCheckbox.disabled                 = data.oauth_token === undefined;
-        // console.log('Loaded settings:', extendColorHorizontally, individualDifficultyColor, includeColor2, color1, color2, color3);
+        // console.log('Loaded settings:', extendColorHorizontally, individualDifficultyColor, includeColor2, color1, color2, color3); // DEBUG
     });
 }
 
@@ -135,7 +135,7 @@ async function setupSettings() {
     });
 
     opacityValue.addEventListener('change', function() {
-        // console.log('opacityValue changed');
+        // console.log('opacityValue changed'); // DEBUG
         chrome.storage.sync.set({opacity: this.value});
         chrome.runtime.sendMessage('settingsChanged');
     });
@@ -158,8 +158,8 @@ async function setupSettings() {
     });
 
     restoreDefaultsButton.addEventListener('click', function() {
-        // console.log('Restoring to defaults');
-        // console.log(defaults);
+        // console.log('Restoring to defaults'); // DEBUG
+        // console.log(defaults); // DEBUG
         chrome.storage.sync.set({
             extendColorHorizontally:   defaults.extendColorHorizontally,
             individualDifficultyColor: defaults.individualDifficultyColor,

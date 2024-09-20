@@ -20,7 +20,7 @@ async function authorize() {
         await chrome.identity.clearAllCachedAuthTokens();
         const { token } = await chrome.identity.getAuthToken({interactive: true});
         // console.log(await chrome.identity.getProfileUserInfo()); // DEBUG
-        // const { email } = await chrome.identity.getProfileUserInfo(); // gets email of user with the extension, not the user that just logged in
+        // const { email } = await chrome.identity.getProfileUserInfo(); // Gets email of user with the extension, not the user that just logged in
         // const domain = email.split('@')[1];
         const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
             headers: {
@@ -31,18 +31,17 @@ async function authorize() {
         const email = userInfo.email;
         const domain = userInfo.hd; // email.split('@')[1] for consistency with server?
         if (domain === 'scu.edu') {
-            // console.log('SCU email detected:', email);
-            // console.log(token);
+            // console.log('SCU email detected:', email); // DEBUG
+            // console.log(token); // DEBUG
             await chrome.storage.sync.set({ oauth_token: token });
             return [true, ''];
         } else {
-            // console.log('Non-SCU email detected:', email);
+            // console.log('Non-SCU email detected:', email); // DEBUG
             await fetch('https://accounts.google.com/o/oauth2/revoke?token=' + token);
             await chrome.identity.clearAllCachedAuthTokens();
             return [false, 'Authorization failed. Email does not end with "@scu.edu".'];
         }
     } catch (error) {
-        // console.error(error); // TODO: handle user cancelling
         return [false, 'Authorization failed. User cancelled.'];
     }
 }
@@ -67,7 +66,7 @@ async function downloadEvalsIfNeeded() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // console.log("service_worker.js received message:", request);
+    // console.log("service_worker.js received message:", request); // DEBUG
 
     if (request.url !== undefined) {
         fetch(request.url)

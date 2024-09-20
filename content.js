@@ -35,8 +35,8 @@ function reloadVisuals() {
 
 function loadSettings() {
   chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity', 'useEvals'], function (data) {
-    // console.log('data', data);
-    // console.log('defaults', defaults);
+    // console.log('data', data); // DEBUG
+    // console.log('defaults', defaults); // DEBUG
 
     let settingsChanged = false;
 
@@ -70,14 +70,14 @@ async function setupSettings() {
   defaults = await getDefaults();
 
   chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    // console.log("content.js received message:", request);
+    // console.log("content.js received message:", request); // DEBUG
     if (request === 'settingsChanged') {
       loadSettings();
     }
   });
 
   loadSettings();
-  // chrome.runtime.sendMessage({ contentLoaded: true });
+  // chrome.runtime.sendMessage({ contentLoaded: true }); // DEBUG
 }
 
 setupSettings();
@@ -224,7 +224,7 @@ function getEmptyRatingDivInnerHtml(ratingType) {
 }
 
 function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index) {
-  if (instructorLi.classList.contains("modified")) return; // TODO
+  if (instructorLi.classList.contains("modified")) return;
   instructorLi.classList.add("modified");
   instructorDiv = instructorLi.querySelector(`[data-automation-id^="selectedItem_"]`);
   if (!instructorDiv) return;
@@ -322,6 +322,7 @@ function handleGrid(visibleGrid) {
   });
 }
 
+// TODO: This doesn't work.
 // function widenUnitsColumn(visibleGrid) {
 //   const styleElements = Array.from(document.head.querySelectorAll('style[type="text/css"]'));
 //   const widthStyleElements = styleElements.filter(style => style.textContent.includes('width:'));
