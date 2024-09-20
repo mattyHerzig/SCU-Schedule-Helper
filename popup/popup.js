@@ -9,12 +9,12 @@ let color3Selector                    = document.getElementById('color3Selector'
 let restoreDefaultsButton             = document.getElementById('restoreDefaultsButton'            );
 let opacitySlider                     = document.getElementById('opacitySlider'                    );
 let opacityValue                      = document.getElementById('opacityValue'                     );
+let authorizationButton               = document.getElementById('authorizationButton');
+let useEvalsCheckbox                  = document.getElementById('useEvalsCheckbox');
 
 document.addEventListener('DOMContentLoaded', function() {
-    opacitySlider.oninput = function() {
-        opacityValue.value = opacitySlider.value;
-    }
-    opacityValue.oninput = function() {
+    function validateOpacityInput() {
+        // Validate the input value
         let value = parseInt(opacityValue.value, 10);
         if (isNaN(value)) {
             value = defaults.opacity !== undefined ? defaults.opacity : 50;
@@ -26,6 +26,27 @@ document.addEventListener('DOMContentLoaded', function() {
         opacityValue.value = value;
         opacitySlider.value = value;
     }
+    
+    opacityValue.oninput = function() {
+        // Allow any input value temporarily
+        let value = opacityValue.value;
+        if (value !== '' && !isNaN(value)) {
+            let numericValue = parseInt(value, 10);
+            if (numericValue >= 0 && numericValue <= 100) {
+                opacitySlider.value = numericValue;
+            }
+        }
+    }
+    
+    opacityValue.onblur = validateOpacityInput;
+    
+    opacityValue.onkeydown = function(event) {
+        if (event.key === 'Enter') {
+            validateOpacityInput();
+            opacityValue.blur(); // Optionally remove focus from the input
+        }
+    }
+    
     includeColor2Checkbox.onchange = function() {
         color2Selector.disabled = !includeColor2Checkbox.checked;
     }
@@ -46,7 +67,7 @@ async function getDefaults() {
 }
 
 function loadSettings() {
-    chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function(data) {
+    chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity', 'useEvals', 'oauth_token'], function(data) {
         // console.log('data', data);
         // console.log('defaults', defaults);
 
@@ -58,8 +79,11 @@ function loadSettings() {
         color3Selector.value                      = data.color3                    !== undefined ? data.color3                    : defaults.color3;
         opacitySlider.value                       = data.opacity                   !== undefined ? data.opacity                   : defaults.opacity;
         opacityValue.value                        = data.opacity                   !== undefined ? data.opacity                   : defaults.opacity;
+        useEvalsCheckbox.checked                  = data.useEvals                  !== undefined ? data.useEvals                  : defaults.useEvals;
 
         color2Selector.disabled                   = !includeColor2Checkbox.checked;
+        authorizationButton.disabled              = data.oauth_token !== undefined;
+        useEvalsCheckbox.disabled                 = data.oauth_token === undefined;
         // console.log('Loaded settings:', extendColorHorizontally, individualDifficultyColor, includeColor2, color1, color2, color3);
     });
 }
@@ -104,14 +128,32 @@ async function setupSettings() {
         chrome.runtime.sendMessage('settingsChanged');
     });
 
-    opacitySlider.addEventListener('input', function() {
+    opacitySlider.addEventListener('mouseup', function() {
+        opacityValue.value = this.value;
         chrome.storage.sync.set({opacity: this.value});
         chrome.runtime.sendMessage('settingsChanged');
     });
 
     opacityValue.addEventListener('change', function() {
-        console.log('opacityValue changed');
+        // console.log('opacityValue changed');
         chrome.storage.sync.set({opacity: this.value});
+        chrome.runtime.sendMessage('settingsChanged');
+    });
+
+    authorizationButton.addEventListener('click', function() {
+        chrome.runtime.sendMessage('authorize', ([authorized, failStatus]) => {
+            if (authorized) {
+                chrome.runtime.sendMessage('downloadEvals', () => {
+                    useEvalsCheckbox.checked = true;
+                    chrome.storage.sync.set({useEvals: true});
+                    chrome.runtime.sendMessage('settingsChanged');
+                });
+            }
+        });
+    });
+
+    useEvalsCheckbox.addEventListener('change', function() {
+        chrome.storage.sync.set({useEvals: this.checked});
         chrome.runtime.sendMessage('settingsChanged');
     });
 
@@ -125,7 +167,8 @@ async function setupSettings() {
             color1:                    defaults.color1,
             color2:                    defaults.color2,
             color3:                    defaults.color3,
-            opacity:                   defaults.opacity
+            opacity:                   defaults.opacity,
+            useEvals:                  defaults.useEvals
         });
         loadSettings();
         chrome.runtime.sendMessage('settingsChanged');

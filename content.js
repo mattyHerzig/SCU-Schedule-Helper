@@ -1,5 +1,7 @@
 // console.log('content.js');
 
+chrome.runtime.sendMessage('downloadEvalsIfNeeded');
+
 let extendColorHorizontally;
 let individualDifficultyColor;
 let includeColor2;
@@ -7,6 +9,7 @@ let color1;
 let color2;
 let color3;
 let opacity;
+let useEvals;
 
 let defaults;
 
@@ -31,7 +34,7 @@ function reloadVisuals() {
 }
 
 function loadSettings() {
-  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity'], function (data) {
+  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity', 'useEvals'], function (data) {
     // console.log('data', data);
     // console.log('defaults', defaults);
 
@@ -53,6 +56,7 @@ function loadSettings() {
     color2                    = checkAndAssign(color2,                    data.color2,                    defaults.color2                   );
     color3                    = checkAndAssign(color3,                    data.color3,                    defaults.color3                   );
     opacity                   = checkAndAssign(opacity,                   data.opacity,                   defaults.opacity                  );
+    useEvals                  = checkAndAssign(useEvals,                  data.useEvals,                  defaults.useEvals                 );
 
     if (settingsChanged) {
       reloadVisuals();
@@ -131,8 +135,10 @@ function changeColor(td, avgRating, reversed) {
   }
   const color = `rgba(${red}, ${green}, ${blue}, ${opacity / 100})`;
   td.style.transition = "background-color 0.5s ease";
-  td.style.backgroundColor = color;
-  td.style.setProperty("background-color", color, "important");
+  // requestAnimationFrame(() => {
+    td.style.backgroundColor = color;
+    td.style.setProperty("background-color", color, "important");
+  // });
 }
 
 function removeColor(td) {
@@ -206,18 +212,18 @@ function getInvalidRatingDivInnerHtml(ratingType, includeMagnifyingGlass, instru
     ? instructorName.indexOf("|") - 1
     : instructorName.length;
   const firstInstructorName = instructorName.substring(0, index);
-  return `<a href="https://www.ratemyprofessors.com/search/professors?q=${firstInstructorName}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">${ratingType}: ${includeMagnifyingGlass ? '🔍' : ''}</a>`;
+  return `<a href="${useEvals ? 'javascript:void(0)' : ('https://www.ratemyprofessors.com/search/professors?q=' + firstInstructorName)}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: ${includeMagnifyingGlass ? '🔍' : ''}</a>`;
 }
 
 function getValidRatingDivInnerHtml(ratingType, avgRating, legacyId) {
-  return `<a href="https://www.ratemyprofessors.com/professor/${legacyId}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';">${ratingType}: ${avgRating.toFixed(1) + "/5.0"}</a>`;
+  return `<a href="${useEvals ? 'javascript:void(0)' : ('https://www.ratemyprofessors.com/professor/' + legacyId)}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: ${avgRating.toFixed(1) + "/5.0"}</a>`;
 }
 
 function getEmptyRatingDivInnerHtml(ratingType) {
-  return `<a target="_blank" style="color: #005dba; text-decoration: none;">${ratingType}: </a>`;
+  return `<a target="_blank" style="color: #005dba; text-decoration: none;" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: </a>`;
 }
 
-function insertRatings(instructorLi, unitsDiv, ratings, index) {
+function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index) {
   if (instructorLi.classList.contains("modified")) return; // TODO
   instructorLi.classList.add("modified");
   instructorDiv = instructorLi.querySelector(`[data-automation-id^="selectedItem_"]`);
@@ -225,6 +231,13 @@ function insertRatings(instructorLi, unitsDiv, ratings, index) {
   instructorDiv.style.paddingBottom = "0";
   if (index > 0) {
     instructorDiv.style.marginTop = '6px';
+  }
+  let subject = number = null;
+  const match = courseDiv.textContent.match(/^([A-Z]+)\s+(\d+)/);
+  if (match) {
+      subject = match[1];
+      number = match[2];
+  } else {
   }
   const instructorName = instructorDiv.textContent;
   const qualityDiv = document.createElement("div");
@@ -235,7 +248,8 @@ function insertRatings(instructorLi, unitsDiv, ratings, index) {
   difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
   instructorLi.appendChild(qualityDiv);
   unitsDiv.appendChild(difficultyDiv);
-  let promise = getRmpRatings(instructorName).then((rating) => {
+  let promise = useEvals ? getEvalsRatings(instructorName, subject, number) : getRmpRatings(instructorName);
+  promise.then((rating) => {
     if (rating !== null) {
       ratings.validRatingsCount++;
       ratings.totalQuality += rating["avgRating"];
@@ -274,6 +288,7 @@ function handleGrid(visibleGrid) {
       const rowid = mainTableRow.getAttribute('rowid');
       const lockedTableRow = lockedTable.querySelector(`tr[rowid="${rowid}"]`);
       // if (!lockedTableRow) return;
+      const courseDiv = mainTableRow.querySelector('[data-automation-id="promptOption"]');
       const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
       const unitsTd = mainTableRow.querySelector('td[headers^="columnheader7"]');
       // if (!instructorsTd) return;
@@ -281,7 +296,7 @@ function handleGrid(visibleGrid) {
       const unitsDiv = unitsTd.querySelector('[role="presentation"]');
       // if (instructorsTd.classList.contains("processing")) return;
       // instructorsTd.classList.add("processing");
-      if (instructorsTd.hasAttribute('avg-quality') && unitsTd.hasAttribute('avg-difficulty')) {
+      if (instructorsTd.getAttribute('use-evals') == useEvals/*instructorsTd.hasAttribute('avg-quality') && unitsTd.hasAttribute('avg-difficulty')*/) {
         colorTds(lockedTableRow, mainTableRow, instructorsTd.getAttribute('avg-quality'), unitsTd.getAttribute('avg-difficulty'), instructorsTd, unitsTd);
       } else {
         let ratings = {
@@ -290,11 +305,12 @@ function handleGrid(visibleGrid) {
           validRatingsCount: 0,
           ratingPromises: []
         };
-        instructorLis.forEach((instructorLi, index) => insertRatings(instructorLi, unitsDiv, ratings, index));
+        instructorLis.forEach((instructorLi, index) => insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index));
         Promise.all(ratings.ratingPromises).then(() => {
           if (ratings.validRatingsCount !== 0) {
             let avgQuality = ratings.totalQuality / ratings.validRatingsCount;
             let avgDifficulty = ratings.totalDifficulty / ratings.validRatingsCount;
+            instructorsTd.setAttribute('use-evals', useEvals);
             instructorsTd.setAttribute('avg-quality', avgQuality);
             unitsTd.setAttribute('avg-difficulty', avgDifficulty);
             colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd);

@@ -7,7 +7,7 @@ rm -rf dist
 mkdir dist
 
 # Copy the necessary files
-cp -r images popup scripts background.js content.js manifest.json dist
+cp -r images popup tab ratings service_worker.js content.js manifest.json dist
 
 # Package the dist directory
 cd dist
