@@ -99,7 +99,7 @@ document.body.removeChild(tempDifficultyDiv);
 
 
 
-function lerp(a, b, t) {
+function lerp(a, b, t) { // Linear interpolation
   return a * t + b * (1 - t);
 }
 
@@ -110,35 +110,40 @@ function hexToRgb(hex) {
     return { r, g, b };
 }
 
-function changeColor(td, avgRating, reversed) {
-  let red, green, blue;
-  let color1RGB = hexToRgb(reversed ? color3 : color1);
-  let color2RGB = hexToRgb(color2);
-  let color3RGB = hexToRgb(reversed ? color1 : color3);
-  if (includeColor2) {
-    if (avgRating >= 3) {
-      let t = (avgRating - 3) / 2; // normalize to 0-1
-      red   = lerp(color1RGB.r, color2RGB.r, t);
-      green = lerp(color1RGB.g, color2RGB.g, t);
-      blue  = lerp(color1RGB.b, color2RGB.b, t);
-    } else {
-      let t = (avgRating - 1) / 2; // normalize to 0-1
-      red   = lerp(color2RGB.r, color3RGB.r, t);
-      green = lerp(color2RGB.g, color3RGB.g, t);
-      blue  = lerp(color2RGB.b, color3RGB.b, t);
-    }
+function changeColor(td, avgRating, reversed) { // (avgQuality == 0) => set color to default
+  if (avgRating == 0) {
+    td.style.backgroundColor = '';
+    td.style.removeProperty('background-color');
   } else {
-    let t = (avgRating - 1) / 4; // normalize to 0-1
-    red   = lerp(color1RGB.r, color3RGB.r, t);
-    green = lerp(color1RGB.g, color3RGB.g, t);
-    blue  = lerp(color1RGB.b, color3RGB.b, t);
+    let red, green, blue;
+    let color1RGB = hexToRgb(reversed ? color3 : color1);
+    let color2RGB = hexToRgb(color2);
+    let color3RGB = hexToRgb(reversed ? color1 : color3);
+    if (includeColor2) {
+      if (avgRating >= 3) {
+        let t = (avgRating - 3) / 2; // normalize to 0-1
+        red   = lerp(color1RGB.r, color2RGB.r, t);
+        green = lerp(color1RGB.g, color2RGB.g, t);
+        blue  = lerp(color1RGB.b, color2RGB.b, t);
+      } else {
+        let t = (avgRating - 1) / 2; // normalize to 0-1
+        red   = lerp(color2RGB.r, color3RGB.r, t);
+        green = lerp(color2RGB.g, color3RGB.g, t);
+        blue  = lerp(color2RGB.b, color3RGB.b, t);
+      }
+    } else {
+      let t = (avgRating - 1) / 4; // normalize to 0-1
+      red   = lerp(color1RGB.r, color3RGB.r, t);
+      green = lerp(color1RGB.g, color3RGB.g, t);
+      blue  = lerp(color1RGB.b, color3RGB.b, t);
+    }
+    const color = `rgba(${red}, ${green}, ${blue}, ${opacity / 100})`;
+    td.style.transition = "background-color 0.5s ease";
+    // requestAnimationFrame(() => {
+      td.style.backgroundColor = color;
+      td.style.setProperty("background-color", color, "important");
+    // });
   }
-  const color = `rgba(${red}, ${green}, ${blue}, ${opacity / 100})`;
-  td.style.transition = "background-color 0.5s ease";
-  // requestAnimationFrame(() => {
-    td.style.backgroundColor = color;
-    td.style.setProperty("background-color", color, "important");
-  // });
 }
 
 function removeColor(td) {
@@ -189,15 +194,15 @@ function colorTdsDefault(tds, avgQuality, instructorsTd) {
   }
 }
 
-function colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd) {
+function colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd) { // (avgQuality == 0) => set color to default
   const lockedTds = Array.from(lockedTableRow.querySelectorAll('td'));
   const mainTds = Array.from(mainTableRow.querySelectorAll('td'));
-  if (extendColorHorizontally && individualDifficultyColor) {
-    colorTdsExtendAndIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd);
-    colorTdsExtendAndIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd);
-  } else if (extendColorHorizontally && !individualDifficultyColor) {
+  if (avgQuality == 0 || (extendColorHorizontally && !individualDifficultyColor)) {
     colorTdsExtend(lockedTds, avgQuality);
     colorTdsExtend(mainTds,   avgQuality);
+  } else if (extendColorHorizontally && individualDifficultyColor) {
+    colorTdsExtendAndIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd);
+    colorTdsExtendAndIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd);
   } else if (!extendColorHorizontally && individualDifficultyColor) {
     colorTdsIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd, unitsTd);
     colorTdsIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd, unitsTd);
@@ -223,9 +228,14 @@ function getEmptyRatingDivInnerHtml(ratingType) {
   return `<a target="_blank" style="color: #005dba; text-decoration: none;" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: </a>`;
 }
 
-function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index) {
-  if (instructorLi.classList.contains("modified")) return;
-  instructorLi.classList.add("modified");
+function removeRatings(instructorLi, unitsDiv) {
+  const qualityElements = Array.from(instructorLi.querySelectorAll('*')).filter(el => el.textContent.trim().startsWith('Quality'));
+  qualityElements.forEach(el => el.remove());
+  const difficultyElements = Array.from(unitsDiv.querySelectorAll('*')).filter(el => el.textContent.trim().startsWith('Difficulty'));
+  difficultyElements.forEach(el => el.remove());
+}
+
+function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index, originalUseEvals) {
   instructorDiv = instructorLi.querySelector(`[data-automation-id^="selectedItem_"]`);
   if (!instructorDiv) return;
   instructorDiv.style.paddingBottom = "0";
@@ -237,8 +247,7 @@ function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index) {
   if (match) {
       subject = match[1];
       number = match[2];
-  } else {
-  }
+  } // else {}
   const instructorName = instructorDiv.textContent;
   const qualityDiv = document.createElement("div");
   const difficultyDiv = document.createElement("div");
@@ -248,7 +257,7 @@ function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index) {
   difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
   instructorLi.appendChild(qualityDiv);
   unitsDiv.appendChild(difficultyDiv);
-  let promise = useEvals ? getEvalsRatings(instructorName, subject, number) : getRmpRatings(instructorName);
+  let promise = originalUseEvals ? getEvalsRatings(instructorName, subject, number) : getRmpRatings(instructorName);
   promise.then((rating) => {
     if (rating !== null) {
       ratings.validRatingsCount++;
@@ -296,24 +305,30 @@ function handleGrid(visibleGrid) {
       const unitsDiv = unitsTd.querySelector('[role="presentation"]');
       // if (instructorsTd.classList.contains("processing")) return;
       // instructorsTd.classList.add("processing");
-      if (instructorsTd.getAttribute('use-evals') == useEvals/*instructorsTd.hasAttribute('avg-quality') && unitsTd.hasAttribute('avg-difficulty')*/) {
-        colorTds(lockedTableRow, mainTableRow, instructorsTd.getAttribute('avg-quality'), unitsTd.getAttribute('avg-difficulty'), instructorsTd, unitsTd);
+      if (instructorsTd.getAttribute('use-evals') !== undefined && instructorsTd.getAttribute('use-evals') == useEvals.toString()) {
+        if (instructorsTd.hasAttribute('avg-quality') && unitsTd.hasAttribute('avg-difficulty')) {
+          colorTds(lockedTableRow, mainTableRow, instructorsTd.getAttribute('avg-quality'), unitsTd.getAttribute('avg-difficulty'), instructorsTd, unitsTd);
+        }
       } else {
+        const originalUseEvals = useEvals;
+        instructorsTd.setAttribute('use-evals', originalUseEvals);
         let ratings = {
           totalQuality: 0,
           totalDifficulty: 0,
           validRatingsCount: 0,
           ratingPromises: []
         };
-        instructorLis.forEach((instructorLi, index) => insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index));
+        instructorLis.forEach((instructorLi) => removeRatings(instructorLi, unitsDiv));
+        instructorLis.forEach((instructorLi, index) => insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index, originalUseEvals));
         Promise.all(ratings.ratingPromises).then(() => {
           if (ratings.validRatingsCount !== 0) {
             let avgQuality = ratings.totalQuality / ratings.validRatingsCount;
             let avgDifficulty = ratings.totalDifficulty / ratings.validRatingsCount;
-            instructorsTd.setAttribute('use-evals', useEvals);
             instructorsTd.setAttribute('avg-quality', avgQuality);
             unitsTd.setAttribute('avg-difficulty', avgDifficulty);
             colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd);
+          } else {
+            colorTds(lockedTableRow, mainTableRow, 0, 0, instructorsTd, unitsTd);
           }
           // instructorsTd.classList.remove("processing");
         });
