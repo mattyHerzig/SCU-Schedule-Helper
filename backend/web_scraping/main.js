@@ -9,6 +9,7 @@ dotenv.config();
 export default async function main() {
   makeDirectoriesAndFiles();
   await authenticate(process.env.SCU_USERNAME, process.env.SCU_PASSWORD);
+  // TODO: Ideally condense into one step, generate the link, download the pdf, and extract the data.
   await generateAllPdfLinks();
   await downloadPdfs();
   await extractDataFromPdfs();

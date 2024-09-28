@@ -1,6 +1,7 @@
 name: Scrape and update evals database on AWS S3
 
-on: [push, workflow_dispatch]
+# TODO: Add chron schedule.
+on: [workflow_dispatch]
 
 jobs:
   build:
@@ -10,9 +11,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: "20.x"
       - run: npm ci
         working-directory: backend/web_scraping
       - name: Run update script
-        run: node main.js
+        run: node test_auth_main.js
+        env:
+          SCU_USERNAME: ${{ secrets.SCU_USERNAME }}
+          SCU_PASSWORD: ${{ secrets.SCU_PASSWORD }}
         working-directory: backend/web_scraping
