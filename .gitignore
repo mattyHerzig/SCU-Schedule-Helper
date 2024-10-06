@@ -3,3 +3,6 @@ testing
 dist
 *.zip
 exclude
+node_modules
+.env
+persistent_data

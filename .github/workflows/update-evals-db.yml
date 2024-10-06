@@ -4,7 +4,7 @@ name: Scrape and update evals database on AWS S3
 on: [workflow_dispatch]
 
 jobs:
-  build:
+  run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,8 +15,15 @@ jobs:
       - run: npm ci
         working-directory: backend/web_scraping
       - name: Run update script
-        run: node test_auth_main.js
+        run: node main.js
         env:
           SCU_USERNAME: ${{ secrets.SCU_USERNAME }}
           SCU_PASSWORD: ${{ secrets.SCU_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          SCU_SCHEDULE_HELPER_BUCKET_NAME: ${{ vars.SCU_SCHEDULE_HELPER_BUCKET_NAME }}
+          AGGREGATE_EVALS_JSON_OBJECT_KEY: ${{ vars.AGGREGATE_EVALS_JSON_OBJECT_KEY }}
+          EVALS_AND_TERMS_JSON_OBJECT_KEY: ${{ vars.EVALS_AND_TERMS_JSON_OBJECT_KEY }}
+
         working-directory: backend/web_scraping

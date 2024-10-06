@@ -1,3 +1,4 @@
+import { evalsAndTerms, existingEvaluations } from "../main.js";
 import fs from "fs";
 import path from "path";
 import PDFParser from "pdf2json";
@@ -7,74 +8,39 @@ const COURSE_CODE_TRANSFORMATIONS = {
   COEN: "CSEN",
 };
 
-const ratings = JSON.parse(fs.readFileSync(path.resolve("./persistent_data/evals.json")));
-const PDFS_EVALUATED_PATH = "./persistent_data/pdfs_evaluated.txt";
+export async function extractEvalDataFromPdf(pdfBuffer, pdfName, term) {
+  const pdfParser = new PDFParser(this, true);
+  let parsingResolver;
+  const finishedParsing = new Promise((resolver) => {
+    parsingResolver = resolver;
+  });
 
-const pdfsEvaluatedFile = fs.createWriteStream(PDFS_EVALUATED_PATH, { flags: "a" });
+  pdfParser.on("pdfParser_dataError", (errData) => {
+    console.error(`Received error parsing PDF${pdfName}${errData.parserError}`);
+    parsingResolver();
+  });
+  pdfParser.on("pdfParser_dataReady", (pdfData) => {
+    try {
+      extractToJson(pdfParser.getRawTextContent(), pdfName, term);
+    } catch (e) {
+      console.error(`Error parsing eval PDF ${pdfName}: ${e}`);
+    }
+    // console.log(pdfParser.getRawTextContent());
+    parsingResolver();
+  });
 
-const pdfsEvaluated = new Set(
-  fs.readFileSync(path.resolve(PDFS_EVALUATED_PATH)).toString().split("\n")
-);
-
-const termsWithinCutoff = new Set(
-  fs.readFileSync("persistent_data/terms_within_cutoff.txt").toString().split("\n")
-);
-
-const viewEvalPattern = /vtrm=(\w+)&viewEval=/;
-const pdfPattern = /vtrm=(\w+)\.pdf/;
-
-function termIsWithinCutoff(pdfPath) {
-  const term = viewEvalPattern.exec(pdfPath) ?? pdfPattern.exec(pdfPath);
-  if (!term) {
-    console.error(`Couldn't find term for pdf ${pdfPath}`);
-    return false;
-  }
-  return termsWithinCutoff.has(term[1]);
+  pdfParser.parseBuffer(pdfBuffer);
+  await finishedParsing;
+  pdfParser.removeAllListeners();
 }
 
-export default async function extractDataFromPdfs() {
-  console.log("Extracting data from PDFs...");
-  const pdfs = fs.readdirSync(path.resolve("./persistent_data/pdfs"));
-  for (let i = 0; i < pdfs.length; i++) {
-    if (pdfsEvaluated.has(pdfs[i]) || !termIsWithinCutoff(pdfs[i])) continue;
-    const pdfParser = new PDFParser(this, true);
-    let parsingResolver;
-    const finishedParsing = new Promise((resolver) => {
-      parsingResolver = resolver;
-    });
-
-    pdfParser.on("pdfParser_dataError", (errData) => {
-      console.error(`Received error parsing PDF${pdfs[i]}${errData.parserError}`);
-      parsingResolver();
-    });
-    pdfParser.on("pdfParser_dataReady", (pdfData) => {
-      try {
-        if (successfullyExtractedToJson(pdfParser.getRawTextContent(), pdfs[i])) {
-          pdfsEvaluatedFile.write(`${pdfs[i]}\n`);
-          pdfsEvaluated.add(pdfs[i]);
-        }
-      } catch (e) {
-        console.error(`Error parsing PDF ${pdfs[i]}: ${e}`);
-      }
-      // console.log(pdfParser.getRawTextContent());
-      parsingResolver();
-    });
-
-    await pdfParser.loadPDF(path.resolve(`./persistent_data/pdfs/${pdfs[i]}`));
-    await finishedParsing;
-    pdfParser.removeAllListeners();
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-  pdfsEvaluatedFile.end();
-}
-
-function successfullyExtractedToJson(rawPdfText, pdfName) {
+function extractToJson(rawPdfText, pdfName, term) {
   if (!rawPdfText.toLowerCase().includes("class climate evaluation")) {
     console.error(`PDF ${pdfName} is not an evaluation ${rawPdfText}`);
-    return false;
+    return;
   }
   if (rawPdfText.includes("The evaluation will not be displayed due to low response rate."))
-    return true;
+    return;
 
   const firstPage = getFirstPage(rawPdfText);
   const lastPage = getLastPage(rawPdfText);
@@ -86,13 +52,13 @@ function successfullyExtractedToJson(rawPdfText, pdfName) {
     console.error(
       `Could not find prof name (${profName}), dept name (${deptName}), or course code (${courseCode}) for pdf ${pdfName}`
     );
-    return false;
+    return;
   }
 
   const qualityRating = getQualityRating(lastPage);
   if (qualityRating === null) {
-    console.error(`Could not find quality rating for pdf ${pdfName}`);
-    return false;
+    console.error(`Could not find quality rating for eval ${pdfName}`);
+    return;
   }
   const difficultyRating = getDifficultyRating(lastPage);
   const workloadRating = getWorkloadRating(rawPdfText);
@@ -100,48 +66,26 @@ function successfullyExtractedToJson(rawPdfText, pdfName) {
     const hasExtraItems = lastPage.includes("1.11");
     if (!hasExtraItems) {
       console.error(
-        `Could not find difficulty or workload rating for pdf ${pdfName}, even though it should exist.`
+        `Could not find difficulty or workload rating for eval ${pdfName}, even though it should exist.`
       );
-      return false;
+      return;
     }
   }
 
-  const currentProf = ratings[profName] ?? {};
-  const profRatingTypes = ["overall", deptName, courseCode];
-  for (const ratingType of profRatingTypes) {
-    const currentRating = currentProf[ratingType] ?? getDefaultRating();
-    const newRating = {
-      quality_total: currentRating.quality_total + qualityRating,
-      quality_count: currentRating.quality_count + 1,
-      difficulty_total: currentRating.difficulty_total + difficultyRating ?? 0,
-      difficulty_count: currentRating.difficulty_count + (difficultyRating ? 1 : 0),
-      workload_total: currentRating.workload_total + workloadRating ?? 0,
-      workload_count: currentRating.workload_count + (workloadRating ? 1 : 0),
-    };
-    newRating.quality_avg = newRating.quality_total / newRating.quality_count;
-    newRating.difficulty_avg = newRating.difficulty_total / newRating.difficulty_count;
-    newRating.workload_avg = newRating.workload_total / newRating.workload_count;
-    currentProf[ratingType] = newRating;
-  }
-
-  // Write back to JSON
-  ratings[profName] = currentProf;
-  fs.writeFileSync(path.resolve("./persistent_data/evals.json"), JSON.stringify(ratings));
-  return true;
-}
-
-function getDefaultRating() {
-  return {
-    quality_total: 0,
-    quality_count: 0,
-    quality_avg: 0, // quality_total / quality_count
-    difficulty_total: 0,
-    difficulty_count: 0,
-    difficulty_avg: 0, // difficulty_total / difficulty_count
-    workload_total: 0,
-    workload_count: 0,
-    workload_avg: 0, // workload_total / workload_count
+  const evaluation = {
+    name: pdfName,
+    term,
+    profName,
+    deptName,
+    courseCode,
+    qualityRating,
+    difficultyRating,
+    workloadRating,
   };
+
+  // Append to pdfs.json
+  evalsAndTerms.evals.push(evaluation);
+  existingEvaluations.add(pdfName);
 }
 
 const FIRST_PAGE_BREAK = "----------------Page (0) Break----------------";

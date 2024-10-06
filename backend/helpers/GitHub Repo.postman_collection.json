@@ -18,7 +18,7 @@
           },
           {
             "key": "Authorization",
-            "value": "Bearer <GITHUB_AUTH_TOKEN>"
+            "value": "Bearer <your github access token>"
           },
           {
             "key": "X-GitHub-Api-Version",
@@ -35,6 +35,33 @@
       "response": []
     },
     {
+      "name": "List repo variables",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/vnd.github+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer <your github access token>"
+          },
+          {
+            "key": "X-GitHub-Api-Version",
+            "value": "2022-11-28"
+          }
+        ],
+        "url": {
+          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
+          "protocol": "https",
+          "host": ["api", "github", "com"],
+          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "variables"]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Get repo public key",
       "request": {
         "method": "GET",
@@ -45,7 +72,7 @@
           },
           {
             "key": "Authorization",
-            "value": "Bearer <GITHUB_AUTH_TOKEN>"
+            "value": "Bearer <your github access token>"
           },
           {
             "key": "X-GitHub-Api-Version",
@@ -89,7 +116,7 @@
           },
           {
             "key": "Authorization",
-            "value": "Bearer <GITHUB_AUTH_TOKEN>"
+            "value": "Bearer <your github access token>"
           },
           {
             "key": "X-GitHub-Api-Version",
@@ -98,7 +125,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"encrypted_value\": \"use backend/helpers/encrypt_secret.js\",\r\n    \"key_id\": \"3380204578043523366\"\r\n}",
+          "raw": "{\r\n    \"encrypted_value\": \"use backend/helpers/encrypt_secret.js to encrypt your secret, then paste the value here\",\r\n    \"key_id\": \"3380204578043523366\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -117,6 +144,52 @@
             "secrets",
             "secret_name"
           ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create repo variable",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [""],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/vnd.github+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer <your github access token>"
+          },
+          {
+            "key": "X-GitHub-Api-Version",
+            "value": "2022-11-28"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"VAR_NAME\",\r\n    \"value\": \"VAR_VALUE\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
+          "protocol": "https",
+          "host": ["api", "github", "com"],
+          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "variables"]
         }
       },
       "response": []

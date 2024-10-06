@@ -1,41 +1,122 @@
+import getAndProcessNewEvals from "./utils/get_eval_links.js";
+import generateAggregateEvalsFile from "./utils/generate_aggregate_evals_json.js";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { authenticate } from "./utils/authentication.js";
-import generateAllPdfLinks from "./utils/generate_pdf_links.js";
-import downloadPdfs from "./utils/download_pdfs.js";
-import extractDataFromPdfs from "./utils/generate_json.js";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
+export const EVALUATIONS_URL = "https://www.scu.edu/apps/evaluations/";
+export const REQUEST_INTERVAL_MS = 50;
+export const REQUEST_MAX_RETRIES = 1;
+
+export let evalsAndTerms = {
+  terms: [],
+  evals: [],
+};
+export let aggregateEvals = {};
+
+export let existingTerms = new Set();
+export let existingEvaluations = new Set();
+
+const PERSISTENT_DATA_PATH = "./persistent_data";
+const EVALS_AND_TERMS_FILENAME = "evals_and_terms.json";
+const AGGREGATE_EVALS_FILENAME = "aggregate_evals.json";
+
+const s3 =
+  process.env.GITHUB_WORKFLOW !== undefined
+    ? new S3Client({
+        region: process.env.AWS_DEFAULT_REGION,
+      })
+    : null;
+
 export default async function main() {
-  makeDirectoriesAndFiles();
+  await initDirectoriesAndFiles();
   await authenticate(process.env.SCU_USERNAME, process.env.SCU_PASSWORD);
-  // TODO: Ideally condense into one step, generate the link, download the pdf, and extract the data.
-  await generateAllPdfLinks();
-  await downloadPdfs();
-  await extractDataFromPdfs();
+  await getAndProcessNewEvals();
+  await generateAggregateEvalsFile();
 }
 
-function makeDirectoriesAndFiles() {
-  if (!fs.existsSync("persistent_data")) {
-    fs.mkdirSync("persistent_data");
+async function initDirectoriesAndFiles() {
+  // Running locally. Check if the files exist, and if not, create them.
+  if (process.env.GITHUB_WORKFLOW === undefined) {
+    if (!fs.existsSync(PERSISTENT_DATA_PATH)) {
+      fs.mkdirSync(PERSISTENT_DATA_PATH);
+    }
+    if (!fs.existsSync(path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`))) {
+      fs.writeFileSync(
+        path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`),
+        JSON.stringify(evalsAndTerms)
+      );
+    } else {
+      evalsAndTerms = JSON.parse(
+        fs.readFileSync(path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`))
+      );
+    }
+    if (!fs.existsSync(`${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`)) {
+      fs.writeFileSync(`${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`, "");
+    }
   }
-  if (!fs.existsSync("persistent_data/terms_within_cutoff.txt")) {
-    fs.writeFileSync("persistent_data/terms_within_cutoff.txt", "");
+  // Running in a GitHub workflow. Retrieve from AWS. The objects should always exist.
+  else {
+    const command = new GetObjectCommand({
+      Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
+      Key: process.env.EVALS_AND_TERMS_JSON_OBJECT_KEY,
+    });
+    const evalsAndTermsObject = await s3.send(command);
+    evalsAndTerms = JSON.parse(await evalsAndTermsObject.Body.transformToString());
   }
-  if (!fs.existsSync("persistent_data/finished_terms.txt")) {
-    fs.writeFileSync("persistent_data/finished_terms.txt", "");
+  existingTerms = new Set(evalsAndTerms.terms);
+  for (const evaluation of evalsAndTerms.evals) {
+    const nameWithoutExtension = evaluation.name.split(".pdf")[0];
+    existingEvaluations.add(nameWithoutExtension);
+    existingEvaluations.add(nameWithoutExtension.split("&viewEval")[0]);
   }
-  if (!fs.existsSync("persistent_data/pdf_links.txt")) {
-    fs.writeFileSync("persistent_data/pdf_links.txt", "");
+}
+
+export async function writeEvalsAndTerms() {
+  if (process.env.GITHUB_WORKFLOW === undefined) {
+    fs.writeFileSync(
+      path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`),
+      JSON.stringify(evalsAndTerms)
+    );
+  } else {
+    // Upload to AWS.
+    const command = new PutObjectCommand({
+      Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
+      Key: process.env.EVALS_AND_TERMS_JSON_OBJECT_KEY,
+      Body: JSON.stringify(evalsAndTerms),
+    });
+    const response = await s3.send(command);
+    if (response.$metadata.httpStatusCode < 200 || response.$metadata.httpStatusCode >= 300) {
+      console.error(`Failed to upload evals and terms to AWS: ${JSON.stringify(response)}`);
+    } else {
+      console.log("Successfully uploaded evals and terms to AWS.");
+    }
   }
-  if (!fs.existsSync("persistent_data/pdfs")) {
-    fs.mkdirSync("persistent_data/pdfs");
-  }
-  if (!fs.existsSync("persistent_data/pdfs_evaluated.txt")) {
-    fs.writeFileSync("persistent_data/pdfs_evaluated.txt", "");
-  }
-  if (!fs.existsSync("persistent_data/evals.json")) {
-    fs.writeFileSync("persistent_data/evals.json", "");
+}
+
+export async function writeAggregateEvals() {
+  if (process.env.GITHUB_WORKFLOW === undefined) {
+    fs.writeFileSync(
+      path.resolve(`${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`),
+      JSON.stringify(aggregateEvals)
+    );
+  } else {
+    // Upload to AWS.
+    const command = new PutObjectCommand({
+      Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
+      Key: process.env.AGGREGATE_EVALS_JSON_OBJECT_KEY,
+      Body: JSON.stringify(aggregateEvals),
+    });
+    const response = await s3.send(command);
+    if (response.$metadata.httpStatusCode < 200 || response.$metadata.httpStatusCode >= 300) {
+      console.error(`Failed to upload aggregate evals to AWS: ${JSON.stringify(response)}`);
+    } else {
+      console.log("Successfully uploaded aggregate evals to AWS.");
+    }
   }
 }
 

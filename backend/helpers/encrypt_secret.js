@@ -1,6 +1,6 @@
 // Use for encrypting secrets to upload to GitHub.
 import libsodium from "libsodium-wrappers";
-const secret = "secret goes here";
+const secret = "nopl44EnVRt+pkkH6dhcYekcWNLVA5JvSWGVWafV";
 // This is the public key of the repo.
 const key = "7oqDBKCm15zky3EQCVqEdX/urNnId+aN4a7uA7Pm9HU=";
 
