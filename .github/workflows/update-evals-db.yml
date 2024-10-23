@@ -6,7 +6,7 @@ on:
     - cron: "0 20 14 2 *" # Pull fall quarter data at 3PM Pacific Time, February 15.
     - cron: "0 20 14 5 *" # Pull winter quarter data at 3PM Pacific Time, May 15.
     - cron: "0 20 29 8 *" # Pull spring quarter data at 3PM Pacific Time, August 29.
-    - cron: "0 20 23 10 *" # Pull summer quarter data at 3PM Pacific Time, October 23.
+    - cron: "30 20 23 10 *" # Pull summer quarter data at 3PM Pacific Time, October 23.
 
 jobs:
   run:
