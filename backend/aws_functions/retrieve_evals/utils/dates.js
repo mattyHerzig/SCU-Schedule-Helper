@@ -1,8 +1,8 @@
 const date_data_becomes_available_mm_dd = {
-  FALL_QUARTER: "01-12",
-  WINTER_QUARTER: "04-10",
-  SPRING_QUARTER: "07-01",
-  SUMMER_QUARTER: "09-25",
+  FALL_QUARTER: "02-15",
+  WINTER_QUARTER: "05-15",
+  SPRING_QUARTER: "08-30",
+  SUMMER_QUARTER: "10-24",
 };
 
 export function getDataExpirationDate() {
