@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd extension
 # Remove the old dist directory
 rm -rf dist
 

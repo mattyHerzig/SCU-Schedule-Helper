@@ -26,10 +26,10 @@
   },
   "action": {
     "default_icon": {
-        "16": "images/icon-16.png",
-        "32": "images/icon-32.png",
-        "48": "images/icon-48.png",
-        "128": "images/icon-128.png"
+      "16": "images/icon-16.png",
+      "32": "images/icon-32.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
     },
     "default_popup": "popup/popup.html"
   },
@@ -42,6 +42,9 @@
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3sr+ixjJmHn/3mEVc79+NkONDLP2DvXl3B3FvmcgKxGgBo/XguSswqGFnog+jc22pQPGoV8BQeNvyaNiSdd0MM8KNNRgYGrDcxkn2UDfGZLP2deLIBCs91Ps+41ZPP9W/Boj+NZAh+QEQdNZluqpYQmKNt3LLO2mbTxrW1l4ZHFQfnzUQT7L6WL7A2bdmT9khJ+JBI/OmOSr75qFXA1vW4Ul+OsFF+H+9w6OK9R9mxmxeMCxqmG9MKP5HYfXMwqZRw85ZKLxlOLi1GJM3kmxVgfI4VPpaW76JPL8jLn8r6phRBU7NRIJhGfDCJDI8c1r1kfB5gMp/G2vWQCTGyaU1wIDAQAB",
   "oauth2": {
     "client_id": "583521775185-ff1gl7infgqmof69u134s6qjjerneuaq.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/userinfo.email"]
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
   }
 }
