@@ -1,31 +1,73 @@
 {
-  "info": {
-    "_postman_id": "b9d1d6ad-05bd-4a22-90fa-42e86b0bc384",
-    "name": "AWS",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "32900503",
-    "_collection_link": "https://asdf66-6370.postman.co/workspace/SCU-Schedule-Helper~917e4a71-6203-4151-95c8-4ef919189511/collection/32900503-b9d1d6ad-05bd-4a22-90fa-42e86b0bc384?action=share&source=collection_link&creator=32900503"
-  },
-  "item": [
-    {
-      "name": "Download SCU Evals",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN3ZGVhbkBzY3UuZWR1IiwiaWF0IjoxNzIzMzA1NjcyLCJleHAiOjE3NTQ4NjMyNzJ9.gboZcf9kquN4PXISb44jAjSd-9Knor_akclO5TT6N4k",
-            "type": "text"
-          }
-        ],
-        "url": {
-          "raw": "https://d7o5we7e9g.execute-api.us-west-1.amazonaws.com/scu-evals",
-          "protocol": "https",
-          "host": ["d7o5we7e9g", "execute-api", "us-west-1", "amazonaws", "com"],
-          "path": ["scu-evals"]
-        }
-      },
-      "response": []
-    }
-  ]
+	"info": {
+		"_postman_id": "b9d1d6ad-05bd-4a22-90fa-42e86b0bc384",
+		"name": "AWS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32900503",
+		"_collection_link": "https://asdf66-6370.postman.co/workspace/SCU-Schedule-Helper~917e4a71-6203-4151-95c8-4ef919189511/collection/32900503-b9d1d6ad-05bd-4a22-90fa-42e86b0bc384?action=share&source=collection_link&creator=32900503"
+	},
+	"item": [
+		{
+			"name": "Create User",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InN3ZGVhbkBzY3UuZWR1IiwiaWF0IjoxNzIzMzA1NjcyLCJleHAiOjE3NTQ4NjMyNzJ9.gboZcf9kquN4PXISb44jAjSd-9Knor_akclO5TT6N4k",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://api.scu-schedule-helper.me/user",
+					"protocol": "https",
+					"host": [
+						"api",
+						"scu-schedule-helper",
+						"me"
+					],
+					"path": [
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Auth Token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "OAuth ya29.a0AeDClZDIfP9xK2sWxBG8Mdk9ymaitysM-9ARDRDXgo3Ajr8mmzxBRtZos_7bLf-7mRvYa-m7xUCtEq5QN1XlUwQuxuKXOEENmNOM4mjEwLvwRbtJhO37pGMAMPHyFlDXQiQWOITSg1EjmhPPTHRZlmVIJ4F5NDeeZeBlGtqJaCgYKAScSARASFQHGX2MiRHZwdfiTLvj3lljlF8zIOg0175",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://api.scu-schedule-helper.me/auth_token",
+					"protocol": "https",
+					"host": [
+						"api",
+						"scu-schedule-helper",
+						"me"
+					],
+					"path": [
+						"auth_token"
+					]
+				}
+			},
+			"response": []
+		}
+	]
 }

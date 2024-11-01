@@ -1,4 +1,4 @@
-export const unauthorizedErrorBody = (authError) => {
+export const unauthorizedErrorBody = (message) => {
   return {
     statusCode: 401,
     body: JSON.stringify({
@@ -7,11 +7,11 @@ export const unauthorizedErrorBody = (authError) => {
   };
 };
 
-export const internalServerErrorBody = (error) => {
+export const internalServerErrorBody = (message) => {
   return {
     statusCode: 500,
     body: JSON.stringify({
-      message: `Internal server error: could not fetch evals JSON due to error ${error}`,
+      message: `Internal server error: ${error}`,
     }),
   };
 };
