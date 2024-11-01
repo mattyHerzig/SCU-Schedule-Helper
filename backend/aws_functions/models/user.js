@@ -3,12 +3,14 @@ class User {
   publicInfo;
   preferences;
   friends;
-  friendRequests;
+  incomingFriendRequests;
+  outgoingFriendRequests;
   constructor() {
     this.publicInfo = new PublicInfo();
     this.preferences = new Preferences();
     this.friends = new Set().add(new User());
-    this.friendRequests = new Set();
+    this.incomingFriendRequests = new Set();
+    this.outgoingFriendRequests = new Set();
   }
 }
 
@@ -36,22 +38,6 @@ class Preferences {
   percentScuEvals;
 }
 
-class Friends {
-    friends;
-    constructor() {
-        this.friends = [];
-    }
-}
-
-class FriendRequests {
-  areIncomingRequests;
-  requests;
-  constructor() {
-    this.areIncomingRequests = false;
-    this.requests = [];
-  }
-}
-
 // PUT api.scu-schedule-helper.me/user/me/friend {
 // "add" : [swdean, dduong]
 // "remove" : [blah, blah]
@@ -61,5 +47,3 @@ class FriendRequests {
 // "add" : [dduong]
 // "remove" : [blah, blah]
 //}
-
-
