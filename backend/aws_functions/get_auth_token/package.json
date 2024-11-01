@@ -1,0 +1,12 @@
+{
+  "name": "get_auth_token",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "author": "Stevie Dean",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}
