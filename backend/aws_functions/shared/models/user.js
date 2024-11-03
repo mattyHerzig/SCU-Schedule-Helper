@@ -37,13 +37,3 @@ class Preferences {
   percentRateMyProfessors;
   percentScuEvals;
 }
-
-// PUT api.scu-schedule-helper.me/user/me/friend {
-// "add" : [swdean, dduong]
-// "remove" : [blah, blah]
-//}
-
-// PUT api.scu-schedule-helper.me/user/me/friend_req_out {
-// "add" : [dduong]
-// "remove" : [blah, blah]
-//}

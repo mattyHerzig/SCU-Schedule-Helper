@@ -1,5 +1,8 @@
 export const defaultResponse = {
   statusCode: 200,
+  headers: {
+    "Content-Type": "text/html",
+  },
   body: `<p style="text-align:center;">&nbsp;</p>
 <p style="text-align:center;">&nbsp;</p>
 <p style="text-align:center;">&nbsp;</p>
@@ -11,6 +14,9 @@ export const defaultResponse = {
 export const validResponse = (response) => {
   return {
     statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(response),
   };
 };
@@ -18,6 +24,9 @@ export const validResponse = (response) => {
 export const unauthorizedError = (message) => {
   return {
     statusCode: 401,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       message: `Could not verify user authorization due to an error: ${message}`,
     }),
@@ -27,6 +36,9 @@ export const unauthorizedError = (message) => {
 export const resourceNotFoundError = (resource) => {
   return {
     statusCode: 404,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       message: `Resource "${resource}" does not exist on the server.`,
     }),
@@ -36,6 +48,9 @@ export const resourceNotFoundError = (resource) => {
 export const unsupportedMethodError = (resource, method) => {
   return {
     statusCode: 405,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       message: `Resource "${resource}" does not support the ${method} method.`,
     }),
@@ -45,6 +60,9 @@ export const unsupportedMethodError = (resource, method) => {
 export const internalServerError = (error) => {
   return {
     statusCode: 500,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       message: `Internal server error: ${error}`,
     }),

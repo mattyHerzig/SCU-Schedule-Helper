@@ -1,15 +1,19 @@
-import { handleAuthTokenRequest } from "./handler.js";
+import { handler } from "./index.js";
 import { GetAuthTokenResponse } from "./model.js";
 
 async function test() {
   console.log("Test 1 get auth token with oauth token");
   const event = {
-    httpMethod: "GET",
+    requestContext: {
+      http: {
+        method: "GET",
+      },
+    },
     headers: {
       authorization: "OAuth <google_oauth_token>",
     },
   };
-  const response = await handleAuthTokenRequest(event);
+  const response = await handler(event, null);
   if (response.statusCode == 401) {
     console.log("Google OAuth token is invalid");
     console.log(response.body);
@@ -26,13 +30,16 @@ async function test() {
 
   console.log("\n\nTest 2 get auth token with bearer token");
   const event2 = {
-    httpMethod: "GET",
+    requestContext: {
+      http: {
+        method: "GET",
+      },
+    },
     headers: {
-      authorization:
-        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzd2RlYW4iLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTUxNjIzOTAyMn0.DFbH_DyZzJJoNbEgXQUrQ_N6ASyxdqvnLBzAOLealFE",
+      authorization: "Bearer <refresh_token>",
     },
   };
-  const response2 = await handleAuthTokenRequest(event2);
+  const response2 = await handler(event2, null);
   if (response2.statusCode == 401) {
     console.log("Refresh token is invalid");
     console.log(response2.body);
@@ -45,12 +52,5 @@ async function test() {
     console.log(`Refresh token (should be null): ${authTokens2.refreshToken}\n`);
     console.log(`OAuth info (should be null): ${authTokens2.oAuthInfo}`);
   }
-
-  console.log("\n\nTest 3 unsupported method");
-  const event3 = {
-    httpMethod: "POST",
-  };
-  const response3 = await handleAuthTokenRequest(event3);
-  console.log(response3);
 }
 await test();

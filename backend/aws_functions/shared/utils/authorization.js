@@ -1,13 +1,16 @@
+import { unauthorizedError } from "../model.js";
+import jwtLib from "jsonwebtoken";
+
 const ERRORS = {
   NO_HEADER: "no authorization header provided.",
   BAD_HEADER: "authorization header must provide an issued access token.",
-  INVALID_TOKEN_TYPE: "invalid token type (expected refresh token)",
+  INVALID_TOKEN_TYPE: "invalid token type (expected access token)",
   BAD_ACCESS_TOKEN: "could not verify access token",
 };
 
 export async function handleWithAuthorization(event, context, handler) {
   const userAuthorization = getUserAuthorization(event);
-  if (userAuthorization.userId == null) return unauthorizedError(userAuthorization.authError);
+  if (!userAuthorization.userId) return unauthorizedError(userAuthorization.authError);
   return await handler(event, context, userAuthorization.userId);
 }
 

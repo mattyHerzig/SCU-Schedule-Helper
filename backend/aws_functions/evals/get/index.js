@@ -1,18 +1,18 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getDataExpirationDate } from "./utils/dates.js";
-import { internalServerError, validResponse } from "../../utils/responses.js";
-import { unsupportedMethodError } from "../../utils/responses.js";
+import { handleWithAuthorization } from "./utils/authorization.js";
+import { internalServerError, validResponse } from "./model.js";
 
 const s3 = new S3Client({
   region: process.env.AWS_S3_BUCKET_REGION,
 });
 
-export async function handleEvalsRequest(event, context, userId) {
-  if (event.httpMethod === "GET") return await handleGetEvalsRequest();
-  else return unsupportedMethodError("evals", event.httpMethod);
+export async function handler(event, context) {
+  return await handleWithAuthorization(event, context, handleGetEvalsRequest);
 }
 
-async function handleGetEvalsRequest() {
+async function handleGetEvalsRequest(event, context, userId) {
+  console.log("Hello");
   try {
     // Fetch the JSON file content from S3
     const command = new GetObjectCommand({

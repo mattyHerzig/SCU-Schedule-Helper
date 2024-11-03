@@ -1,9 +1,12 @@
 {
-  "name": "get_auth_token",
+  "name": "get_evals",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
-  "author": "Stevie Dean",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {

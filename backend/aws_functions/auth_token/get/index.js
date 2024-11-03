@@ -1,6 +1,5 @@
 import jwtLib from "jsonwebtoken";
-import { GetAuthTokenResponse, OAuthInfo } from "./model.js";
-import { unauthorizedError, unsupportedMethodError, validResponse } from "../../utils/responses.js";
+import { GetAuthTokenResponse, OAuthInfo, unauthorizedError, validResponse } from "./model.js";
 
 const ERRORS = {
   NO_HEADER: "no authorization header provided.",
@@ -12,12 +11,7 @@ const ERRORS = {
   INVALID_TOKEN_TYPE: "invalid token type (provided access token, expected refresh token)",
 };
 
-export async function handleAuthTokenRequest(event, context) {
-  if (event.httpMethod === "GET") return await handleGetAuthTokenRequest(event);
-  else return unsupportedMethodError("auth_token", event.httpMethod);
-}
-
-async function handleGetAuthTokenRequest(event) {
+export async function handler(event, context) {
   const userAuthorization = await getUserAuthorization(event);
   if (userAuthorization.userId == null) return unauthorizedError(userAuthorization.authError);
   else {
