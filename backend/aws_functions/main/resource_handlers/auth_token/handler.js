@@ -1,10 +1,6 @@
 import jwtLib from "jsonwebtoken";
-import {
-  GetAuthTokenResponse,
-  OAuthInfo,
-  unauthorizedErrorBody,
-  validResponseBody,
-} from "./model.js";
+import { GetAuthTokenResponse, OAuthInfo } from "./model.js";
+import { unauthorizedError, unsupportedMethodError, validResponse } from "../../utils/responses.js";
 
 const ERRORS = {
   NO_HEADER: "no authorization header provided.",
@@ -16,9 +12,14 @@ const ERRORS = {
   INVALID_TOKEN_TYPE: "invalid token type (provided access token, expected refresh token)",
 };
 
-export async function handler(event, context) {
+export async function handleAuthTokenRequest(event, context) {
+  if (event.httpMethod === "GET") return await handleGetAuthTokenRequest(event);
+  else return unsupportedMethodError("auth_token", event.httpMethod);
+}
+
+async function handleGetAuthTokenRequest(event) {
   const userAuthorization = await getUserAuthorization(event);
-  if (!userAuthorization.isAuthorized) return unauthorizedErrorBody(userAuthorization.authError);
+  if (userAuthorization.userId == null) return unauthorizedError(userAuthorization.authError);
   else {
     let tokenResponse = new GetAuthTokenResponse();
     tokenResponse.accessToken = generateDataAccessToken(userAuthorization.userId);
@@ -29,37 +30,22 @@ export async function handler(event, context) {
       tokenResponse.refreshToken = generateRefreshToken(userAuthorization.userId);
       tokenResponse.oAuthInfo = userAuthorization.oAuthInfo;
     }
-    return validResponseBody(tokenResponse);
+    return validResponse(tokenResponse);
   }
 }
 
-/**
- *  Get the users information using authorization header.
- */
 async function getUserAuthorization(event) {
   if (!event || !event.headers || !event.headers.authorization)
-    return { isAuthorized: false, authError: ERRORS.NO_HEADER };
+    return { authError: ERRORS.NO_HEADER };
   const authorizationHeader = event.headers.authorization;
   const authType = authorizationHeader.split(" ")[0];
   if (authorizationHeader.split(" ").length !== 2 || !["OAuth", "Bearer"].includes(authType)) {
     return {
-      isAuthorized: false,
       authError: ERRORS.BAD_HEADER,
     };
   }
   if (authType === "OAuth") return await verifyGoogleOAuthToken(authorizationHeader.split(" ")[1]);
-  else if (authType === "Bearer")
-    return await verifyRefreshToken(authorizationHeader.split(" ")[1]);
-}
-
-export function generateDataAccessToken(userId) {
-  return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, { expiresIn: "1y" });
-}
-
-export function generateRefreshToken(userId) {
-  return jwtLib.sign({ sub: userId, type: "refresh" }, process.env.JWT_SECRET, {
-    expiresIn: "100y",
-  });
+  else if (authType === "Bearer") return verifyRefreshToken(authorizationHeader.split(" ")[1]);
 }
 
 async function verifyGoogleOAuthToken(accessToken) {
@@ -72,44 +58,48 @@ async function verifyGoogleOAuthToken(accessToken) {
 
   if (personInfo.error) {
     return {
-      isAuthorized: false,
       authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${personInfo.error_description})`,
     };
   } else if (personInfo.hd != "scu.edu") {
     return {
-      isAuthorized: false,
       authError: ERRORS.BAD_EMAIL,
     };
   } else if (!personInfo.email_verified) {
     return {
-      isAuthorized: false,
       authError: ERRORS.EMAIL_NOT_VERIFIED,
     };
   } else {
     return {
       userId: personInfo.email.split("@")[0],
-      isAuthorized: true,
       oAuthInfo: new OAuthInfo(personInfo.email, personInfo.name, personInfo.picture),
     };
   }
 }
 
-async function verifyRefreshToken(refreshToken) {
+function verifyRefreshToken(refreshToken) {
   try {
     const token = jwtLib.verify(refreshToken, process.env.JWT_SECRET);
     if (token.type !== "refresh") {
       return {
-        isAuthorized: false,
         authError: ERRORS.INVALID_TOKEN_TYPE,
       };
     }
-    return { userId: token.sub, isAuthorized: true };
+    return { userId: token.sub };
   } catch (error) {
     return {
-      isAuthorized: false,
       authError: `${ERRORS.BAD_REFRESH_TOKEN} (${error}).`,
     };
   }
+}
+
+function generateDataAccessToken(userId) {
+  return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, { expiresIn: "1y" });
+}
+
+function generateRefreshToken(userId) {
+  return jwtLib.sign({ sub: userId, type: "refresh" }, process.env.JWT_SECRET, {
+    expiresIn: "100y",
+  });
 }
 
 function getUnixTimestamp(date) {
