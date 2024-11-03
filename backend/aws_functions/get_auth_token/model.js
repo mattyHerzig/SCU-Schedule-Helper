@@ -2,7 +2,7 @@ export class GetAuthTokenResponse {
   constructor() {
     this.accessToken = "";
     this.accessTokenExpirationDate = 0;
-    this.refreshToken = "";
+    this.refreshToken = null;
     this.oAuthInfo = null;
   }
 }
