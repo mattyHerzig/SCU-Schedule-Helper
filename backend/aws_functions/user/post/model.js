@@ -1,41 +1,23 @@
-class User {
-  id;
-  publicInfo;
-  preferences;
-  friends;
-  incomingFriendRequests;
-  outgoingFriendRequests;
-  constructor() {
-    this.publicInfo = new PublicInfo();
-    this.preferences = new Preferences();
-    this.friends = new Set().add(new User());
-    this.incomingFriendRequests = new Set();
-    this.outgoingFriendRequests = new Set();
+export class CreatedUserResponse {
+  constructor(id, publicInfo) {
+    this.id = id;
+    this.publicInfo = publicInfo;
   }
 }
 
-class PublicInfo {
-  constructor() {
-    this.profile = new Profile();
-    this.coursesTaken = new Set();
-    this.sectionsInterested = new Set();
+export class PublicInfo {
+  constructor(profile) {
+    this.profile = profile;
   }
 }
 
-class Profile {
-  name;
-  photoUrl;
-  email;
-  notificationIds = new Set();
-}
-
-class Preferences {
-  startHour;
-  startMinute;
-  endHour;
-  endMinute;
-  percentRateMyProfessors;
-  percentScuEvals;
+export class Profile {
+  constructor(name, photoUrl, email, notificationId) {
+    this.name = name;
+    this.photoUrl = photoUrl;
+    this.email = email;
+    this.notificationIds = new Set(notificationId);
+  }
 }
 
 export const validResponse = (response) => {
@@ -48,6 +30,28 @@ export const validResponse = (response) => {
   };
 };
 
+export const createdResponse = (response) => {
+  return {
+    statusCode: 201,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(response),
+  };
+};
+
+export const badRequestResponse = (message) => {
+  return {
+    statusCode: 400,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: `Bad request: ${message}`,
+    }),
+  };
+};
+
 export const unauthorizedError = (message) => {
   return {
     statusCode: 401,
@@ -56,6 +60,18 @@ export const unauthorizedError = (message) => {
     },
     body: JSON.stringify({
       message: `Could not verify user authorization due to an error: ${message}`,
+    }),
+  };
+};
+
+export const internalServerError = (error) => {
+  return {
+    statusCode: 500,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: `Internal server error: ${error}`,
     }),
   };
 };

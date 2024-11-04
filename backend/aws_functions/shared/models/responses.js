@@ -21,6 +21,16 @@ export const validResponse = (response) => {
   };
 };
 
+export const badRequestResponse = (response) => {
+  return {
+    statusCode: 400,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(response),
+  };
+};
+
 export const unauthorizedError = (message) => {
   return {
     statusCode: 401,
