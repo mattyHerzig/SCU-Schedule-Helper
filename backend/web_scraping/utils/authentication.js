@@ -26,7 +26,6 @@ export async function authenticate(username, password) {
       const verificationCode = await verificationCodeDiv.evaluate((node) => node.textContent);
       console.log(`Use verification code: ${verificationCode}`);
     }
-    console.log;
     const buttonToTap = await page.waitForSelector(
       "button::-p-text(Yes, this is my device), button::-p-text(Try again)",
       { timeout: 65000 }

@@ -12,7 +12,6 @@ export async function handler(event, context) {
 }
 
 async function handleGetEvalsRequest(event, context, userId) {
-  console.log("Hello");
   try {
     // Fetch the JSON file content from S3
     const command = new GetObjectCommand({
