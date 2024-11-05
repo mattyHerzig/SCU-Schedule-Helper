@@ -2,11 +2,8 @@ import getAndProcessNewEvals from "./utils/get_eval_links.js";
 import generateAggregateEvalsFile from "./utils/generate_aggregate_evals_json.js";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { authenticate } from "./utils/authentication.js";
-import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-
-dotenv.config();
 
 export const EVALUATIONS_URL = "https://www.scu.edu/apps/evaluations/";
 export const REQUEST_INTERVAL_MS = 50;
@@ -14,6 +11,7 @@ export const REQUEST_MAX_RETRIES = 1;
 
 export let evalsAndTerms = {
   terms: [],
+  termIdsToTermNames: {},
   evals: [],
 };
 export let aggregateEvals = {};

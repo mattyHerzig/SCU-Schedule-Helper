@@ -8,12 +8,10 @@ import {
   REQUEST_MAX_RETRIES,
 } from "../main.js";
 import { processEvalLinks } from "./download_evals.js";
-import dotenv from "dotenv";
 import jsdom from "jsdom";
 
-dotenv.config();
-
 const LOGIN_TITLE = "<title>SCU Login";
+const TERM_NAME_PATTERN = /((Fall|Winter|Spring|Summer).*(\d{4}))/;
 
 export let termsWithinCutoff;
 
@@ -21,7 +19,7 @@ export default async function getAndProcessNewEvals() {
   const schoolsAndTerms = await getSchoolsAndTerms();
   deleteExpiredEvals();
   let hadNonEmptyTerm = false;
-  for (const term of schoolsAndTerms.terms) {
+  for (const term of schoolsAndTerms.termIds) {
     if (existingTerms.has(term)) {
       hadNonEmptyTerm = true;
       console.log(`All PDFS from term ${term} have been downloaded already. Skipping...`);
@@ -57,7 +55,6 @@ export default async function getAndProcessNewEvals() {
       `Finished getting eval pdf links for term: ${term}.\nNow downloading and processing eval pdfs...`
     );
     await processEvalLinks(evalLinksForThisTerm, term);
-    // Links from each term are unique, so we can update the file now.
     evalsAndTerms.terms.push(term);
     existingTerms.add(term);
     await writeEvalsAndTerms();
@@ -74,16 +71,27 @@ async function getSchoolsAndTerms() {
     else schools.push(el.value.trim());
   }
   let termElements = doc.querySelector("#term").children;
-  let terms = [];
-  for (let el of termElements) {
-    if (el.value.trim() === "") continue;
-    else terms.push(el.value.trim());
+  let termIds = [];
+  let termIdsToTermNames = {};
+  for (let i = 0; i < 44; i++) {
+    const el = termElements.item(i);
+    if (el === null || el.value.trim() === "" || el.textContent.trim() === "") continue;
+    else {
+      const termId = el.value.trim();
+      const termName = el.textContent.trim();
+      const termNameMatch = termName.match(TERM_NAME_PATTERN);
+      if (!termNameMatch) console.error("Could not parse term name: " + termName);
+      else {
+        termIds.push(termId);
+        termIdsToTermNames[termId] = `${termNameMatch[2]} ${termNameMatch[3]}`;
+      }
+    }
   }
-  const latest44Terms = terms.slice(0, 45);
-  termsWithinCutoff = new Set(latest44Terms);
+  evalsAndTerms.termIdsToTermNames = termIdsToTermNames;
+  termsWithinCutoff = new Set(termIds);
   console.log(`Got schools: ${schools}`);
-  console.log(`Using the latest 44 terms: ${latest44Terms}`);
-  return { schools, terms };
+  console.log(`Using the latest 44 terms: ${termIds}`);
+  return { schools, termIds };
 }
 
 function deleteExpiredEvals() {

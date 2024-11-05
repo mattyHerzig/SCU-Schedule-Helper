@@ -1,6 +1,4 @@
 import { evalsAndTerms, existingEvaluations } from "../main.js";
-import fs from "fs";
-import path from "path";
 import PDFParser from "pdf2json";
 
 // If a course code is changed over time, we can map it here.
@@ -39,18 +37,18 @@ function extractToJson(rawPdfText, pdfName, term) {
     console.error(`PDF ${pdfName} is not an evaluation ${rawPdfText}`);
     return;
   }
-  if (rawPdfText.includes("The evaluation will not be displayed due to low response rate."))
-    return;
+  if (rawPdfText.includes("The evaluation will not be displayed due to low response rate.")) return;
 
   const firstPage = getFirstPage(rawPdfText);
   const lastPage = getLastPage(rawPdfText);
   const profName = getProfName(lastPage);
   const deptName = getDeptName(firstPage);
   const courseCode = getCourseCode(firstPage);
+  const courseName = getCourseName(profName, lastPage);
 
-  if (profName === null || deptName === null || courseCode === null) {
+  if (profName === null || deptName === null || courseCode === null || courseName === null) {
     console.error(
-      `Could not find prof name (${profName}), dept name (${deptName}), or course code (${courseCode}) for pdf ${pdfName}`
+      `Could not find prof name (${profName}), dept name (${deptName}), course code (${courseCode}), or course name (${courseName}) for pdf ${pdfName}`
     );
     return;
   }
@@ -78,12 +76,12 @@ function extractToJson(rawPdfText, pdfName, term) {
     profName,
     deptName,
     courseCode,
+    courseName,
     qualityRating,
     difficultyRating,
     workloadRating,
   };
 
-  // Append to pdfs.json
   evalsAndTerms.evals.push(evaluation);
   existingEvaluations.add(pdfName);
 }
@@ -130,6 +128,15 @@ function getCourseCode(firstPageText) {
   const newMatches = firstPageText.match(newCourseCodePattern);
   if (oldMatches) return transformDeptName(oldMatches[1]) + oldMatches[2];
   else if (newMatches) return transformDeptName(newMatches[1]) + newMatches[2];
+  else return null;
+}
+
+function getCourseName(profName, lastPageText) {
+  if (profName === null) return null;
+  profName = profName.replace("(", "\\(").replace(")", "\\)");
+  const courseNamePattern = new RegExp(`${profName},(.*)`);
+  const match = lastPageText.match(courseNamePattern);
+  if (match) return match[1].trim();
   else return null;
 }
 
