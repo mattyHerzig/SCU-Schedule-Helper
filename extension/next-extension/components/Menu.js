@@ -20,9 +20,9 @@ export default function Menu({ navigateToPage }) {
           <HomeIcon color="white" sx = {{fontSize: 30, px: 1, color: '#d1d1d1', cursor: 'pointer','&:hover': {color: '#703331'}}} onClick={() => navigateToPage('main')}/>
           <TuneIcon color="white" sx = {{fontSize: 30, px: 1, color: '#d1d1d1', cursor: 'pointer','&:hover': {color: '#703331'}}} onClick={() => navigateToPage('preferences')}/>
           <PersonAddIcon color="white" sx = {{fontSize: 30, px: 1, color: '#d1d1d1', cursor: 'pointer','&:hover': {color: '#703331'}}} onClick={() => navigateToPage('friends')}/>
-          <SettingsIcon color="white" sx = {{fontSize: 30, px: 1, color: '#d1d1d1', cursor: 'pointer','&:hover': {color: '#703331'}}} onClick={() => navigateToPage('settings')}/>
         </Toolbar>
       </AppBar>
     </Box>
   );
+  //hellow world
 }
