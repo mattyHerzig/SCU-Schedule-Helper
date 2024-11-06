@@ -10,7 +10,7 @@ async function test() {
       },
     },
     headers: {
-      authorization: "Bearer <access_token>",
+      authorization: `Bearer ${process.env.TEST_ACCESS_JWT}`,
     },
   };
   const response = await handler(event, null, null);

@@ -12,7 +12,7 @@ async function test() {
       },
     },
     headers: {
-      authorization: "Bearer <access_token>",
+      authorization: `Bearer ${process.env.TEST_ACCESS_JWT}`,
     },
     body: {
       name: "John Doe",

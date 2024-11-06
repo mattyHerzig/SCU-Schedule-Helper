@@ -16,12 +16,12 @@ async function handleGetEvalsRequest(event, context, userId) {
     // Fetch the JSON file content from S3
     const command = new GetObjectCommand({
       Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
-      Key: process.env.AGGREGATE_EVALS_JSON_OBJECT_KEY,
+      Key: process.env.AGGREGATE_EVALS_JSON_GZ_OBJECT_KEY,
     });
     const data = await s3.send(command);
     return validResponse({
-      data_expiration_date: getDataExpirationDate(),
-      data: JSON.parse(await data.Body.transformToString()),
+      dataExpirationDate: getDataExpirationDate(),
+      data: Buffer.from(await data.Body.transformToByteArray()).toString("base64"),
     });
   } catch (error) {
     console.error(`could not fetch evals JSON due to error ${error}`);
