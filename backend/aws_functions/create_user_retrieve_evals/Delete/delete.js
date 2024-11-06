@@ -1,7 +1,8 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { handler as authorizeUser } from '../../get_auth_token/index.js';
-import { unauthorizedErrorBody } from '../../get_auth_token/model.js';
+import { handler as authorizeUser } from '../../auth_token/get/index.js';
+import { unauthorizedError } from "../../auth_token/get/model.js";
+
 
 const client = new DynamoDBClient({ region: 'us-west-1' });
 const docClient = DynamoDBDocumentClient.from(client);
@@ -10,7 +11,7 @@ const table_name = "SCU-Schedule-Helper";
 export async function deleteUser(event, context, userId) {
     const userAuthorization = await authorizeUser(event, context);
   if (!userAuthorization.isAuthorized) {
-    return unauthorizedErrorBody(userAuthorization.authError);
+    return unauthorizedError(userAuthorization.authError);
   }
     const sortKeys = await getSortKeys(userId);
     

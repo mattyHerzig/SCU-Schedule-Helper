@@ -2,7 +2,7 @@ import { deleteUser } from './delete.js';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import 'dotenv/config'; 
-const JWT  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2FydG9yeSIsInR5cGUiOiJhY2Nlc3MiLCJuYW1lIjoiZXRoYW4gc2FydG9yeSIsImlhdCI6MTUxNjIzOTAyMn0.0GKf737YRuv4GsIySGzK6E6bFnIuGHbU-0LOTRmTu7M";
+const JWT  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2FydG9yeSIsInR5cGUiOiJhY2Nlc3MifQ.zhZ5RuK-Hy6bM8HQZjijxDxJBrQYpLL48AbSj8t32D8";
 const client = new DynamoDBClient({ region: 'us-west-1' });
 const docClient = DynamoDBDocumentClient.from(client);
 
