@@ -2,11 +2,9 @@ import getAndProcessNewEvals from "./utils/get_eval_links.js";
 import generateAggregateEvalsFile from "./utils/generate_aggregate_evals_json.js";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { authenticate } from "./utils/authentication.js";
-import dotenv from "dotenv";
+import zlib from "zlib";
 import fs from "fs";
 import path from "path";
-
-dotenv.config();
 
 export const EVALUATIONS_URL = "https://www.scu.edu/apps/evaluations/";
 export const REQUEST_INTERVAL_MS = 50;
@@ -14,6 +12,7 @@ export const REQUEST_MAX_RETRIES = 1;
 
 export let evalsAndTerms = {
   terms: [],
+  termIdsToTermNames: {},
   evals: [],
 };
 export let aggregateEvals = {};
@@ -63,10 +62,13 @@ async function initDirectoriesAndFiles() {
   else {
     const command = new GetObjectCommand({
       Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
-      Key: process.env.EVALS_AND_TERMS_JSON_OBJECT_KEY,
+      Key: process.env.EVALS_AND_TERMS_JSON_GZ_OBJECT_KEY,
     });
     const evalsAndTermsObject = await s3.send(command);
-    evalsAndTerms = JSON.parse(await evalsAndTermsObject.Body.transformToString());
+    let evalsAndTermsBuffer = zlib.gunzipSync(
+      Buffer.from(await evalsAndTermsObject.Body.transformToByteArray())
+    );
+    evalsAndTerms = JSON.parse(evalsAndTermsBuffer.toString());
   }
   existingTerms = new Set(evalsAndTerms.terms);
   for (const evaluation of evalsAndTerms.evals) {
@@ -86,8 +88,8 @@ export async function writeEvalsAndTerms() {
     // Upload to AWS.
     const command = new PutObjectCommand({
       Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
-      Key: process.env.EVALS_AND_TERMS_JSON_OBJECT_KEY,
-      Body: JSON.stringify(evalsAndTerms),
+      Key: process.env.EVALS_AND_TERMS_JSON_GZ_OBJECT_KEY,
+      Body: zlib.gzipSync(JSON.stringify(evalsAndTerms)),
     });
     const response = await s3.send(command);
     if (response.$metadata.httpStatusCode < 200 || response.$metadata.httpStatusCode >= 300) {
@@ -108,8 +110,8 @@ export async function writeAggregateEvals() {
     // Upload to AWS.
     const command = new PutObjectCommand({
       Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
-      Key: process.env.AGGREGATE_EVALS_JSON_OBJECT_KEY,
-      Body: JSON.stringify(aggregateEvals),
+      Key: process.env.AGGREGATE_EVALS_JSON_GZ_OBJECT_KEY,
+      Body: zlib.gzipSync(JSON.stringify(aggregateEvals)),
     });
     const response = await s3.send(command);
     if (response.$metadata.httpStatusCode < 200 || response.$metadata.httpStatusCode >= 300) {

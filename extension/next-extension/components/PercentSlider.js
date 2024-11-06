@@ -26,8 +26,8 @@ export default function PercentSlider() {
         max={100}
         valueLabelDisplay="auto"
       />
-      <Box sx={{ mt: 2 }}>
-        <Typography align="center" gutterBottom>
+      <Box sx={{ mt: 2, justifyContent: 'center', alignItems: 'center'}}>
+        <Typography align="center" gutterBottom sx={{fontSize: '.75rem', whiteSpace: 'nowrap'}}> 
           SCU Course Evaluations: {value}% | RateMyProfessor: {100 - value}%
         </Typography>
       </Box>

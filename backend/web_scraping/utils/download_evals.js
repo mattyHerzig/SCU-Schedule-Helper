@@ -6,12 +6,10 @@ import {
   REQUEST_MAX_RETRIES,
   existingEvaluations,
 } from "../main.js";
-import dotenv from "dotenv";
 import jsdom from "jsdom";
-dotenv.config();
 
 export async function processEvalLinks(evalLinks, term) {
-  for(const link of evalLinks) {
+  for (const link of evalLinks) {
     let evalName = link.split("/?").pop();
     if (!link.trim() || existingEvaluations.has(evalName)) continue;
     await downloadEvalPdfAndExtractData(evalName, term, link.trim(), evalLinks);
