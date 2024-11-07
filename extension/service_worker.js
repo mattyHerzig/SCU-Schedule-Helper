@@ -13,7 +13,7 @@ const defaults = {
   useEvals: false,
 };
 
-const downloadEvalsUrl = "https://api.scu-schedule-helper.me/user"; // also in `manifest.json`
+const downloadEvalsUrl = "https://api.scu-schedule-helper.me/evals"; // also in `manifest.json`
 
 async function authorize() {
   try {
@@ -21,51 +21,56 @@ async function authorize() {
     const { token } = await chrome.identity.getAuthToken({
       interactive: true,
     });
-    // console.log(await chrome.identity.getProfileUserInfo()); // DEBUG
-    // const { email } = await chrome.identity.getProfileUserInfo(); // Gets email of user with the extension, not the user that just logged in
-    // const domain = email.split('@')[1];
-    const response = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+    const response = await fetch("https://api.scu-schedule-helper.me/auth_token", {
+      method: "GET",
       headers: {
-        Authorization: "Bearer " + token,
+        Authorization: `OAuth ${token}`,
       },
     });
-    const userInfo = await response.json();
-    const email = userInfo.email;
-    const domain = userInfo.hd; // email.split('@')[1] for consistency with server?
-    if (domain === "scu.edu") {
-      // console.log('SCU email detected:', email); // DEBUG
-      console.log(token); // DEBUG
-      await chrome.storage.sync.set({ oauth_token: token });
-      return [true, ""];
-    } else {
-      // console.log('Non-SCU email detected:', email); // DEBUG
-      await fetch("https://accounts.google.com/o/oauth2/revoke?token=" + token);
-      await chrome.identity.clearAllCachedAuthTokens();
-      return [false, 'Authorization failed. Email does not end with "@scu.edu".'];
+    const data = await response.json();
+
+    if (response.status !== 200) {
+      return [false, `Authorization failed. ${data.message}`];
     }
+    await chrome.storage.sync.set({
+      accessToken: data.accessToken,
+      accessTokenExpirationDate: data.accessTokenExpirationDate,
+      refreshToken: data.refreshToken,
+    });
+    return [true, ""];
   } catch (error) {
     return [false, "Authorization failed. User cancelled."];
   }
 }
 
 async function downloadEvals() {
-  const { oauth_token: oAuthToken, access_token: accessToken } = await chrome.storage.sync.get([
-    "oauth_token",
-    "access_token",
-  ]);
+  const accessToken = await chrome.storage.sync.get(["accessToken"]);
+
   const response = await fetch(downloadEvalsUrl, {
-    method: "POST",
+    method: "GET",
     headers: {
-      Authorization: accessToken ? "Bearer " + accessToken : "OAuth " + oAuthToken,
+      Authorization: "Bearer " + accessToken.accessToken,
     },
   });
   const data = await response.json();
-  await chrome.storage.sync.set({ access_token: data.access_token });
-  await chrome.storage.local.set({
-    evals: data.data,
-    evals_expiration_date: data.data_expiration_date,
-  });
-//   console.log("evals", data.data); // DEBUG
+
+  const evalsExpirationDate = data.dataExpirationDate;
+  const evals = await decodeAndDecompress(data.data);
+}
+
+async function decodeAndDecompress(base64EncodedGzippedData) {
+  const binaryString = atob(base64EncodedGzippedData);
+  const binaryData = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    binaryData[i] = binaryString.charCodeAt(i);
+  }
+
+  const decompressedStream = new Response(binaryData).body.pipeThrough(
+    new DecompressionStream("gzip")
+  );
+  const decompressedText = await new Response(decompressedStream).text();
+  const jsonData = JSON.parse(decompressedText);
+  return jsonData;
 }
 
 async function downloadEvalsIfNeeded() {
@@ -79,8 +84,6 @@ async function downloadEvalsIfNeeded() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // console.log("service_worker.js received message:", request); // DEBUG
-
   if (request.url !== undefined) {
     fetch(request.url)
       .then((response) => response.text())

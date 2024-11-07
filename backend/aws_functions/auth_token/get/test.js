@@ -10,7 +10,7 @@ async function test() {
       },
     },
     headers: {
-      authorization: "OAuth <google_oauth_token>",
+      authorization: `OAuth ${process.env.TEST_OAUTH_JWT}`,
     },
   };
   const response = await handler(event, null);
@@ -36,7 +36,7 @@ async function test() {
       },
     },
     headers: {
-      authorization: "Bearer <refresh_token>",
+      authorization: `Bearer ${process.env.TEST_REFRESH_JWT}`,
     },
   };
   const response2 = await handler(event2, null);
