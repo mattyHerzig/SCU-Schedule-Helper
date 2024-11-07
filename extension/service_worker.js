@@ -1,7 +1,3 @@
-// console.log("service_worker.js");
-
-// (oauth_token !== undefined) => (user is authorized), (evals_expiration_date !== undefined) => (evals have been downloaded)
-
 const defaults = {
   extendColorHorizontally: false,
   individualDifficultyColor: true,
@@ -121,12 +117,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "downloadEvalsIfNeeded":
       downloadEvalsIfNeeded().then(() => sendResponse());
       return true;
-
-    // case 'checkIfAuthorized':
-    //     chrome.storage.sync.get('oauth_token', ({ oauth_token: oAuthToken }) => {
-    //         sendResponse(oAuthToken !== undefined);
-    //     });
-    //     return true;
   }
 });
 
@@ -153,7 +143,48 @@ chrome.runtime.onInstalled.addListener((details) => {
   // else if (details.reason == "update") {}
 });
 
+self.addEventListener("push", function (event) {
+  console.log(`Push had this data/text: "${event.data.text()}"`);
+});
+
+self.addEventListener("activate", (event) => {
+  const serverSubscription = subscribe();
+  chrome.storage.sync.set({ serverSubscription });
+});
+
 // Download evals on startup if download was interrupted, or evals are expired
 chrome.runtime.onStartup.addListener(() => {
   downloadEvalsIfNeeded();
 });
+
+const SERVER_PUBLIC_KEY =
+  "BLMxe4dFTN6sJ7U-ZFXgHUyhlI5udo11b4curIyRfCdGZMYjDx4kFoV3ejHzDf4hNZQOmW3UP6_dgyYTdg3LDIE";
+const applicationServerKey = urlB64ToUint8Array(SERVER_PUBLIC_KEY);
+
+async function subscribe() {
+  try {
+    let subscription = await self.registration.pushManager.subscribe({
+      userVisibleOnly: false,
+      applicationServerKey,
+    });
+
+    console.log(`Subscribed: ${JSON.stringify(subscription, 0, 2)}`);
+
+    return subscription;
+  } catch (error) {
+    console.error("Subscribe error: ", error);
+  }
+}
+
+function urlB64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}

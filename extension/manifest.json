@@ -3,7 +3,7 @@
   "name": "SCU Schedule Helper",
   "version": "1.1",
   "description": "Course/professor rating and color coding for SCU Find Course Sections.",
-  "permissions": ["activeTab", "storage", "identity"],
+  "permissions": ["activeTab", "storage", "identity", "notifications"],
   "host_permissions": [
     "https://www.myworkday.com/scu/*",
     "https://www.ratemyprofessors.com/*",
