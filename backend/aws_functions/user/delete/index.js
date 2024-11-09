@@ -17,33 +17,34 @@ async function deleteUser(event, context, userId) {
   if (sortKeys.length === 0) {
     console.log(`No sort keys for primary key u#${userId}`);
     return;
-  } else if (sortKeys.length > 25) {
-    console.log("Too many sort keys for one operation");
-    return;
+  } 
+  const batches = [];
+  while (sortKeys.length > 0) {
+    batches.push(sortKeys.splice(0, 25));
   }
-
-  const delete_requests = sortKeys.map((sk) => ({
-    DeleteRequest: {
-      Key: {
-        pk: `u#${userId}`,
-        sk: sk,
+  for (const batch of batches) {
+    const delete_requests = batch.map((sk) => ({
+      DeleteRequest: {
+        Key: {
+          pk: `u#${userId}`,
+          sk: sk,
+        },
       },
-    },
-  }));
+    }));
 
-  const params = {
-    RequestItems: {
-      [tableName]: delete_requests,
-    },
-  };
+    const params = {
+      RequestItems: {
+        [tableName]: delete_requests,
+      },
+    };
 
-  try {
-    const result = await docClient.send(new BatchWriteCommand(params));
-    console.log(`Deleted ${delete_requests.length} items from the table.`);
-    return result;
-  } catch (error) {
-    console.error("Error deleting items:", error);
-    throw error; // Optionally return an error response here
+    try {
+      const result = await docClient.send(new BatchWriteCommand(params));
+      console.log(`Deleted ${delete_requests.length} items from the table.`);
+    } catch (error) {
+      console.error("Error deleting items:", error);
+      throw error; 
+    }
   }
 }
 

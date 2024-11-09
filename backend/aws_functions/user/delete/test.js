@@ -1,7 +1,7 @@
 import { handler } from "./index.js";
 
 const JWT =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2FydG9yeSIsInR5cGUiOiJhY2Nlc3MiLCJuYW1lIjoiZXRoYW4gc2FydG9yeSIsImlhdCI6MTUxNjIzOTAyMn0.0GKf737YRuv4GsIySGzK6E6bFnIuGHbU-0LOTRmTu7M";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2FydG9yeSIsInR5cGUiOiJhY2Nlc3MifQ.zhZ5RuK-Hy6bM8HQZjijxDxJBrQYpLL48AbSj8t32D8";
 
 async function runTest() {
   const event = {
