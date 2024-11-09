@@ -1,5 +1,5 @@
 import React from 'react';
-import PropTypes from 'prop-types'; // Add prop-types for default props and validation
+import PropTypes from 'prop-types';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Accordion from '@mui/material/Accordion';
