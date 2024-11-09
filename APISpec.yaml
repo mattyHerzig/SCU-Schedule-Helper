@@ -24,7 +24,6 @@ paths:
           description: Request Entity Too Large - Too many items to delete in one operation
         '500':
           description: Internal Server Error - Unable to complete delete operation
-paths:
   /users/{userId}:
     put:
       summary: Update user information based on context
