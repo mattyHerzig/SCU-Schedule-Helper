@@ -1,0 +1,25 @@
+import { handler } from "./index.js";
+
+const JWT =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2FydG9yeSIsInR5cGUiOiJhY2Nlc3MiLCJuYW1lIjoiZXRoYW4gc2FydG9yeSIsImlhdCI6MTUxNjIzOTAyMn0.0GKf737YRuv4GsIySGzK6E6bFnIuGHbU-0LOTRmTu7M";
+
+async function runTest() {
+  const event = {
+    requestContext: {
+      http: {
+        method: "DELETE",
+      },
+    },
+    headers: {
+      authorization: `Bearer ${JWT}`,
+    },
+  };
+
+  try {
+    const response = await handler(event, null);
+    console.log("Delete User Result:", response);
+  } catch (error) {
+    console.error("Error during deleteUser:", error);
+  }
+}
+runTest();
