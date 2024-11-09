@@ -23,7 +23,7 @@ const RequestsAccordion = ({ requests = [], setRequests = () => {}, setFriends =
     setFriends(prevFriends => [...prevFriends, {
       id: Date.now(), // Generate new ID
       name: request.name,
-      details: "New friend added",
+      details: "Courses registered next quarter: CSCI60-3 with Nicholas Tran, MATH12-2 with Glenn Appleby",
       expanded: false
     }]);
     setRequests(requests.filter(req => req.id !== request.id));

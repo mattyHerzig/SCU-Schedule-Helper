@@ -27,8 +27,8 @@ export default function Preferences() {
         <PercentSlider></PercentSlider>
 
         <Typography sx={{pt: 5}}>
-            Select subjects of interest for general education courses:
-          </Typography>
+            Select subjects of interest for electives:
+        </Typography>
           <Box sx={{ '& .MuiFormControlLabel-root': { fontSize: '0.75rem' } }}>
             <FormControlLabel control={<Checkbox sx={{ transform: 'scale(0.75)' }} />} label="History" />
             <FormControlLabel control={<Checkbox sx={{ transform: 'scale(0.75)' }} />} label="Film" />
@@ -47,6 +47,9 @@ export default function Preferences() {
             <FormControlLabel control={<Checkbox sx={{ transform: 'scale(0.75)' }} />} label="Foreign Language" />
             <FormControlLabel control={<Checkbox sx={{ transform: 'scale(0.75)' }} />} label="Law" />
           </Box>
+          <Typography sx={{pt: 5}}>
+            Select core requirements you are interested in:
+        </Typography>
         <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2}}>
           <Button variant="contained" color="primary">
               Submit Preferences
