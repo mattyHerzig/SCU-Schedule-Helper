@@ -22,5 +22,5 @@ export function getDataExpirationDate() {
       dataNextAvailableDate = dataAvailabilityDate;
     }
   }
-  return dataNextAvailableDate.getTime();
+  return dataNextAvailableDate.toISOString();
 }

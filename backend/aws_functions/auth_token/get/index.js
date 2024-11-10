@@ -19,7 +19,7 @@ export async function handler(event, context) {
     tokenResponse.accessToken = generateDataAccessToken(userAuthorization.userId);
     // 2 days less than a year (the actual expiration date), just to be safe :)
     let tokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 363);
-    tokenResponse.accessTokenExpirationDate = getUnixTimestamp(tokenExpDate);
+    tokenResponse.accessTokenExpirationDate = tokenExpDate.toISOString();
     if (userAuthorization.oAuthInfo != null) {
       tokenResponse.refreshToken = generateRefreshToken(userAuthorization.userId);
       tokenResponse.oAuthInfo = userAuthorization.oAuthInfo;
