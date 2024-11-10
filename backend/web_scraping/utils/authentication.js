@@ -1,17 +1,11 @@
 import puppeteer from "puppeteer";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import fs from "fs";
 
-const s3 = new S3Client({
-  region: process.env.AWS_DEFAULT_REGION,
-});
 const MAX_LOGIN_TRIES = 5;
 
 export async function authenticate(username, password) {
   const loginButton = "button::-p-text(Login)";
   const browser = await puppeteer.launch({ args: ["--incognito"] });
   const page = await browser.newPage();
-  const recorder = await page.screencast({ path: "auth.webm" });
 
   console.log("Starting authentication...");
   await page.goto("https://scu.edu/apps/evaluations");
@@ -36,11 +30,9 @@ export async function authenticate(username, password) {
       // Sleep thread
       const otherOptionsButton = await page.waitForSelector(".other-options-link");
       await otherOptionsButton.tap();
-      console.log("Waiting for Duo Push button to appear...");
       // Wait for the Duo Push button to appear, and tap it.
       const duoPushButton = await page.waitForSelector("::-p-text(Duo Push)");
       await duoPushButton.tap();
-      console.log("Waiting for mobile approval...");
       // If there is a verification code, log it.
       const verificationCodeDiv = await page.$(".verification-code");
       if (verificationCodeDiv) {
@@ -52,7 +44,6 @@ export async function authenticate(username, password) {
         "button::-p-text(Yes, this is my device), button::-p-text(Try again)",
         { timeout: 65000 }
       );
-      console.log("Mobile request approved. Continuing...");
       needMobileApproval = await buttonToTap.evaluate((node) => node.textContent === "Try again");
       await buttonToTap.tap();
       if (!needMobileApproval) {
@@ -63,12 +54,9 @@ export async function authenticate(username, password) {
       }
     } catch (error) {
       console.error(`Error during mobile approval: ${error}`);
-      await recorder.stop();
-      uploadRecordingToS3();
     }
   }
-  await recorder.stop();
-  await uploadRecordingToS3();
+
   if (loginTries >= MAX_LOGIN_TRIES) {
     console.log("Failed to login after 5 tries. Exiting.");
     await browser.close();
@@ -86,16 +74,6 @@ export async function authenticate(username, password) {
   await browser.close();
   process.env.SIMPLE_SAML = SimpleSAML;
   process.env.SIMPLE_SAML_AUTH_TOKEN = SimpleSAMLAuthToken;
-}
-
-async function uploadRecordingToS3() {
-  // Upload the recording to S3.
-  const command = new PutObjectCommand({
-    Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
-    Key: "auth.webm",
-    Body: fs.readFileSync("auth.webm"),
-  });
-  await s3.send(command);
 }
 
 export function getWithCookies(url) {
