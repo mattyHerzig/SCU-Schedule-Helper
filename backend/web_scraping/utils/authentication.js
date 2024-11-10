@@ -9,7 +9,7 @@ const MAX_LOGIN_TRIES = 5;
 
 export async function authenticate(username, password) {
   const loginButton = "button::-p-text(Login)";
-  const browser = await puppeteer.launch({ args: ["--incognito"] });
+  const browser = await puppeteer.launch({ args: ["--incognito"], headless: false });
   const page = await browser.newPage();
   const recorder = await page.screencast({ path: "auth.webm" });
 
