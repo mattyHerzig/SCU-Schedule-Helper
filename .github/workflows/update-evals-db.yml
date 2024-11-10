@@ -17,6 +17,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          # As of version 3 of this action, builds are no longer downloaded from GitHub
+          # except on Windows: https://github.com/GyanD/codexffmpeg/releases.
+          github-token: ${{ github.server_url == 'https://github.com' && github.token || '' }}
       - run: npm ci
         working-directory: backend/web_scraping
       - name: Run update script
