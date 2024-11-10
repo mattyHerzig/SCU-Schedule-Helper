@@ -1,7 +1,5 @@
 import puppeteer from "puppeteer";
 
-const MAX_LOGIN_TRIES = 5;
-
 export async function authenticate(username, password) {
   const loginButton = "button::-p-text(Login)";
   const browser = await puppeteer.launch({ args: ["--incognito"] });
@@ -16,46 +14,32 @@ export async function authenticate(username, password) {
   await page.locator("#password").fill(password);
 
   console.log(`Attemping to login user ${username}`);
-  await page.tap(loginButton);
+  page.tap(loginButton);
   await page.waitForNetworkIdle();
 
-  let loginTries = 0;
   let needMobileApproval = page.url().includes("duosecurity");
-  while (needMobileApproval && loginTries < MAX_LOGIN_TRIES) {
-    loginTries++;
+  while (needMobileApproval) {
     console.log("***************************ACTION REQUIRED***************************");
     console.log("Mobile request sent for authentication. Please approve on your phone.");
-    // Press other options, in case the user isn't using mobile push.
-    const otherOptionsButton = await page.waitForSelector("::-p-text(Other options)");
-    await otherOptionsButton.tap();
-    // Wait for the Duo Push button to appear, and tap it.
-    const duoPushButton = await page.waitForSelector("::-p-text(Duo Push)");
-    await duoPushButton.tap();
-    // If there is a verification code, log it.
     const verificationCodeDiv = await page.$(".verification-code");
     if (verificationCodeDiv) {
       const verificationCode = await verificationCodeDiv.evaluate((node) => node.textContent);
       console.log(`Use verification code: ${verificationCode}`);
     }
-    // Wait for the Yes, this is my device button to appear (i.e. the user has approved the push).
     const buttonToTap = await page.waitForSelector(
       "button::-p-text(Yes, this is my device), button::-p-text(Try again)",
       { timeout: 65000 }
     );
     needMobileApproval = await buttonToTap.evaluate((node) => node.textContent === "Try again");
-    await buttonToTap.tap();
+    buttonToTap.tap();
     if (!needMobileApproval) {
       await page.waitForRequest((request) => request.url().includes("scu.edu"));
     } else {
       console.log("Mobile request not approved. Retrying...");
-      await page.waitForSelector("::-p-text(Other options)");
+      await page.waitForSelector(
+        "div::-p-text(Check for a Duo Push), div::-p-text(Enter code in Duo Mobile)"
+      );
     }
-  }
-
-  if (loginTries >= MAX_LOGIN_TRIES) {
-    console.log("Failed to login after 5 tries. Exiting.");
-    await browser.close();
-    throw new Error("Failed to login after 5 tries.");
   }
 
   await page.waitForNetworkIdle();
