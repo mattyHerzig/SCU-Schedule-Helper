@@ -12,9 +12,13 @@ export default function Home() {
     setActivePage(page);
   };
 
+  const openLandingPage = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('tab/index.html') });
+  };
+
   return (
     <>
-      <Menu navigateToPage={navigateToPage} />
+      <Menu navigateToPage={navigateToPage} openLandingPage={openLandingPage} />
       {activePage === 'main' && <Main navigateToPage={navigateToPage} />} 
       {activePage === 'preferences' && <Preferences navigateToPage={navigateToPage} />}
       {activePage === 'friends' && <Friends navigateToPage={navigateToPage} />}

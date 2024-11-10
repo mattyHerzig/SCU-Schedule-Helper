@@ -4,14 +4,8 @@ import Slider from '@mui/material/Slider';
 import Typography from '@mui/material/Typography';
 
 const marks = [
-  {
-    value: 8,
-    label: '8:00',
-  },
-  {
-    value: 9,
-    label: '9:00',
-  },
+  {value: 8, label: '8:00'},
+  {value: 9, label: '9:00'},
   {
     value: 10,
     label: '10:00',
@@ -78,14 +72,13 @@ export default function RangeSliderTime() {
   return (
     <Box sx={{ width: 350 }}>
       <Slider
-        getAriaLabel={() => 'Temperature range'} // Accessibility label
         value={value} // Current slider value
         onChange={handleChange} // Function to handle changes
         valueLabelDisplay="auto" // Show value label on hover
         getAriaValueText={valuetext} // Custom value text for accessibility
         step={1}
-        min={8} // Minimum value
-        max={20} // Maximum value
+        min={8}
+        max={20} 
         marks={marks.map((mark) => ({
           ...mark,
           label: (

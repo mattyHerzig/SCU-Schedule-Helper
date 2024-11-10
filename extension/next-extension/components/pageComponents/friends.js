@@ -20,7 +20,7 @@ export default function Friends() {
     ]);
 
     return (
-        <Box>
+        <Box sx={{ width: 450, height: 600, overflow: 'auto' }}>
             <RequestsAccordion requests={requests} setRequests={setRequests} setFriends={setFriends} />
             <FriendsAccordion friends={friends} setFriends={setFriends} />
             <Box sx = {{ my: 3, flexDirection: 'column', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>

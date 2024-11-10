@@ -13,6 +13,7 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import AdbIcon from '@mui/icons-material/Adb';
+import AuthButton from './AuthButton';
 
 const pages = [];
 const settings = ['Logout'];
@@ -120,7 +121,6 @@ function ResponsiveAppBar() {
               </Button>
             ))}
           </Box>
-          <Button color="inherit">Login</Button>
         </Toolbar>
       </Container>
     </AppBar>

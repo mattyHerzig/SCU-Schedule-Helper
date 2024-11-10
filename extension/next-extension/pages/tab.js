@@ -1,6 +1,6 @@
 'use client'
-import ResponsiveAppBar from "./components/ResponsiveAppBar";
-import React from 'react';
+import ResponsiveAppBar from "../components/ResponsiveAppBar";
+import React, { useState} from 'react';
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -17,84 +17,8 @@ export default function Home() {
   const [authStatus, setAuthStatus] = useState('checking');
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        if (typeof chrome !== 'undefined' && chrome.runtime) {
-          const { accessToken } = await chrome.storage.sync.get('accessToken');
-          
-          if (!accessToken) {
-            setAuthStatus('unauthorized');
-          } else {
-            const { accessTokenExpirationDate } = await chrome.storage.sync.get('accessTokenExpirationDate');
-            
-            if (new Date(accessTokenExpirationDate) < new Date()) {
-              const [authorized, failStatus] = await chrome.runtime.sendMessage('authorize');
-              
-              if (!authorized) {
-                setError(failStatus);
-                setAuthStatus('error');
-                return;
-              }
-            }
-            
-            setAuthStatus('authorized');
-          }
-        } else {
-          setError('Not running in extension context');
-          setAuthStatus('error');
-        }
-      } catch (err) {
-        setError(err.message);
-        setAuthStatus('error');
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  const handleAuth = async () => {
-    try {
-      const [authorized, failStatus] = await chrome.runtime.sendMessage('authorize');
-      
-      if (!authorized) {
-        setError(failStatus);
-        setAuthStatus('error');
-        return;
-      }
-      
-      setAuthStatus('authorized');
-    } catch (err) {
-      setError(err.message);
-      setAuthStatus('error');
-    }
-  };
-
-  if (authStatus === 'checking') {
-    return <div>Checking authentication status...</div>;
-  }
-
-  if (authStatus === 'error') {
-    return (
-      <div>
-        <p>Error: {error}</p>
-        <button onClick={handleAuth}>Try Again</button>
-      </div>
-    );
-  }
-
-  if (authStatus === 'unauthorized') {
-    return (
-      <div>
-        <h1>Welcome to SCU Schedule Helper</h1>
-        <p>Please authenticate to continue</p>
-        <button onClick={handleAuth}>Login</button>
-      </div>
-    );
-  }
-
   return (
-    <main>
+    <main sx = {{width: '100%', height: '100%'}}>
       <ResponsiveAppBar/>
       <Box sx={{ pl: 10, pr: 10, pt: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyContent: 'center' }}>
           <Box
