@@ -12,7 +12,7 @@ export function getDataExpirationDate() {
   for (const quarter in date_data_becomes_available_mm_dd) {
     const [month, day] = date_data_becomes_available_mm_dd[quarter].split("-");
     // If the date has already passed this year, use next year
-    const dataAvailabilityDate = new Date(today.getFullYear(), month, day);
+    const dataAvailabilityDate = new Date(today.getFullYear(), month - 1, day);
     if (today.getMonth() + 1 > month || (today.getMonth() == month && today.getDate() > day)) {
       dataAvailabilityDate.setFullYear(today.getFullYear() + 1);
     }
