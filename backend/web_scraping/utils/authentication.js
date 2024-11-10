@@ -32,6 +32,9 @@ export async function authenticate(username, password) {
     const duoPushButton = await page.waitForSelector("::-p-text(Duo Push)");
     await duoPushButton.tap();
     // If there is a verification code, log it.
+    try {
+      await page.waitForSelector(".verification-code", { timeout: 2000 });
+    } catch (ignore) {}
     const verificationCodeDiv = await page.$(".verification-code");
     if (verificationCodeDiv) {
       const verificationCode = await verificationCodeDiv.evaluate((node) => node.textContent);
