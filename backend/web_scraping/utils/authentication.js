@@ -35,9 +35,11 @@ export async function authenticate(username, password) {
       // Press other options, in case the user isn't using mobile push.
       const otherOptionsButton = await page.waitForSelector("::-p-text(Other options)");
       await otherOptionsButton.tap();
+      console.log("Waiting for Duo Push button to appear...");
       // Wait for the Duo Push button to appear, and tap it.
       const duoPushButton = await page.waitForSelector("::-p-text(Duo Push)");
       await duoPushButton.tap();
+      console.log("Waiting for mobile approval...");
       // If there is a verification code, log it.
       const verificationCodeDiv = await page.$(".verification-code");
       if (verificationCodeDiv) {
@@ -49,6 +51,7 @@ export async function authenticate(username, password) {
         "button::-p-text(Yes, this is my device), button::-p-text(Try again)",
         { timeout: 65000 }
       );
+      console.log("Mobile request approved. Continuing...");
       needMobileApproval = await buttonToTap.evaluate((node) => node.textContent === "Try again");
       await buttonToTap.tap();
       if (!needMobileApproval) {
