@@ -9,7 +9,7 @@ const MAX_LOGIN_TRIES = 5;
 
 export async function authenticate(username, password) {
   const loginButton = "button::-p-text(Login)";
-  const browser = await puppeteer.launch({ args: ["--incognito"], headless: false });
+  const browser = await puppeteer.launch({ args: ["--incognito"] });
   const page = await browser.newPage();
   const recorder = await page.screencast({ path: "auth.webm" });
 
@@ -33,6 +33,8 @@ export async function authenticate(username, password) {
       console.log("***************************ACTION REQUIRED***************************");
       console.log("Mobile request sent for authentication. Please approve on your phone.");
       // Press other options, in case the user isn't using mobile push.
+      // Sleep thread
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       const otherOptionsButton = await page.waitForSelector(".other-options-link");
       await otherOptionsButton.tap();
       console.log("Waiting for Duo Push button to appear...");
