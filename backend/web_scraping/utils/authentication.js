@@ -26,12 +26,15 @@ export async function authenticate(username, password) {
     console.log("***************************ACTION REQUIRED***************************");
     console.log("Mobile request sent for authentication. Please approve on your phone.");
     // Press other options, in case the user isn't using mobile push.
-    const otherOptionsButton = await page.waitForSelector("::-p-text(Other options)");
+    const otherOptionsButton = await page.waitForSelector(".other-options-link");
     await otherOptionsButton.tap();
     // Wait for the Duo Push button to appear, and tap it.
     const duoPushButton = await page.waitForSelector("::-p-text(Duo Push)");
     await duoPushButton.tap();
     // If there is a verification code, log it.
+    try {
+      await page.waitForSelector(".verification-code", { timeout: 2000 });
+    } catch (ignore) {}
     const verificationCodeDiv = await page.$(".verification-code");
     if (verificationCodeDiv) {
       const verificationCode = await verificationCodeDiv.evaluate((node) => node.textContent);

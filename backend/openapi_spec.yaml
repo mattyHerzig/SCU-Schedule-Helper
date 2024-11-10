@@ -1,0 +1,723 @@
+openapi: "3.1.0"
+info:
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+    # identifier: MIT
+  title: SCU Schedule Helper API
+  summary: A better scheduling tool for SCU students.
+  description: API for managing user information on the SCU Schedule Helper Chrome extension.
+  version: 1.0.0
+jsonSchemaDialect: "https://spec.openapis.org/oas/3.1/dialect/base"
+servers:
+  - url: https://api.scu-schedule-helper.me
+    description: Production server
+
+paths:
+  /authToken:
+    get:
+      tags:
+        - Authentication
+      security:
+        - oauth: []
+        - bearerRefreshToken: []
+      summary: Get an access token (JWT)
+      description: Get a new JWT for the current user, using a Google OAuth token, or a refresh token.
+      operationId: getAuthToken
+      responses:
+        "200":
+          description: Success - JWT successfully generated.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    title: OAuth response
+                    allOf:
+                      - $ref: "#/components/schemas/AccessTokenResponse"
+                    properties:
+                      refreshToken:
+                        type: string
+                        description: A refresh token (JWT) that can be used for the current user.
+                      oAuthInfo:
+                        type: object
+                        description: The user's Google OAuth information.
+                        properties:
+                          email:
+                            type: string
+                            description: The user's email address.
+                          name:
+                            type: string
+                            description: The user's full name.
+                          picture:
+                            type: string
+                            description: A URL to the user's Google profile picture.
+                  - type: object
+                    title: Refresh token response
+                    allOf:
+                      - $ref: "#/components/schemas/AccessTokenResponse"
+        "401":
+          description: Unauthorized - Invalid or expired Google OAuth token or refresh token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to generate JWT or could not process the client provided JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+  /evals:
+    get:
+      tags:
+        - SCU Evaluations
+      summary: "Get SCU Evaluations data"
+      description: "Get all of the SCU Evaluations data aggregated by professor and course."
+      operationId: getEvals
+      responses:
+        "200":
+          description: Successfully retrieved SCU Evaluations data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    description: The aggregated SCU Evaluations data.
+                    patternProperties:
+                      ".*":
+                        description: Contains all ratings aggregated by professor, and course. The key is professor name or course code.
+                        oneOf:
+                          - $ref: "#/components/schemas/ProfessorAggregateRatings"
+                            title: Professor aggregate rating
+                          - $ref: "#/components/schemas/CourseAggregateRating"
+                            title: Course aggregate rating
+                  dataExpirationDate:
+                    type: string
+                    format: date-time
+                    description: The expiration date of the SCU Evaluations data, as an ISO-formatted timestamp.
+                example:
+                  {
+                    data:
+                      {
+                        "FNCE131":
+                          {
+                            "qualityTotal": 18.77777777777778,
+                            "qualityCount": 4,
+                            "difficultyTotal": 14.4,
+                            "difficultyCount": 4,
+                            "workloadTotal": 11.995000000000001,
+                            "workloadCount": 4,
+                            "qualityAvg": 4.694444444444445,
+                            "difficultyAvg": 3.6,
+                            "workloadAvg": 2.9987500000000002,
+                            "recentTerms": ["Winter 2024"],
+                            "courseName": "Real Estate Law",
+                            "professors": ["David Brown"],
+                            "type": "course",
+                          },
+                        "David Smith":
+                          {
+                            "type": "prof",
+                            "overall":
+                              {
+                                "qualityTotal": 9.333333333333334,
+                                "qualityCount": 2,
+                                "difficultyTotal": 7,
+                                "difficultyCount": 2,
+                                "workloadTotal": 7,
+                                "workloadCount": 2,
+                                "qualityAvg": 4.666666666666667,
+                                "difficultyAvg": 3.5,
+                                "workloadAvg": 3.5,
+                              },
+                            "FNCE":
+                              {
+                                "qualityTotal": 9.333333333333334,
+                                "qualityCount": 2,
+                                "difficultyTotal": 7,
+                                "difficultyCount": 2,
+                                "workloadTotal": 7,
+                                "workloadCount": 2,
+                                "qualityAvg": 4.666666666666667,
+                                "difficultyAvg": 3.5,
+                                "workloadAvg": 3.5,
+                              },
+                            "FNCE131":
+                              {
+                                "qualityTotal": 9.333333333333334,
+                                "qualityCount": 2,
+                                "difficultyTotal": 7,
+                                "difficultyCount": 2,
+                                "workloadTotal": 7,
+                                "workloadCount": 2,
+                                "qualityAvg": 4.666666666666667,
+                                "difficultyAvg": 3.5,
+                                "workloadAvg": 3.5,
+                                "recentTerms": ["Winter 2024"],
+                              },
+                          },
+                      },
+                    dataExpirationDate: "2024-03-01T00:00:00Z",
+                  }
+        "401":
+          description: Unauthorized - missing or invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to retrieve SCU Evaluations data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+  /users:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      description: Create a new user with the specified information.
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - subscription
+              properties:
+                name:
+                  type: string
+                  description: The user's full name.
+                  example: John Doe
+                subscription:
+                  type: string
+                  description: A stringified webpush subscription object (so that they can receive notifications from our server).
+                  example: '{
+                    endpoint: "https://fcm.googleapis.com/fcm/send/id",
+                    expirationTime: null,
+                    keys: {
+                    p256dh: "",
+                    auth: "",
+                    },
+                    };'
+                photo:
+                  type: string
+                  description: A base64-encoded image of the user's profile picture.
+                photoUrl:
+                  type: string
+                  description: A URL to the user's profile picture.
+      responses:
+        "201":
+          description: Successfully created a new user.
+        "400":
+          description: Bad Request - Invalid data (probably an invalid photo) provided.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "401":
+          description: Unauthorized - missing or invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to create the user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags:
+        - Users
+      summary: Get a user's info
+      description: Get the maximum amount of information about a user that the current user is authorized to see.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: The ID of the user to get information for (for the contextual user, this should just be "me").
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved user information.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    title: Contextual user profile
+                    $ref: "#/components/schemas/User"
+                  - type: object
+                    title: Friend profile
+                    $ref: "#/components/schemas/UserFriendProfile"
+                  - type: object
+                    title: Non-friend profile
+                    $ref: "#/components/schemas/UserLimitedProfile"
+        "401":
+          description: Unauthorized - User is not authorized to view this information or missing/invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "404":
+          description: Not Found - User with the specified `userId` does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to retrieve the user information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+    put:
+      operationId: updateUser
+      tags:
+        - Users
+      summary: Update a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: The ID of the user to update (for the contextual user, this should just be "me").
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: object
+                  title: interested sections
+                  $ref: "#/components/schemas/InterestedSectionsUpdate"
+                - type: object
+                  title: courses taken
+                  $ref: "#/components/schemas/CoursesTakenUpdate"
+                - type: object
+                  title: personal information
+                  $ref: "#/components/schemas/PersonalInfo"
+                - type: object
+                  title: preferences
+                  $ref: "#/components/schemas/Preferences"
+                - type: object
+                  title: friends
+                  $ref: "#/components/schemas/FriendsUpdate"
+                - type: object
+                  title: friend requests
+                  $ref: "#/components/schemas/FriendRequestsUpdate"
+      responses:
+        "204":
+          description: Successfully updated user information.
+        "400":
+          description: Bad Request - Invalid data provided for the specified context.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "401":
+          description: Unauthorized - User is not authorized to update this information, or missing/invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "404":
+          description: Not Found - User with the specified `userId` does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to update the user information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+    delete:
+      summary: Delete a user
+      tags:
+        - Users
+      description: Deletes all entries associated with a given userId from the database if the user is authorized
+      operationId: deleteUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: The ID of the user to delete (for the contextual user, this should just be "me").
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Success - User and all of their entries are successfully deleted.
+        "401":
+          description: Unauthorized - User is not authorized to delete these entries, or missing/invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "404":
+          description: Not Found - No entries found for the provided userId.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to complete delete operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+
+components:
+  schemas:
+    AccessTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: An access token (JWT) for the current user.
+        accessTokenExpiration:
+          type: string
+          format: date-time
+          description: The expiration date of the access token, as an ISO-formatted timestamp.
+    ErrorReponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: The error message.
+          example: "Error message."
+    User:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserFriendProfile"
+      properties:
+        preferences:
+          type: object
+          description: The user's preferences for class scheduling.
+          allOf:
+            - $ref: "#/components/schemas/Preferences"
+        friends:
+          type: array
+          description: A list of user objects that the user is friends with.
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/UserFriendProfile"
+        friendRequests:
+          type: array
+          description: A list of user objects that have sent friend requests to the user.
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/UserLimitedProfile"
+            properties:
+              type:
+                type: string
+                description: The type of friend request (incoming or outgoing).
+                enum: ["incoming", "outgoing"]
+                example: "incoming"
+    UserFriendProfile:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserLimitedProfile"
+      properties:
+        interestedSections:
+          type: array
+          description: A list of sections that the user is interested in.
+          items:
+            type: string
+          example: ["P{Natalie Linnell}S{CSCI187-1}"]
+        coursesTaken:
+          type: array
+          description: A list of courses that the user has taken.
+          items:
+            type: string
+          example: ["P{Natalie Linnell}C{CSCI187}"]
+    UserLimitedProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The user's unique ID.
+          example: "jdoe"
+        name:
+          type: string
+          description: The user's full name.
+          example: "John Doe"
+        photo:
+          type: string
+          description: A URL to the user's profile picture.
+          example: "https://scu-schedule-helper.s3.amazonaws.com/u%23jdoe/photo"
+    PersonalInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The user's full name.
+        photo:
+          type: string
+          description: A base64-encoded image of the user's profile picture.
+        subscription:
+          type: string
+          description: A stringified webpush subscription object.
+      example: { name: "John Doe", photo: "b64 image", subscription: '{
+            endpoint: "https://fcm.googleapis.com/fcm/send/id",
+            expirationTime: null,
+            keys: {
+            p256dh: "",
+            auth: "",
+            },
+            };' }
+    Preferences:
+      type: object
+      properties:
+        preferredTimeRange:
+          type: object
+          description: The user's preferred time range for classes.
+          properties:
+            startHour:
+              type: integer
+            startMinute:
+              type: integer
+            endHour:
+              type: integer
+            endMinute:
+              type: integer
+        scoreWeighting:
+          type: object
+          description: The user's preferred weighting for SCU Evaluations and Rate My Professors scores.
+          properties:
+            weightScuEvals:
+              type: integer
+            weightRmp:
+              type: integer
+      example:
+        {
+          startHour: 8,
+          startMinute: 0,
+          endHour: 18,
+          endMinute: 0,
+          weightScuEvals: 50,
+          weightRmp: 50,
+        }
+    ListUpdate:
+      type: object
+      properties:
+        add:
+          type: array
+          description: Items to add to the list.
+          items:
+            type: string
+        remove:
+          type: array
+          description: Items to remove from the list.
+          items:
+            type: string
+    InterestedSectionsUpdate:
+      type: object
+      description: An object containing sections to add or remove from the user's interested sections.
+      allOf:
+        - $ref: "#/components/schemas/ListUpdate"
+      example:
+        { add: ["P{Natalie Linnell}S{CSCI187-1}"], remove: ["P{Natalie Linnell}S{CSCI187-2}"] }
+    CoursesTakenUpdate:
+      type: object
+      description: An object containing courses to add or remove from the user's taken courses.
+      allOf:
+        - $ref: "#/components/schemas/ListUpdate"
+      example: { add: ["P{Natalie Linnell}C{CSCI187}"], remove: ["P{Natalie Linnell}C{CSCI161}"] }
+    FriendsUpdate:
+      type: object
+      description: An object containing users to add or remove from the user's friends list.
+      allOf:
+        - $ref: "#/components/schemas/ListUpdate"
+      example: { add: ["userd1", "userId2"], remove: ["userId3", "userId4"] }
+    FriendRequestsUpdate:
+      type: object
+      properties:
+        send:
+          type: array
+          description: Friend requests to send to other users.
+          items:
+            type: string
+        removeIncoming:
+          type: array
+          description: Friend requests to remove from the user's incoming friend requests.
+          items:
+            type: string
+        removeOutgoing:
+          type: array
+          description: Friend requests to remove from the user's outgoing friend requests.
+          items:
+            type: string
+      example:
+        {
+          send: ["userd1", "userId2"],
+          removeIncoming: ["userId3", "userId4"],
+          removeOutgoing: ["userId5", "userId6"],
+        }
+    ProfessorAggregateRatings:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of rating (prof).
+          enum: ["prof", "course"]
+        overall:
+          description: The overall ratings (aggregated across all data) for the professor.
+          $ref: "#/components/schemas/Rating"
+      patternProperties:
+        ".*":
+          description: The rating of the professor for a department or specific course. The key is the department code or course code.
+          oneOf:
+            - $ref: "#/components/schemas/RatingWithRecentTerms"
+              title: Course rating
+            - $ref: "#/components/schemas/Rating"
+              title: Department rating
+      example:
+        {
+          "John Doe":
+            {
+              "type": "prof",
+              "overall":
+                {
+                  "qualityTotal": 5,
+                  "qualityCount": 1,
+                  "difficultyTotal": 4.3,
+                  "difficultyCount": 1,
+                  "workloadTotal": 3.166,
+                  "workloadCount": 1,
+                  "qualityAvg": 5,
+                  "difficultyAvg": 4.3,
+                  "workloadAvg": 3.166,
+                },
+              "EDUC":
+                {
+                  "qualityTotal": 5,
+                  "qualityCount": 1,
+                  "difficultyTotal": 4.3,
+                  "difficultyCount": 1,
+                  "workloadTotal": 3.166,
+                  "workloadCount": 1,
+                  "qualityAvg": 5,
+                  "difficultyAvg": 4.3,
+                  "workloadAvg": 3.166,
+                },
+              "EDUC257E":
+                {
+                  "qualityTotal": 5,
+                  "qualityCount": 1,
+                  "difficultyTotal": 4.3,
+                  "difficultyCount": 1,
+                  "workloadTotal": 3.166,
+                  "workloadCount": 1,
+                  "qualityAvg": 5,
+                  "difficultyAvg": 4.3,
+                  "workloadAvg": 3.166,
+                  "recentTerms": ["Summer 2024"],
+                },
+            },
+        }
+    CourseAggregateRating:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/RatingWithRecentTerms"
+      properties:
+        courseName:
+          type: string
+          description: The name of the course (not the course code).
+          example: "Managing Operations, Technologies & Supply Chains"
+        professors:
+          type: array
+          description: A list of professor objects that have taught the course.
+          items:
+            type: string
+          example: ["John Doe"]
+        type:
+          type: string
+          description: The type of rating (course).
+          enum: ["prof", "course"]
+          example: "course"
+    RatingWithRecentTerms:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/Rating"
+      properties:
+        recentTerms:
+          type: array
+          description: The terms that the course has been taught in, sorted by recency.
+          items:
+            type: string
+          example: ["Fall 2019, Winter 2019, Summer 2018"]
+    Rating:
+      type: object
+      properties:
+        qualityTotal:
+          type: number
+          description: The total quality rating of the professor.
+        qualityCount:
+          type: integer
+          description: The number of quality ratings for the professor.
+        difficultyTotal:
+          type: number
+          description: The total difficulty rating of the professor.
+        difficultyCount:
+          type: integer
+          description: The number of difficulty ratings for the professor.
+        workloadTotal:
+          type: number
+          description: The total workload rating of the professor.
+        workloadCount:
+          type: integer
+          description: The number of workload ratings for the professor.
+        qualityAvg:
+          type: number
+          description: The average quality rating of the professor (between 0-5).
+        difficultyAvg:
+          type: number
+          description: The average difficulty rating of the professor (between 0-5).
+        workloadAvg:
+          type: number
+          description: The average workload (in hours/week) of the professor (between 0-15).
+      example:
+        {
+          qualityTotal: 4.34,
+          qualityCount: 1,
+          difficultyTotal: 4.3,
+          difficultyCount: 1,
+          workloadTotal: 3.16,
+          workloadCount: 1,
+          qualityAvg: 5,
+          difficultyAvg: 4.3,
+          workloadAvg: 3.16,
+        }
+  securitySchemes:
+    bearerAccessToken:
+      description: A bearer access token issued by our server. The subject of the token is the user ID of the contextual user.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    oauth:
+      description: An OAuth token generated for our Google Cloud app by Google. Used in the authorization header as "OAuth {token}"
+      type: http
+      scheme: oauth
+    bearerRefreshToken:
+      description: A refresh token issued by our server. The type of the token is "refresh"
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAccessToken: []

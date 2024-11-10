@@ -32,28 +32,28 @@ export default async function generateAggregateEvalsFile() {
 
 function generateNewAggregateRating(currentRating, evaluation, includeRecentTerms, isCourseEval) {
   const newRating = {
-    quality_total: currentRating.quality_total + evaluation.qualityRating,
-    quality_count: currentRating.quality_count + 1,
-    difficulty_total: currentRating.difficulty_total + evaluation.difficultyRating ?? 0,
-    difficulty_count: currentRating.difficulty_count + (evaluation.difficultyRating ? 1 : 0),
-    workload_total: currentRating.workload_total + evaluation.workloadRating ?? 0,
-    workload_count: currentRating.workload_count + (evaluation.workloadRating ? 1 : 0),
+    qualityTotal: currentRating.qualityTotal + evaluation.qualityRating,
+    qualityCount: currentRating.qualityCount + 1,
+    difficultyTotal: currentRating.difficultyTotal + evaluation.difficultyRating ?? 0,
+    difficultyCount: currentRating.difficultyCount + (evaluation.difficultyRating ? 1 : 0),
+    workloadTotal: currentRating.workloadTotal + evaluation.workloadRating ?? 0,
+    workloadCount: currentRating.workloadCount + (evaluation.workloadRating ? 1 : 0),
   };
-  newRating.quality_avg = newRating.quality_total / newRating.quality_count;
-  newRating.difficulty_avg = newRating.difficulty_total / newRating.difficulty_count;
-  newRating.workload_avg = newRating.workload_total / newRating.workload_count;
+  newRating.qualityAvg = newRating.qualityTotal / newRating.qualityCount;
+  newRating.difficultyAvg = newRating.difficultyTotal / newRating.difficultyCount;
+  newRating.workloadAvg = newRating.workloadTotal / newRating.workloadCount;
   if (includeRecentTerms) {
-    const recent_terms_set = new Set(currentRating.recent_terms);
-    recent_terms_set.add(evalsAndTerms.termIdsToTermNames[evaluation.term]);
-    newRating.recent_terms = Array.from(recent_terms_set).sort(mostRecentTermFirst);
+    const recentTermsSet = new Set(currentRating.recentTerms);
+    recentTermsSet.add(evalsAndTerms.termIdsToTermNames[evaluation.term]);
+    newRating.recentTerms = Array.from(recentTermsSet).sort(mostRecentTermFirst);
   }
   if (isCourseEval) {
-    if (newRating.recent_terms[0] === evalsAndTerms.termIdsToTermNames[evaluation.term]) {
+    if (newRating.recentTerms[0] === evalsAndTerms.termIdsToTermNames[evaluation.term]) {
       newRating.courseName = evaluation.courseName;
     }
-    const profs_set = new Set(currentRating.professors);
-    profs_set.add(evaluation.profName);
-    newRating.professors = Array.from(profs_set).sort();
+    const profsSet = new Set(currentRating.professors);
+    profsSet.add(evaluation.profName);
+    newRating.professors = Array.from(profsSet).sort();
     newRating.type = "course";
   }
   return newRating;
@@ -61,15 +61,15 @@ function generateNewAggregateRating(currentRating, evaluation, includeRecentTerm
 
 function getDefaultRating() {
   return {
-    quality_total: 0,
-    quality_count: 0,
-    quality_avg: 0, // quality_total / quality_count
-    difficulty_total: 0,
-    difficulty_count: 0,
-    difficulty_avg: 0, // difficulty_total / difficulty_count
-    workload_total: 0,
-    workload_count: 0,
-    workload_avg: 0, // workload_total / workload_count
+    qualityTotal: 0,
+    qualityCount: 0,
+    qualityAvg: 0, // qualityTotal / qualityCount
+    difficultyTotal: 0,
+    difficultyCount: 0,
+    difficultyAvg: 0, // difficultyTotal / difficultyCount
+    workloadTotal: 0,
+    workloadCount: 0,
+    workloadAvg: 0, // workloadTotal / workloadCount
   };
 }
 
