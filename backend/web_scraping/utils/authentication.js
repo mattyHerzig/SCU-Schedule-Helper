@@ -33,7 +33,7 @@ export async function authenticate(username, password) {
       console.log("***************************ACTION REQUIRED***************************");
       console.log("Mobile request sent for authentication. Please approve on your phone.");
       // Press other options, in case the user isn't using mobile push.
-      const otherOptionsButton = await page.waitForSelector("::-p-text(Other options)");
+      const otherOptionsButton = await page.waitForSelector(".other-options-link");
       await otherOptionsButton.tap();
       console.log("Waiting for Duo Push button to appear...");
       // Wait for the Duo Push button to appear, and tap it.
