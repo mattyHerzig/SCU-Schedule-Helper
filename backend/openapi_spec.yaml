@@ -14,7 +14,7 @@ servers:
     description: Production server
 
 paths:
-  /authToken:
+  /auth_token:
     get:
       tags:
         - Authentication
@@ -49,7 +49,7 @@ paths:
                           name:
                             type: string
                             description: The user's full name.
-                          picture:
+                          photoUrl:
                             type: string
                             description: A URL to the user's Google profile picture.
                   - type: object
@@ -174,7 +174,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorReponse"
-  /users:
+  /user:
     post:
       summary: Create a new user
       tags:
@@ -187,34 +187,30 @@ paths:
           application/json:
             schema:
               type: object
+              allOf:
+                - $ref: "#/components/schemas/PersonalInfo"
               required:
                 - name
                 - subscription
               properties:
-                name:
-                  type: string
-                  description: The user's full name.
-                  example: John Doe
-                subscription:
-                  type: string
-                  description: A stringified webpush subscription object (so that they can receive notifications from our server).
-                  example: '{
-                    endpoint: "https://fcm.googleapis.com/fcm/send/id",
-                    expirationTime: null,
-                    keys: {
-                    p256dh: "",
-                    auth: "",
-                    },
-                    };'
-                photo:
-                  type: string
-                  description: A base64-encoded image of the user's profile picture.
                 photoUrl:
                   type: string
                   description: A URL to the user's profile picture.
       responses:
         "201":
           description: Successfully created a new user.
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: "#/components/schemas/UserLimitedProfile"
+                properties:
+                  subscriptions:
+                    type: array
+                    description: An array of stringified webpush subscription objects.
+                    items:
+                      type: string
         "400":
           description: Bad Request - Invalid data (probably an invalid photo) provided.
           content:
@@ -233,7 +229,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorReponse"
-  /users/{userId}:
+  /user/{userId}:
     get:
       operationId: getUser
       tags:
@@ -307,10 +303,10 @@ paths:
                   $ref: "#/components/schemas/CoursesTakenUpdate"
                 - type: object
                   title: personal information
-                  $ref: "#/components/schemas/PersonalInfo"
+                  $ref: "#/components/schemas/PersonalInfoUpdate"
                 - type: object
                   title: preferences
-                  $ref: "#/components/schemas/Preferences"
+                  $ref: "#/components/schemas/PreferencesUpdate"
                 - type: object
                   title: friends
                   $ref: "#/components/schemas/FriendsUpdate"
@@ -456,7 +452,11 @@ components:
           type: string
           description: The user's full name.
           example: "John Doe"
-        photo:
+        email:
+          type: string
+          description: The user's email address.
+          example: "jdoe@scu.edu"
+        photoUrl:
           type: string
           description: A URL to the user's profile picture.
           example: "https://scu-schedule-helper.s3.amazonaws.com/u%23jdoe/photo"
@@ -483,7 +483,7 @@ components:
     Preferences:
       type: object
       properties:
-        preferredTimeRange:
+        preferredSectionTimeRange:
           type: object
           description: The user's preferred time range for classes.
           properties:
@@ -504,14 +504,14 @@ components:
             weightRmp:
               type: integer
       example:
-        {
-          startHour: 8,
-          startMinute: 0,
-          endHour: 18,
-          endMinute: 0,
-          weightScuEvals: 50,
-          weightRmp: 50,
-        }
+        preferredSectionTimeRange:
+          startHour: 8
+          startMinute: 0
+          endHour: 18
+          endMinute: 0
+        scoreWeighting:
+          weightScuEvals: 50
+          weightRmp: 50
     ListUpdate:
       type: object
       properties:
@@ -528,53 +528,83 @@ components:
     InterestedSectionsUpdate:
       type: object
       description: An object containing sections to add or remove from the user's interested sections.
-      allOf:
-        - $ref: "#/components/schemas/ListUpdate"
+      properties:
+        interestedSections:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ListUpdate"
       example:
-        {
-          add: ["P{Natalie Linnell}S{CSCI187-1}"],
-          remove: ["P{Natalie Linnell}S{CSCI187-2}"],
-        }
+        interestedSections:
+          {
+            add: ["P{Natalie Linnell}S{CSCI187-1}"],
+            remove: ["P{Natalie Linnell}S{CSCI187-2}"],
+          }
     CoursesTakenUpdate:
       type: object
       description: An object containing courses to add or remove from the user's taken courses.
-      allOf:
-        - $ref: "#/components/schemas/ListUpdate"
+      properties:
+        coursesTaken:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ListUpdate"
       example:
-        {
-          add: ["P{Natalie Linnell}C{CSCI187}"],
-          remove: ["P{Natalie Linnell}C{CSCI161}"],
-        }
+        coursesTaken:
+          {
+            add: ["P{Natalie Linnell}C{CSCI187}"],
+            remove: ["P{Natalie Linnell}C{CSCI161}"],
+          }
+    PersonalInfoUpdate:
+      type: object
+      properties:
+        personalInfo:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/PersonalInfo"
+    PreferencesUpdate:
+      type: object
+      properties:
+        preferences:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/Preferences"
     FriendsUpdate:
       type: object
       description: An object containing users to add or remove from the user's friends list.
-      allOf:
-        - $ref: "#/components/schemas/ListUpdate"
-      example: { add: ["userd1", "userId2"], remove: ["userId3", "userId4"] }
+      properties:
+        friends:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ListUpdate"
+      example:
+        friends: { add: ["userd1", "userId2"], remove: ["userId3", "userId4"] }
     FriendRequestsUpdate:
       type: object
       properties:
-        send:
-          type: array
-          description: Friend requests to send to other users.
-          items:
-            type: string
-        removeIncoming:
-          type: array
-          description: Friend requests to remove from the user's incoming friend requests.
-          items:
-            type: string
-        removeOutgoing:
-          type: array
-          description: Friend requests to remove from the user's outgoing friend requests.
-          items:
-            type: string
+        friendRequests:
+          type: object
+          properties:
+            send:
+              type: array
+              description: Friend requests to send to other users.
+              items:
+                type: string
+            removeIncoming:
+              type: array
+              description: Friend requests to remove from the user's incoming friend requests.
+              items:
+                type: string
+            removeOutgoing:
+              type: array
+              description: Friend requests to remove from the user's outgoing friend requests.
+              items:
+                type: string
       example:
-        {
-          send: ["userd1", "userId2"],
-          removeIncoming: ["userId3", "userId4"],
-          removeOutgoing: ["userId5", "userId6"],
-        }
+        friendRequests:
+          {
+            send: ["userd1", "userId2"],
+            removeIncoming: ["userId3", "userId4"],
+            removeOutgoing: ["userId5", "userId6"],
+          }
     ProfessorAggregateRatings:
       type: object
       properties:

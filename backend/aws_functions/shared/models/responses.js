@@ -55,18 +55,6 @@ export const resourceNotFoundError = (resource) => {
   };
 };
 
-export const unsupportedMethodError = (resource, method) => {
-  return {
-    statusCode: 405,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message: `Resource "${resource}" does not support the ${method} method.`,
-    }),
-  };
-};
-
 export const internalServerError = (error) => {
   return {
     statusCode: 500,

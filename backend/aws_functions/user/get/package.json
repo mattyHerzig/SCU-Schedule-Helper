@@ -1,16 +1,16 @@
 {
-  "name": "delete_user",
+  "name": "get_user",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Ethan Sartory",
+  "author": "Stevie Dean",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.682.0",
+    "@aws-sdk/client-dynamodb": "^3.687.0",
     "jsonwebtoken": "^9.0.2"
   }
 }
