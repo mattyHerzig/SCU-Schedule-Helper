@@ -25,10 +25,16 @@ export default function AuthButton() {
 
     setIsLoading(true);
     try {
-      const [success, message] = await chrome.runtime.sendMessage('authorize');
+      // Simulate login response with user info and token
+      const [success, message, userData] = await chrome.runtime.sendMessage('authorize');
+      
       if (success) {
+        const { accessToken, userInfo } = userData; // Assume userData includes accessToken and userInfo
+        // Save access token and user info in chrome storage
+        await chrome.storage.sync.set({ accessToken, userInfo });
         setIsLoggedIn(true);
-        // Notify parent component of login success
+
+        // Notify other components of login success
         window.dispatchEvent(new CustomEvent('auth-status-changed', { detail: { isLoggedIn: true } }));
       } else {
         console.error('Login failed:', message);

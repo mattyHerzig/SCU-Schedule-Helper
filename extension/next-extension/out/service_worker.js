@@ -11,6 +11,27 @@ const defaults = {
 
 const downloadEvalsUrl = "https://api.scu-schedule-helper.me/evals"; // also in `manifest.json`
 
+async function fetchUserInfo(token) {
+  const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (userInfoResponse.ok) {
+    const userInfo = await userInfoResponse.json();
+    await chrome.storage.sync.set({
+      accessToken: data.accessToken,
+      accessTokenExpirationDate: data.accessTokenExpirationDate,
+      refreshToken: data.refreshToken,
+      userInfo: {
+        name: userInfo.name,
+        email: userInfo.email,
+      },
+    });
+  }
+}
+
 async function authorize() {
   try {
     await chrome.identity.clearAllCachedAuthTokens();
@@ -28,11 +49,15 @@ async function authorize() {
     if (response.status !== 200) {
       return [false, `Authorization failed. ${data.message}`];
     }
+
     await chrome.storage.sync.set({
       accessToken: data.accessToken,
       accessTokenExpirationDate: data.accessTokenExpirationDate,
       refreshToken: data.refreshToken,
     });
+
+    await fetchUserInfo(data.accessToken);
+
     return [true, ""];
   } catch (error) {
     return [false, "Authorization failed. User cancelled."];
@@ -69,15 +94,21 @@ async function decodeAndDecompress(base64EncodedGzippedData) {
   return jsonData;
 }
 
+
 async function downloadEvalsIfNeeded() {
-  const { oauth_token: oAuthToken } = await chrome.storage.sync.get("oauth_token");
+  const { oauth_token: oAuthToken, accessToken } = await chrome.storage.sync.get([
+    "oauth_token",
+    "accessToken",
+  ]);
   const { evals_expiration_date: evalsExpirationDate } = await chrome.storage.local.get(
     "evals_expiration_date"
   );
+
   if (oAuthToken && (evalsExpirationDate === undefined || evalsExpirationDate < new Date())) {
-    await downloadEvals();
+    await downloadEvals(accessToken);
   }
 }
+
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
@@ -131,17 +162,23 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
   });
 });
 
-chrome.runtime.onInstalled.addListener((details) => {
-  chrome.storage.sync.get("oauth_token", ({ oauth_token: oAuthToken }) => {
+/*
+chrome.runtime.onInstalled.addListener(async (details) => {
+  chrome.storage.sync.get("oauth_token", async ({ oauth_token: oAuthToken }) => {
     if (!oAuthToken) {
-      chrome.tabs.create({ url: chrome.runtime.getURL("tab/tab.html") });
+      chrome.tabs.create({ url: chrome.runtime.getURL("tab/index.html") });
+    } else {
+      const { accessToken } = await chrome.storage.sync.get(["accessToken"]);
+      await fetchUserInfo(accessToken);
     }
   });
-  if (details.reason == "install") {
+
+  if (details.reason === "install") {
     chrome.storage.sync.set(defaults);
   }
   // else if (details.reason == "update") {}
 });
+*/
 
 self.addEventListener("push", function (event) {
   console.log(`Push had this data/text: "${event.data.text()}"`);
@@ -152,10 +189,12 @@ self.addEventListener("activate", (event) => {
   chrome.storage.sync.set({ serverSubscription });
 });
 
+/*
 // Download evals on startup if download was interrupted, or evals are expired
 chrome.runtime.onStartup.addListener(() => {
   downloadEvalsIfNeeded();
 });
+*/
 
 const SERVER_PUBLIC_KEY =
   "BLMxe4dFTN6sJ7U-ZFXgHUyhlI5udo11b4curIyRfCdGZMYjDx4kFoV3ejHzDf4hNZQOmW3UP6_dgyYTdg3LDIE";
@@ -187,23 +226,4 @@ function urlB64ToUint8Array(base64String) {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
-}
-
-const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-
-if (userInfoResponse.ok) {
-  const userInfo = await userInfoResponse.json();
-  await chrome.storage.sync.set({
-    accessToken: data.accessToken,
-    accessTokenExpirationDate: data.accessTokenExpirationDate,
-    refreshToken: data.refreshToken,
-    userInfo: {
-      name: userInfo.name,
-      email: userInfo.email,
-    },
-  });
 }
