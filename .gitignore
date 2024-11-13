@@ -3,7 +3,7 @@ exclude
 dist
 testing
 persistent_data
-
+out
 .env
 *.zip
 *.next
