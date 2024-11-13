@@ -38,7 +38,7 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   }
   let teacherInfoString = html.substring(
     openingBraceIndex,
-    closingBraceIndex + 1
+    closingBraceIndex + 1,
   );
   let teacherData = JSON.parse(teacherInfoString);
   if (debuggingEnabled) console.log(teacherData);
@@ -61,7 +61,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
     let closingBraceIndex = html.indexOf("}", indexOfSchool);
     let schoolInfoString = html.substring(
       openingBraceIndex,
-      closingBraceIndex + 1
+      closingBraceIndex + 1,
     );
     let schoolData = JSON.parse(schoolInfoString);
     if (schoolData.name == "Santa Clara University") {
@@ -81,7 +81,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
     let closingBraceIndex = html.indexOf("}", indexOfSaved);
     let teacherInfoString = html.substring(
       openingBraceIndex,
-      closingBraceIndex + 1
+      closingBraceIndex + 1,
     );
     let teacherData = JSON.parse(teacherInfoString);
     if (debuggingEnabled) console.log(teacherData);
@@ -90,7 +90,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
       // Get the most updated data for the teacher.
       teacherData = await scrapeProfessorPage(
         teacherData.legacyId,
-        debuggingEnabled
+        debuggingEnabled,
       );
     }
     if (teacherData.numRatings > 0) teachers.push(teacherData);
@@ -158,7 +158,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   if (entry == null && preferredFirstName != "") {
     data = await scrapeRmpRatings(
       preferredFirstName + " " + lastName,
-      debuggingEnabled
+      debuggingEnabled,
     );
     if (data.length == 1) {
       entry = data[0];
@@ -183,7 +183,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   if (entry == null) {
     data = await scrapeRmpRatings(
       realFirstName + " " + lastName,
-      debuggingEnabled
+      debuggingEnabled,
     );
     if (data.length == 1) {
       entry = data[0];
@@ -228,7 +228,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
           lastName,
           "\nRMP:",
           firstNameReceived,
-          lastNameReceived
+          lastNameReceived,
         );
       entry = null;
     }
@@ -245,7 +245,7 @@ async function getRmpRatings(rawProfName, debuggingEnabled = false) {
           lastName,
           "\nRMP:",
           firstNameReceived,
-          lastNameReceived
+          lastNameReceived,
         );
       entry = null;
     }

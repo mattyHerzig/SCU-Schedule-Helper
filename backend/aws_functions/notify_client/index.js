@@ -4,7 +4,7 @@ webpush.setGCMAPIKey(process.env.FIREBASE_API_KEY);
 webpush.setVapidDetails(
   "mailto:stephenwdean@gmail.com",
   process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
+  process.env.VAPID_PRIVATE_KEY,
 );
 
 // TODO: Actually get the user's push subscription from DDB.

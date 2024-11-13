@@ -1,27 +1,39 @@
 import jwtLib from "jsonwebtoken";
-import { GetAuthTokenResponse, OAuthInfo, unauthorizedError, validResponse } from "./model.js";
+import {
+  GetAuthTokenResponse,
+  OAuthInfo,
+  unauthorizedError,
+  validResponse,
+} from "./model.js";
 
 const ERRORS = {
   NO_HEADER: "no authorization header provided.",
-  BAD_HEADER: "authorization header must provide an issued refresh token or a Google OAuth token.",
+  BAD_HEADER:
+    "authorization header must provide an issued refresh token or a Google OAuth token.",
   GOOGLE_OAUTH_ERROR: "error fetching user info from Google",
   BAD_EMAIL: "invalid email (not in scu.edu).",
   EMAIL_NOT_VERIFIED: "invalid email (email is not verified).",
   BAD_REFRESH_TOKEN: "could not verify refresh token",
-  INVALID_TOKEN_TYPE: "invalid token type (provided access token, expected refresh token)",
+  INVALID_TOKEN_TYPE:
+    "invalid token type (provided access token, expected refresh token)",
 };
 
 export async function handler(event, context) {
   const userAuthorization = await getUserAuthorization(event);
-  if (userAuthorization.userId == null) return unauthorizedError(userAuthorization.authError);
+  if (userAuthorization.userId == null)
+    return unauthorizedError(userAuthorization.authError);
   else {
     let tokenResponse = new GetAuthTokenResponse();
-    tokenResponse.accessToken = generateDataAccessToken(userAuthorization.userId);
+    tokenResponse.accessToken = generateDataAccessToken(
+      userAuthorization.userId,
+    );
     // 2 days less than a year (the actual expiration date), just to be safe :)
     let tokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 363);
     tokenResponse.accessTokenExpirationDate = tokenExpDate.toISOString();
     if (userAuthorization.oAuthInfo != null) {
-      tokenResponse.refreshToken = generateRefreshToken(userAuthorization.userId);
+      tokenResponse.refreshToken = generateRefreshToken(
+        userAuthorization.userId,
+      );
       tokenResponse.oAuthInfo = userAuthorization.oAuthInfo;
     }
     return validResponse(tokenResponse);
@@ -33,21 +45,29 @@ async function getUserAuthorization(event) {
     return { authError: ERRORS.NO_HEADER };
   const authorizationHeader = event.headers.authorization;
   const authType = authorizationHeader.split(" ")[0];
-  if (authorizationHeader.split(" ").length !== 2 || !["OAuth", "Bearer"].includes(authType)) {
+  if (
+    authorizationHeader.split(" ").length !== 2 ||
+    !["OAuth", "Bearer"].includes(authType)
+  ) {
     return {
       authError: ERRORS.BAD_HEADER,
     };
   }
-  if (authType === "OAuth") return await verifyGoogleOAuthToken(authorizationHeader.split(" ")[1]);
-  else if (authType === "Bearer") return verifyRefreshToken(authorizationHeader.split(" ")[1]);
+  if (authType === "OAuth")
+    return await verifyGoogleOAuthToken(authorizationHeader.split(" ")[1]);
+  else if (authType === "Bearer")
+    return verifyRefreshToken(authorizationHeader.split(" ")[1]);
 }
 
 async function verifyGoogleOAuthToken(accessToken) {
-  const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+  const response = await fetch(
+    "https://www.googleapis.com/oauth2/v3/userinfo",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     },
-  });
+  );
   const personInfo = await response.json();
 
   if (personInfo.error) {
@@ -65,7 +85,11 @@ async function verifyGoogleOAuthToken(accessToken) {
   } else {
     return {
       userId: personInfo.email.split("@")[0],
-      oAuthInfo: new OAuthInfo(personInfo.email, personInfo.name, personInfo.picture),
+      oAuthInfo: new OAuthInfo(
+        personInfo.email,
+        personInfo.name,
+        personInfo.picture,
+      ),
     };
   }
 }
@@ -87,7 +111,9 @@ function verifyRefreshToken(refreshToken) {
 }
 
 function generateDataAccessToken(userId) {
-  return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, { expiresIn: "1y" });
+  return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, {
+    expiresIn: "1y",
+  });
 }
 
 function generateRefreshToken(userId) {

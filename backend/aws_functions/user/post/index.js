@@ -1,4 +1,8 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  GetItemCommand,
+  PutItemCommand,
+} from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {
   validResponse,
@@ -18,7 +22,11 @@ const retryMode = "standard";
 const ddbRegion = process.env.AWS_DDB_REGION;
 const s3Region = process.env.AWS_S3_REGION;
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
-const dynamoDBClient = new DynamoDBClient({ ddbRegion, maxAttempts, retryMode });
+const dynamoDBClient = new DynamoDBClient({
+  ddbRegion,
+  maxAttempts,
+  retryMode,
+});
 const s3Client = new S3Client({ s3Region });
 
 export async function handler(event, context) {
@@ -33,7 +41,7 @@ async function handlePostUserRequest(event, context, userId) {
     if (!request.name) missingFields.push("name");
     if (!request.notification_id) missingFields.push("notification_id");
     return badRequestResponse(
-      `missing required fields. Required fields: ${missingFields.join(", ")}.`
+      `missing required fields. Required fields: ${missingFields.join(", ")}.`,
     );
   }
 
@@ -60,7 +68,12 @@ async function handlePostUserRequest(event, context, userId) {
 
   // Add the user to the database.
   try {
-    return await addUserToDatabase(userId, request.name, request.notification_id, photoURL);
+    return await addUserToDatabase(
+      userId,
+      request.name,
+      request.notification_id,
+      photoURL,
+    );
   } catch (error) {
     console.error(error);
     return internalServerError(`error adding user to database.`);
@@ -83,7 +96,7 @@ async function userAlreadyExists(userId) {
   const response = await dynamoDBClient.send(command);
   if (response.$metadata.httpStatusCode !== 200) {
     throw new Error(
-      `error checking if user already exists (received HTTP status code from DynamoDB: ${response.$metadata.httpStatusCode}).`
+      `error checking if user already exists (received HTTP status code from DynamoDB: ${response.$metadata.httpStatusCode}).`,
     );
   }
   return response.Item !== undefined;
@@ -101,7 +114,7 @@ async function uploadUserPhotoToS3(userId, base64EncodedPhoto) {
   const s3Response = await s3Client.send(new PutObjectCommand(photoParams));
   if (s3Response.$metadata.httpStatusCode !== 200) {
     throw new Error(
-      `error uploading profile photo to S3 (received HTTP status code from S3: ${s3Response.$metadata.httpStatusCode}).`
+      `error uploading profile photo to S3 (received HTTP status code from S3: ${s3Response.$metadata.httpStatusCode}).`,
     );
   }
   return `https://${
@@ -126,9 +139,16 @@ async function addUserToDatabase(userId, name, notificationId, photoUrl) {
   const dbResponse = await dynamoDBClient.send(new PutItemCommand(putInput));
   if (dbResponse.$metadata.httpStatusCode !== 200) {
     throw new Error(
-      `error adding user to database (received HTTP status code from DynamoDB: ${dbResponse.$metadata.httpStatusCode}).`
+      `error adding user to database (received HTTP status code from DynamoDB: ${dbResponse.$metadata.httpStatusCode}).`,
     );
   }
-  const createdUserProfile = new Profile(name, photoUrl, `${userId}@scu.edu`, notificationId);
-  return createdResponse(new CreatedUserResponse(userId, new PublicInfo(createdUserProfile)));
+  const createdUserProfile = new Profile(
+    name,
+    photoUrl,
+    `${userId}@scu.edu`,
+    notificationId,
+  );
+  return createdResponse(
+    new CreatedUserResponse(userId, new PublicInfo(createdUserProfile)),
+  );
 }

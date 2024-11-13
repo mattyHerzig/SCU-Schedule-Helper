@@ -11,56 +11,37 @@ const defaults = {
 
 const downloadEvalsUrl = "https://api.scu-schedule-helper.me/evals"; // also in `manifest.json`
 
-async function fetchUserInfo(token) {
-  const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (userInfoResponse.ok) {
-    const userInfo = await userInfoResponse.json();
-    await chrome.storage.sync.set({
-      accessToken: data.accessToken,
-      accessTokenExpirationDate: data.accessTokenExpirationDate,
-      refreshToken: data.refreshToken,
-      userInfo: {
-        name: userInfo.name,
-        email: userInfo.email,
-      },
-    });
-  }
-}
-
 async function authorize() {
   try {
     await chrome.identity.clearAllCachedAuthTokens();
     const { token } = await chrome.identity.getAuthToken({
       interactive: true,
     });
-    const response = await fetch("https://api.scu-schedule-helper.me/auth_token", {
-      method: "GET",
-      headers: {
-        Authorization: `OAuth ${token}`,
+    const response = await fetch(
+      "https://api.scu-schedule-helper.me/auth_token",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `OAuth ${token}`,
+        },
       },
-    });
+    );
     const data = await response.json();
 
     if (response.status !== 200) {
-      return [false, `Authorization failed. ${data.message}`];
+      return `Authorization failed. ${data.message}`;
     }
 
     await chrome.storage.sync.set({
       accessToken: data.accessToken,
       accessTokenExpirationDate: data.accessTokenExpirationDate,
       refreshToken: data.refreshToken,
+      oAuthInfo: data.oAuthInfo,
     });
 
-    await fetchUserInfo(data.accessToken);
-
-    return [true, ""];
+    return null;
   } catch (error) {
-    return [false, "Authorization failed. User cancelled."];
+    return "Authorization failed. User cancelled.";
   }
 }
 
@@ -87,28 +68,26 @@ async function decodeAndDecompress(base64EncodedGzippedData) {
   }
 
   const decompressedStream = new Response(binaryData).body.pipeThrough(
-    new DecompressionStream("gzip")
+    new DecompressionStream("gzip"),
   );
   const decompressedText = await new Response(decompressedStream).text();
   const jsonData = JSON.parse(decompressedText);
   return jsonData;
 }
 
-
 async function downloadEvalsIfNeeded() {
-  const { oauth_token: oAuthToken, accessToken } = await chrome.storage.sync.get([
-    "oauth_token",
-    "accessToken",
-  ]);
-  const { evals_expiration_date: evalsExpirationDate } = await chrome.storage.local.get(
-    "evals_expiration_date"
-  );
+  const { oauth_token: oAuthToken, accessToken } =
+    await chrome.storage.sync.get(["oauth_token", "accessToken"]);
+  const { evals_expiration_date: evalsExpirationDate } =
+    await chrome.storage.local.get("evals_expiration_date");
 
-  if (oAuthToken && (evalsExpirationDate === undefined || evalsExpirationDate < new Date())) {
+  if (
+    oAuthToken &&
+    (evalsExpirationDate === undefined || evalsExpirationDate < new Date())
+  ) {
     await downloadEvals(accessToken);
   }
 }
-
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
@@ -138,7 +117,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "authorize":
-      authorize().then(([authorized, failStatus]) => sendResponse([authorized, failStatus]));
+      authorize().then(([authorized, failStatus]) =>
+        sendResponse([authorized, failStatus]),
+      );
       return true; // Keep the message channel open for asynchronous response
 
     case "downloadEvals":
@@ -154,10 +135,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
     if (tab.url && tab.url.startsWith("https://www.myworkday.com/scu/")) {
-      chrome.tabs.sendMessage(activeInfo.tabId, "settingsChanged", (response) => {
-        if (chrome.runtime.lastError) {
-        } // ignore
-      });
+      chrome.tabs.sendMessage(
+        activeInfo.tabId,
+        "settingsChanged",
+        (response) => {
+          if (chrome.runtime.lastError) {
+          } // ignore
+        },
+      );
     }
   });
 });

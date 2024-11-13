@@ -21,10 +21,12 @@ async function test() {
     let authTokens = new GetAuthTokenResponse();
     Object.assign(authTokens, JSON.parse(response.body));
     console.log(`Access token: ${authTokens.accessToken}\n`);
-    console.log(`Access token expiration date: ${authTokens.accessTokenExpirationDate}\n`);
+    console.log(
+      `Access token expiration date: ${authTokens.accessTokenExpirationDate}\n`,
+    );
     console.log(`Refresh token: ${authTokens.refreshToken}\n`);
     console.log(
-      `OAuth info: email(${authTokens.oAuthInfo.email}) name(${authTokens.oAuthInfo.name}) picture(${authTokens.oAuthInfo.picture})\n\n`
+      `OAuth info: email(${authTokens.oAuthInfo.email}) name(${authTokens.oAuthInfo.name}) picture(${authTokens.oAuthInfo.picture})\n\n`,
     );
   }
 
@@ -48,8 +50,12 @@ async function test() {
     let authTokens2 = new GetAuthTokenResponse();
     Object.assign(authTokens2, JSON.parse(response2.body));
     console.log(`Access token: ${authTokens2.accessToken}\n`);
-    console.log(`Access token expiration date: ${authTokens2.accessTokenExpirationDate}\n`);
-    console.log(`Refresh token (should be null): ${authTokens2.refreshToken}\n`);
+    console.log(
+      `Access token expiration date: ${authTokens2.accessTokenExpirationDate}\n`,
+    );
+    console.log(
+      `Refresh token (should be null): ${authTokens2.refreshToken}\n`,
+    );
     console.log(`OAuth info (should be null): ${authTokens2.oAuthInfo}`);
   }
 }

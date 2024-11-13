@@ -1,28 +1,28 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Slider from '@mui/material/Slider';
-import Typography from '@mui/material/Typography';
+import * as React from "react";
+import Box from "@mui/material/Box";
+import Slider from "@mui/material/Slider";
+import Typography from "@mui/material/Typography";
 
 const marks = [
   {
     value: 1,
-    label: '1',
+    label: "1",
   },
   {
     value: 2,
-    label: '2',
+    label: "2",
   },
   {
     value: 3,
-    label: '3',
+    label: "3",
   },
   {
     value: 4,
-    label: '4',
+    label: "4",
   },
   {
     value: 5,
-    label: '5',
+    label: "5",
   },
 ];
 

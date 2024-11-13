@@ -17,12 +17,15 @@ async function authorize() {
     const { token } = await chrome.identity.getAuthToken({
       interactive: true,
     });
-    const response = await fetch("https://api.scu-schedule-helper.me/auth_token", {
-      method: "GET",
-      headers: {
-        Authorization: `OAuth ${token}`,
+    const response = await fetch(
+      "https://api.scu-schedule-helper.me/auth_token",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `OAuth ${token}`,
+        },
       },
-    });
+    );
     const data = await response.json();
 
     if (response.status !== 200) {
@@ -62,7 +65,7 @@ async function decodeAndDecompress(base64EncodedGzippedData) {
   }
 
   const decompressedStream = new Response(binaryData).body.pipeThrough(
-    new DecompressionStream("gzip")
+    new DecompressionStream("gzip"),
   );
   const decompressedText = await new Response(decompressedStream).text();
   const jsonData = JSON.parse(decompressedText);
@@ -70,11 +73,14 @@ async function decodeAndDecompress(base64EncodedGzippedData) {
 }
 
 async function downloadEvalsIfNeeded() {
-  const { oauth_token: oAuthToken } = await chrome.storage.sync.get("oauth_token");
-  const { evals_expiration_date: evalsExpirationDate } = await chrome.storage.local.get(
-    "evals_expiration_date"
-  );
-  if (oAuthToken && (evalsExpirationDate === undefined || evalsExpirationDate < new Date())) {
+  const { oauth_token: oAuthToken } =
+    await chrome.storage.sync.get("oauth_token");
+  const { evals_expiration_date: evalsExpirationDate } =
+    await chrome.storage.local.get("evals_expiration_date");
+  if (
+    oAuthToken &&
+    (evalsExpirationDate === undefined || evalsExpirationDate < new Date())
+  ) {
     await downloadEvals();
   }
 }
@@ -107,7 +113,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "authorize":
-      authorize().then(([authorized, failStatus]) => sendResponse([authorized, failStatus]));
+      authorize().then(([authorized, failStatus]) =>
+        sendResponse([authorized, failStatus]),
+      );
       return true; // Keep the message channel open for asynchronous response
 
     case "downloadEvals":
@@ -123,10 +131,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
     if (tab.url && tab.url.startsWith("https://www.myworkday.com/scu/")) {
-      chrome.tabs.sendMessage(activeInfo.tabId, "settingsChanged", (response) => {
-        if (chrome.runtime.lastError) {
-        } // ignore
-      });
+      chrome.tabs.sendMessage(
+        activeInfo.tabId,
+        "settingsChanged",
+        (response) => {
+          if (chrome.runtime.lastError) {
+          } // ignore
+        },
+      );
     }
   });
 });

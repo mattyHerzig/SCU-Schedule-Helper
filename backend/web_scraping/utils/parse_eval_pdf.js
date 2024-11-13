@@ -37,7 +37,12 @@ function extractToJson(rawPdfText, pdfName, term) {
     console.error(`PDF ${pdfName} is not an evaluation ${rawPdfText}`);
     return;
   }
-  if (rawPdfText.includes("The evaluation will not be displayed due to low response rate.")) return;
+  if (
+    rawPdfText.includes(
+      "The evaluation will not be displayed due to low response rate.",
+    )
+  )
+    return;
 
   const firstPage = getFirstPage(rawPdfText);
   const lastPage = getLastPage(rawPdfText);
@@ -46,9 +51,14 @@ function extractToJson(rawPdfText, pdfName, term) {
   const courseCode = getCourseCode(firstPage);
   const courseName = getCourseName(profName, lastPage);
 
-  if (profName === null || deptName === null || courseCode === null || courseName === null) {
+  if (
+    profName === null ||
+    deptName === null ||
+    courseCode === null ||
+    courseName === null
+  ) {
     console.error(
-      `Could not find prof name (${profName}), dept name (${deptName}), course code (${courseCode}), or course name (${courseName}) for pdf ${pdfName}`
+      `Could not find prof name (${profName}), dept name (${deptName}), course code (${courseCode}), or course name (${courseName}) for pdf ${pdfName}`,
     );
     return;
   }
@@ -64,7 +74,7 @@ function extractToJson(rawPdfText, pdfName, term) {
     const hasExtraItems = lastPage.includes("1.11");
     if (!hasExtraItems) {
       console.error(
-        `Could not find difficulty or workload rating for eval ${pdfName}, even though it should exist.`
+        `Could not find difficulty or workload rating for eval ${pdfName}, even though it should exist.`,
       );
       return;
     }
@@ -98,7 +108,7 @@ function getLastPage(rawPdfText) {
   const secondLastPageBreak = pageBreaks.pop();
   return rawPdfText.substring(
     rawPdfText.indexOf(secondLastPageBreak) + secondLastPageBreak.length,
-    rawPdfText.indexOf(lastPageBreak)
+    rawPdfText.indexOf(lastPageBreak),
   );
 }
 
@@ -176,11 +186,21 @@ const over15HoursPattern = /15\+(\d+\.?\d*)%/;
 
 function getWorkloadRating(rawPdfText) {
   const percentStudentsUpTo1Hour = rawPdfText.match(upTo1HourPattern);
-  const percentStudentsBetween2And3Hours = rawPdfText.match(between2And3HoursPattern);
-  const percentStudentsBetween4And5Hours = rawPdfText.match(between4And5HoursPattern);
-  const percentStudentsBetween6And7Hours = rawPdfText.match(between6And7HoursPattern);
-  const percentStudentsBetween8And10Hours = rawPdfText.match(between8And10HoursPattern);
-  const percentStudentsBetween11And14Hours = rawPdfText.match(between11And14HoursPattern);
+  const percentStudentsBetween2And3Hours = rawPdfText.match(
+    between2And3HoursPattern,
+  );
+  const percentStudentsBetween4And5Hours = rawPdfText.match(
+    between4And5HoursPattern,
+  );
+  const percentStudentsBetween6And7Hours = rawPdfText.match(
+    between6And7HoursPattern,
+  );
+  const percentStudentsBetween8And10Hours = rawPdfText.match(
+    between8And10HoursPattern,
+  );
+  const percentStudentsBetween11And14Hours = rawPdfText.match(
+    between11And14HoursPattern,
+  );
   const percentStudentsOver15Hours = rawPdfText.match(over15HoursPattern);
 
   if (

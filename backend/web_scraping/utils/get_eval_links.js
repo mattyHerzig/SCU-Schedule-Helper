@@ -22,7 +22,9 @@ export default async function getAndProcessNewEvals() {
   for (const term of schoolsAndTerms.termIds) {
     if (existingTerms.has(term)) {
       hadNonEmptyTerm = true;
-      console.log(`All PDFS from term ${term} have been downloaded already. Skipping...`);
+      console.log(
+        `All PDFS from term ${term} have been downloaded already. Skipping...`,
+      );
       continue;
     } else if (!termsWithinCutoff.has(term)) {
       console.log(`Term ${term} is not within the cutoff. Skipping...`);
@@ -31,12 +33,12 @@ export default async function getAndProcessNewEvals() {
       if (hadNonEmptyTerm) {
         evalsAndTerms.terms.push(term);
         console.log(
-          `Term ${term} has no data (and will always have no data). Adding to finished terms and skipping...`
+          `Term ${term} has no data (and will always have no data). Adding to finished terms and skipping...`,
         );
         continue;
       }
       console.log(
-        `Term ${term} is currently empty (but may have data in the future). Skipping for now...`
+        `Term ${term} is currently empty (but may have data in the future). Skipping for now...`,
       );
       continue;
     }
@@ -46,13 +48,13 @@ export default async function getAndProcessNewEvals() {
     for (const school of schoolsAndTerms.schools) {
       for (let i = 0; i < 26; i++) {
         const queryResultsDoc = await fetchWithAuth(
-          generateSearchLink(term, school, String.fromCharCode(97 + i))
+          generateSearchLink(term, school, String.fromCharCode(97 + i)),
         );
         addLinksFromQueryResults(queryResultsDoc, evalLinksForThisTerm);
       }
     }
     console.log(
-      `Finished getting eval pdf links for term: ${term}.\nNow downloading and processing eval pdfs...`
+      `Finished getting eval pdf links for term: ${term}.\nNow downloading and processing eval pdfs...`,
     );
     await processEvalLinks(evalLinksForThisTerm, term);
     evalsAndTerms.terms.push(term);
@@ -75,12 +77,14 @@ async function getSchoolsAndTerms() {
   let termIdsToTermNames = {};
   for (let i = 0; i < 44; i++) {
     const el = termElements.item(i);
-    if (el === null || el.value.trim() === "" || el.textContent.trim() === "") continue;
+    if (el === null || el.value.trim() === "" || el.textContent.trim() === "")
+      continue;
     else {
       const termId = el.value.trim();
       const termName = el.textContent.trim();
       const termNameMatch = termName.match(TERM_NAME_PATTERN);
-      if (!termNameMatch) console.error("Could not parse term name: " + termName);
+      if (!termNameMatch)
+        console.error("Could not parse term name: " + termName);
       else {
         termIds.push(termId);
         termIdsToTermNames[termId] = `${termNameMatch[2]} ${termNameMatch[3]}`;
@@ -99,7 +103,7 @@ function deleteExpiredEvals() {
   for (let i = 0; i < evalsAndTerms.terms.length; i++) {
     if (!termsWithinCutoff.has(evalsAndTerms.terms[i])) {
       console.log(
-        `Detected expired term ${evalsAndTerms.terms[i]} within existing dataset. Deleting...`
+        `Detected expired term ${evalsAndTerms.terms[i]} within existing dataset. Deleting...`,
       );
 
       evalsAndTerms.terms.splice(i, 1);
@@ -118,7 +122,8 @@ function deleteExpiredEvals() {
 function addLinksFromQueryResults(queryResultsDoc, evalLinks) {
   const resultLinks = queryResultsDoc.querySelectorAll("tr>td>a");
   for (let link of resultLinks) {
-    if (link.href && link.href.trim()) evalLinks.add(`${EVALUATIONS_URL}${link.href}`);
+    if (link.href && link.href.trim())
+      evalLinks.add(`${EVALUATIONS_URL}${link.href}`);
   }
 }
 

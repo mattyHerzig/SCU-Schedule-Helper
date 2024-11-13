@@ -1,9 +1,13 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  QueryCommand,
+  BatchWriteCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { handleWithAuthorization } from "./utils/authorization.js";
 
 const docClient = DynamoDBDocumentClient.from(
-  new DynamoDBClient({ region: process.env.AWS_DDB_REGION })
+  new DynamoDBClient({ region: process.env.AWS_DDB_REGION }),
 );
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
@@ -17,7 +21,7 @@ async function deleteUser(event, context, userId) {
   if (sortKeys.length === 0) {
     console.log(`No sort keys for primary key u#${userId}`);
     return;
-  } 
+  }
   const batches = [];
   while (sortKeys.length > 0) {
     batches.push(sortKeys.splice(0, 25));
@@ -43,7 +47,7 @@ async function deleteUser(event, context, userId) {
       console.log(`Deleted ${delete_requests.length} items from the table.`);
     } catch (error) {
       console.error("Error deleting items:", error);
-      throw error; 
+      throw error;
     }
   }
 }

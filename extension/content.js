@@ -1,6 +1,6 @@
 // console.log('content.js');
 
-chrome.runtime.sendMessage('downloadEvalsIfNeeded');
+chrome.runtime.sendMessage("downloadEvalsIfNeeded");
 
 let extendColorHorizontally;
 let individualDifficultyColor;
@@ -15,7 +15,7 @@ let defaults;
 
 async function getDefaults() {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage('getDefaults', function (response) {
+    chrome.runtime.sendMessage("getDefaults", function (response) {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
       } else {
@@ -26,63 +26,87 @@ async function getDefaults() {
 }
 
 function reloadVisuals() {
-  const mainTables = document.querySelectorAll('[data-automation-id^="MainTable-"]');
-    mainTables.forEach((mainTable) => {
-      mainTable.classList.remove("modified");
+  const mainTables = document.querySelectorAll(
+    '[data-automation-id^="MainTable-"]',
+  );
+  mainTables.forEach((mainTable) => {
+    mainTable.classList.remove("modified");
   });
   checkForGrid();
 }
 
 function loadSettings() {
-  chrome.storage.sync.get(['extendColorHorizontally', 'individualDifficultyColor', 'includeColor2', 'color1', 'color2', 'color3', 'opacity', 'useEvals'], function (data) {
-    // console.log('data', data); // DEBUG
-    // console.log('defaults', defaults); // DEBUG
+  chrome.storage.sync.get(
+    [
+      "extendColorHorizontally",
+      "individualDifficultyColor",
+      "includeColor2",
+      "color1",
+      "color2",
+      "color3",
+      "opacity",
+      "useEvals",
+    ],
+    function (data) {
+      // console.log('data', data); // DEBUG
+      // console.log('defaults', defaults); // DEBUG
 
-    let settingsChanged = false;
+      let settingsChanged = false;
 
-    const checkAndAssign = (currentValue, newValue, defaultValue) => {
-      const finalValue = newValue !== undefined ? newValue : defaultValue;
-      if (currentValue !== finalValue) {
-        settingsChanged = true;
-        return finalValue;
+      const checkAndAssign = (currentValue, newValue, defaultValue) => {
+        const finalValue = newValue !== undefined ? newValue : defaultValue;
+        if (currentValue !== finalValue) {
+          settingsChanged = true;
+          return finalValue;
+        }
+        return currentValue;
+      };
+
+      extendColorHorizontally = checkAndAssign(
+        extendColorHorizontally,
+        data.extendColorHorizontally,
+        defaults.extendColorHorizontally,
+      );
+      individualDifficultyColor = checkAndAssign(
+        individualDifficultyColor,
+        data.individualDifficultyColor,
+        defaults.individualDifficultyColor,
+      );
+      includeColor2 = checkAndAssign(
+        includeColor2,
+        data.includeColor2,
+        defaults.includeColor2,
+      );
+      color1 = checkAndAssign(color1, data.color1, defaults.color1);
+      color2 = checkAndAssign(color2, data.color2, defaults.color2);
+      color3 = checkAndAssign(color3, data.color3, defaults.color3);
+      opacity = checkAndAssign(opacity, data.opacity, defaults.opacity);
+      useEvals = checkAndAssign(useEvals, data.useEvals, defaults.useEvals);
+
+      if (settingsChanged) {
+        reloadVisuals();
       }
-      return currentValue;
-    };
-
-    extendColorHorizontally   = checkAndAssign(extendColorHorizontally,   data.extendColorHorizontally,   defaults.extendColorHorizontally  );
-    individualDifficultyColor = checkAndAssign(individualDifficultyColor, data.individualDifficultyColor, defaults.individualDifficultyColor);
-    includeColor2             = checkAndAssign(includeColor2,             data.includeColor2,             defaults.includeColor2            );
-    color1                    = checkAndAssign(color1,                    data.color1,                    defaults.color1                   );
-    color2                    = checkAndAssign(color2,                    data.color2,                    defaults.color2                   );
-    color3                    = checkAndAssign(color3,                    data.color3,                    defaults.color3                   );
-    opacity                   = checkAndAssign(opacity,                   data.opacity,                   defaults.opacity                  );
-    useEvals                  = checkAndAssign(useEvals,                  data.useEvals,                  defaults.useEvals                 );
-
-    if (settingsChanged) {
-      reloadVisuals();
-    }
-
-    
-  });
+    },
+  );
 }
 
 async function setupSettings() {
   defaults = await getDefaults();
 
-  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    // console.log("content.js received message:", request); // DEBUG
-    if (request === 'settingsChanged') {
-      loadSettings();
-    }
-  });
+  chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+      // console.log("content.js received message:", request); // DEBUG
+      if (request === "settingsChanged") {
+        loadSettings();
+      }
+    },
+  );
 
   loadSettings();
   // chrome.runtime.sendMessage({ contentLoaded: true }); // DEBUG
 }
 
 setupSettings();
-
-
 
 const tempQualityDiv = document.createElement("div");
 const tempDifficultyDiv = document.createElement("div");
@@ -97,23 +121,23 @@ const difficultyDivMaxHeight = tempDifficultyDiv.offsetHeight;
 document.body.removeChild(tempQualityDiv);
 document.body.removeChild(tempDifficultyDiv);
 
-
-
-function lerp(a, b, t) { // Linear interpolation
+function lerp(a, b, t) {
+  // Linear interpolation
   return a * t + b * (1 - t);
 }
 
 function hexToRgb(hex) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return { r, g, b };
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
 }
 
-function changeColor(td, avgRating, reversed) { // (avgQuality == 0) => set color to default
+function changeColor(td, avgRating, reversed) {
+  // (avgQuality == 0) => set color to default
   if (avgRating == 0) {
-    td.style.backgroundColor = '';
-    td.style.removeProperty('background-color');
+    td.style.backgroundColor = "";
+    td.style.removeProperty("background-color");
   } else {
     let red, green, blue;
     let color1RGB = hexToRgb(reversed ? color3 : color1);
@@ -122,26 +146,26 @@ function changeColor(td, avgRating, reversed) { // (avgQuality == 0) => set colo
     if (includeColor2) {
       if (avgRating >= 3) {
         let t = (avgRating - 3) / 2; // normalize to 0-1
-        red   = lerp(color1RGB.r, color2RGB.r, t);
+        red = lerp(color1RGB.r, color2RGB.r, t);
         green = lerp(color1RGB.g, color2RGB.g, t);
-        blue  = lerp(color1RGB.b, color2RGB.b, t);
+        blue = lerp(color1RGB.b, color2RGB.b, t);
       } else {
         let t = (avgRating - 1) / 2; // normalize to 0-1
-        red   = lerp(color2RGB.r, color3RGB.r, t);
+        red = lerp(color2RGB.r, color3RGB.r, t);
         green = lerp(color2RGB.g, color3RGB.g, t);
-        blue  = lerp(color2RGB.b, color3RGB.b, t);
+        blue = lerp(color2RGB.b, color3RGB.b, t);
       }
     } else {
       let t = (avgRating - 1) / 4; // normalize to 0-1
-      red   = lerp(color1RGB.r, color3RGB.r, t);
+      red = lerp(color1RGB.r, color3RGB.r, t);
       green = lerp(color1RGB.g, color3RGB.g, t);
-      blue  = lerp(color1RGB.b, color3RGB.b, t);
+      blue = lerp(color1RGB.b, color3RGB.b, t);
     }
     const color = `rgba(${red}, ${green}, ${blue}, ${opacity / 100})`;
     td.style.transition = "background-color 0.5s ease";
     // requestAnimationFrame(() => {
-      td.style.backgroundColor = color;
-      td.style.setProperty("background-color", color, "important");
+    td.style.backgroundColor = color;
+    td.style.setProperty("background-color", color, "important");
     // });
   }
 }
@@ -152,7 +176,12 @@ function removeColor(td) {
   td.style.setProperty("background-color", "", "important");
 }
 
-function colorTdsExtendAndIndividual(tds, avgQuality, avgDifficulty, instructorsTd) {
+function colorTdsExtendAndIndividual(
+  tds,
+  avgQuality,
+  avgDifficulty,
+  instructorsTd,
+) {
   let passedInstructorsTd = false;
   for (let td of tds) {
     if (!passedInstructorsTd) {
@@ -172,7 +201,13 @@ function colorTdsExtend(tds, avgQuality) {
   }
 }
 
-function colorTdsIndividual(tds, avgQuality, avgDifficulty, instructorsTd, unitsTd) {
+function colorTdsIndividual(
+  tds,
+  avgQuality,
+  avgDifficulty,
+  instructorsTd,
+  unitsTd,
+) {
   for (let td of tds) {
     if (td === instructorsTd) {
       changeColor(td, avgQuality, false);
@@ -194,59 +229,109 @@ function colorTdsDefault(tds, avgQuality, instructorsTd) {
   }
 }
 
-function colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd) { // (avgQuality == 0) => set color to default
-  const lockedTds = Array.from(lockedTableRow.querySelectorAll('td'));
-  const mainTds = Array.from(mainTableRow.querySelectorAll('td'));
-  if (avgQuality == 0 || (extendColorHorizontally && !individualDifficultyColor)) {
+function colorTds(
+  lockedTableRow,
+  mainTableRow,
+  avgQuality,
+  avgDifficulty,
+  instructorsTd,
+  unitsTd,
+) {
+  // (avgQuality == 0) => set color to default
+  const lockedTds = Array.from(lockedTableRow.querySelectorAll("td"));
+  const mainTds = Array.from(mainTableRow.querySelectorAll("td"));
+  if (
+    avgQuality == 0 ||
+    (extendColorHorizontally && !individualDifficultyColor)
+  ) {
     colorTdsExtend(lockedTds, avgQuality);
-    colorTdsExtend(mainTds,   avgQuality);
+    colorTdsExtend(mainTds, avgQuality);
   } else if (extendColorHorizontally && individualDifficultyColor) {
-    colorTdsExtendAndIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd);
-    colorTdsExtendAndIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd);
+    colorTdsExtendAndIndividual(
+      lockedTds,
+      avgQuality,
+      avgDifficulty,
+      instructorsTd,
+    );
+    colorTdsExtendAndIndividual(
+      mainTds,
+      avgQuality,
+      avgDifficulty,
+      instructorsTd,
+    );
   } else if (!extendColorHorizontally && individualDifficultyColor) {
-    colorTdsIndividual(lockedTds, avgQuality, avgDifficulty, instructorsTd, unitsTd);
-    colorTdsIndividual(mainTds,   avgQuality, avgDifficulty, instructorsTd, unitsTd);
+    colorTdsIndividual(
+      lockedTds,
+      avgQuality,
+      avgDifficulty,
+      instructorsTd,
+      unitsTd,
+    );
+    colorTdsIndividual(
+      mainTds,
+      avgQuality,
+      avgDifficulty,
+      instructorsTd,
+      unitsTd,
+    );
   } else {
     colorTdsDefault(lockedTds, avgQuality, instructorsTd);
-    colorTdsDefault(mainTds,   avgQuality, instructorsTd);
+    colorTdsDefault(mainTds, avgQuality, instructorsTd);
   }
 }
 
-function getInvalidRatingDivInnerHtml(ratingType, includeMagnifyingGlass, instructorName) {
+function getInvalidRatingDivInnerHtml(
+  ratingType,
+  includeMagnifyingGlass,
+  instructorName,
+) {
   const index = instructorName.includes("|")
     ? instructorName.indexOf("|") - 1
     : instructorName.length;
   const firstInstructorName = instructorName.substring(0, index);
-  return `<a href="${useEvals ? 'javascript:void(0)' : ('https://www.ratemyprofessors.com/search/professors?q=' + firstInstructorName)}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: ${includeMagnifyingGlass ? '🔍' : ''}</a>`;
+  return `<a href="${useEvals ? "javascript:void(0)" : "https://www.ratemyprofessors.com/search/professors?q=" + firstInstructorName}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';" ${useEvals ? 'onclick="event.preventDefault();"' : ""}>${ratingType}: ${includeMagnifyingGlass ? "🔍" : ""}</a>`;
 }
 
 function getValidRatingDivInnerHtml(ratingType, avgRating, legacyId) {
-  return `<a href="${useEvals ? 'javascript:void(0)' : ('https://www.ratemyprofessors.com/professor/' + legacyId)}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: ${avgRating.toFixed(1) + "/5.0"}</a>`;
+  return `<a href="${useEvals ? "javascript:void(0)" : "https://www.ratemyprofessors.com/professor/" + legacyId}" target="_blank" style="color: #005dba; text-decoration: none;" onmouseover="this.style.textDecoration='underline';" onmouseout="this.style.textDecoration='none';" ${useEvals ? 'onclick="event.preventDefault();"' : ""}>${ratingType}: ${avgRating.toFixed(1) + "/5.0"}</a>`;
 }
 
 function getEmptyRatingDivInnerHtml(ratingType) {
-  return `<a target="_blank" style="color: #005dba; text-decoration: none;" ${useEvals ? 'onclick="event.preventDefault();"' : ''}>${ratingType}: </a>`;
+  return `<a target="_blank" style="color: #005dba; text-decoration: none;" ${useEvals ? 'onclick="event.preventDefault();"' : ""}>${ratingType}: </a>`;
 }
 
 function removeRatings(instructorLi, unitsDiv) {
-  const qualityElements = Array.from(instructorLi.querySelectorAll('*')).filter(el => el.textContent.trim().startsWith('Quality'));
-  qualityElements.forEach(el => el.remove());
-  const difficultyElements = Array.from(unitsDiv.querySelectorAll('*')).filter(el => el.textContent.trim().startsWith('Difficulty'));
-  difficultyElements.forEach(el => el.remove());
+  const qualityElements = Array.from(instructorLi.querySelectorAll("*")).filter(
+    (el) => el.textContent.trim().startsWith("Quality"),
+  );
+  qualityElements.forEach((el) => el.remove());
+  const difficultyElements = Array.from(unitsDiv.querySelectorAll("*")).filter(
+    (el) => el.textContent.trim().startsWith("Difficulty"),
+  );
+  difficultyElements.forEach((el) => el.remove());
 }
 
-function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index, originalUseEvals) {
-  instructorDiv = instructorLi.querySelector(`[data-automation-id^="selectedItem_"]`);
+function insertRatings(
+  courseDiv,
+  instructorLi,
+  unitsDiv,
+  ratings,
+  index,
+  originalUseEvals,
+) {
+  instructorDiv = instructorLi.querySelector(
+    `[data-automation-id^="selectedItem_"]`,
+  );
   if (!instructorDiv) return;
   instructorDiv.style.paddingBottom = "0";
   if (index > 0) {
-    instructorDiv.style.marginTop = '6px';
+    instructorDiv.style.marginTop = "6px";
   }
-  let subject = number = null;
+  let subject = (number = null);
   const match = courseDiv.textContent.match(/^([A-Z]+)\s+(\d+)/);
   if (match) {
-      subject = match[1];
-      number = match[2];
+    subject = match[1];
+    number = match[2];
   } // else {}
   const instructorName = instructorDiv.textContent;
   const qualityDiv = document.createElement("div");
@@ -257,26 +342,52 @@ function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index, origin
   difficultyDiv.innerHTML = getEmptyRatingDivInnerHtml("Difficulty");
   instructorLi.appendChild(qualityDiv);
   unitsDiv.appendChild(difficultyDiv);
-  let promise = originalUseEvals ? getEvalsRatings(instructorName, subject, number) : getRmpRatings(instructorName);
+  let promise = originalUseEvals
+    ? getEvalsRatings(instructorName, subject, number)
+    : getRmpRatings(instructorName);
   promise.then((rating) => {
     if (rating !== null) {
       ratings.validRatingsCount++;
       ratings.totalQuality += rating["avgRating"];
       ratings.totalDifficulty += rating["avgDifficulty"];
-      qualityDiv.innerHTML = getValidRatingDivInnerHtml("Quality", rating["avgRating"], rating["legacyId"]);
+      qualityDiv.innerHTML = getValidRatingDivInnerHtml(
+        "Quality",
+        rating["avgRating"],
+        rating["legacyId"],
+      );
       if (index > 0) {
-        difficultyDiv.style.marginTop = '6px';
-        difficultyDiv.innerHTML = "<br>" + getValidRatingDivInnerHtml("Difficulty", rating["avgDifficulty"], rating["legacyId"]);
+        difficultyDiv.style.marginTop = "6px";
+        difficultyDiv.innerHTML =
+          "<br>" +
+          getValidRatingDivInnerHtml(
+            "Difficulty",
+            rating["avgDifficulty"],
+            rating["legacyId"],
+          );
       } else {
-        difficultyDiv.innerHTML = getValidRatingDivInnerHtml("Difficulty", rating["avgDifficulty"], rating["legacyId"]);
+        difficultyDiv.innerHTML = getValidRatingDivInnerHtml(
+          "Difficulty",
+          rating["avgDifficulty"],
+          rating["legacyId"],
+        );
       }
     } else {
-      qualityDiv.innerHTML = getInvalidRatingDivInnerHtml("Quality", true, instructorName);
+      qualityDiv.innerHTML = getInvalidRatingDivInnerHtml(
+        "Quality",
+        true,
+        instructorName,
+      );
       if (index > 0) {
-        difficultyDiv.style.marginTop = '6px';
-        difficultyDiv.innerHTML = "<br>" + getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
+        difficultyDiv.style.marginTop = "6px";
+        difficultyDiv.innerHTML =
+          "<br>" +
+          getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
       } else {
-        difficultyDiv.innerHTML = getInvalidRatingDivInnerHtml("Difficulty", false, instructorName);
+        difficultyDiv.innerHTML = getInvalidRatingDivInnerHtml(
+          "Difficulty",
+          false,
+          instructorName,
+        );
       }
     }
   });
@@ -284,51 +395,104 @@ function insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index, origin
 }
 
 function handleGrid(visibleGrid) {
-  const mainTables = visibleGrid.querySelectorAll('[data-automation-id^="MainTable-"]');
+  const mainTables = visibleGrid.querySelectorAll(
+    '[data-automation-id^="MainTable-"]',
+  );
   mainTables.forEach((mainTable) => {
     if (mainTable.classList.contains("modified")) return;
     mainTable.classList.add("modified");
-    const mainTableRows = mainTable.querySelectorAll('.mainTable tr:not([data-automation-id="ghostRow"])');
-    const dataAutomationId = mainTable.getAttribute('data-automation-id');
-    const mainTableId = dataAutomationId.split('-')[1];
-    const lockedTable = visibleGrid.querySelector(`[data-automation-id="LockedTable-${mainTableId}"]`);
+    const mainTableRows = mainTable.querySelectorAll(
+      '.mainTable tr:not([data-automation-id="ghostRow"])',
+    );
+    const dataAutomationId = mainTable.getAttribute("data-automation-id");
+    const mainTableId = dataAutomationId.split("-")[1];
+    const lockedTable = visibleGrid.querySelector(
+      `[data-automation-id="LockedTable-${mainTableId}"]`,
+    );
     // if (!lockedTable) return;
     mainTableRows.forEach((mainTableRow) => {
-      const rowid = mainTableRow.getAttribute('rowid');
+      const rowid = mainTableRow.getAttribute("rowid");
       const lockedTableRow = lockedTable.querySelector(`tr[rowid="${rowid}"]`);
       // if (!lockedTableRow) return;
-      const courseDiv = mainTableRow.querySelector('[data-automation-id="promptOption"]');
-      const instructorsTd = mainTableRow.querySelector('td[headers^="columnheader6"]');
-      const unitsTd = mainTableRow.querySelector('td[headers^="columnheader7"]');
+      const courseDiv = mainTableRow.querySelector(
+        '[data-automation-id="promptOption"]',
+      );
+      const instructorsTd = mainTableRow.querySelector(
+        'td[headers^="columnheader6"]',
+      );
+      const unitsTd = mainTableRow.querySelector(
+        'td[headers^="columnheader7"]',
+      );
       // if (!instructorsTd) return;
-      const instructorLis = instructorsTd.querySelectorAll('li[role="presentation"]');
+      const instructorLis = instructorsTd.querySelectorAll(
+        'li[role="presentation"]',
+      );
       const unitsDiv = unitsTd.querySelector('[role="presentation"]');
       // if (instructorsTd.classList.contains("processing")) return;
       // instructorsTd.classList.add("processing");
-      if (instructorsTd.getAttribute('use-evals') !== undefined && instructorsTd.getAttribute('use-evals') == useEvals.toString()) {
-        if (instructorsTd.hasAttribute('avg-quality') && unitsTd.hasAttribute('avg-difficulty')) {
-          colorTds(lockedTableRow, mainTableRow, instructorsTd.getAttribute('avg-quality'), unitsTd.getAttribute('avg-difficulty'), instructorsTd, unitsTd);
+      if (
+        instructorsTd.getAttribute("use-evals") !== undefined &&
+        instructorsTd.getAttribute("use-evals") == useEvals.toString()
+      ) {
+        if (
+          instructorsTd.hasAttribute("avg-quality") &&
+          unitsTd.hasAttribute("avg-difficulty")
+        ) {
+          colorTds(
+            lockedTableRow,
+            mainTableRow,
+            instructorsTd.getAttribute("avg-quality"),
+            unitsTd.getAttribute("avg-difficulty"),
+            instructorsTd,
+            unitsTd,
+          );
         }
       } else {
         const originalUseEvals = useEvals;
-        instructorsTd.setAttribute('use-evals', originalUseEvals);
+        instructorsTd.setAttribute("use-evals", originalUseEvals);
         let ratings = {
           totalQuality: 0,
           totalDifficulty: 0,
           validRatingsCount: 0,
-          ratingPromises: []
+          ratingPromises: [],
         };
-        instructorLis.forEach((instructorLi) => removeRatings(instructorLi, unitsDiv));
-        instructorLis.forEach((instructorLi, index) => insertRatings(courseDiv, instructorLi, unitsDiv, ratings, index, originalUseEvals));
+        instructorLis.forEach((instructorLi) =>
+          removeRatings(instructorLi, unitsDiv),
+        );
+        instructorLis.forEach((instructorLi, index) =>
+          insertRatings(
+            courseDiv,
+            instructorLi,
+            unitsDiv,
+            ratings,
+            index,
+            originalUseEvals,
+          ),
+        );
         Promise.all(ratings.ratingPromises).then(() => {
           if (ratings.validRatingsCount !== 0) {
             let avgQuality = ratings.totalQuality / ratings.validRatingsCount;
-            let avgDifficulty = ratings.totalDifficulty / ratings.validRatingsCount;
-            instructorsTd.setAttribute('avg-quality', avgQuality);
-            unitsTd.setAttribute('avg-difficulty', avgDifficulty);
-            colorTds(lockedTableRow, mainTableRow, avgQuality, avgDifficulty, instructorsTd, unitsTd);
+            let avgDifficulty =
+              ratings.totalDifficulty / ratings.validRatingsCount;
+            instructorsTd.setAttribute("avg-quality", avgQuality);
+            unitsTd.setAttribute("avg-difficulty", avgDifficulty);
+            colorTds(
+              lockedTableRow,
+              mainTableRow,
+              avgQuality,
+              avgDifficulty,
+              instructorsTd,
+              unitsTd,
+            );
           } else {
-            colorTds(lockedTableRow, mainTableRow, 0, 0, instructorsTd, unitsTd);
+            colorTds(
+              lockedTableRow,
+              mainTableRow,
+              0,
+              0,
+              instructorsTd,
+              unitsTd,
+            );
           }
           // instructorsTd.classList.remove("processing");
         });
@@ -349,14 +513,21 @@ function handleGrid(visibleGrid) {
 // }
 
 function checkForGrid() {
-  const loadingPanel = document.querySelector("[data-automation-loadingpanelhidden]");
+  const loadingPanel = document.querySelector(
+    "[data-automation-loadingpanelhidden]",
+  );
   const isLoading = loadingPanel
-    ? loadingPanel.getAttribute("data-automation-loadingpanelhidden") === "false"
+    ? loadingPanel.getAttribute("data-automation-loadingpanelhidden") ===
+      "false"
     : false;
   if (isLoading) return;
-  const scuFindCourseSections = document.querySelector('div[title="SCU Find Course Sections"]');
+  const scuFindCourseSections = document.querySelector(
+    'div[title="SCU Find Course Sections"]',
+  );
   if (!scuFindCourseSections) return;
-  const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]');
+  const visibleGrid = document.querySelector(
+    '[data-automation-id="VisibleGrid"]',
+  );
   if (!visibleGrid) return;
   // if (!visibleGrid.classList.contains("modified")) widenUnitsColumn(visibleGrid);
   handleGrid(visibleGrid);

@@ -1,42 +1,44 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import IconButton from '@mui/material/IconButton';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CloseIcon from '@mui/icons-material/Close';
+import React from "react";
+import PropTypes from "prop-types";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import IconButton from "@mui/material/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import CloseIcon from "@mui/icons-material/Close";
 
 const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
   const handleAccordionChange = (id) => {
-    setFriends(friends.map(friend => ({
-      ...friend,
-      expanded: friend.id === id ? !friend.expanded : friend.expanded
-    })));
+    setFriends(
+      friends.map((friend) => ({
+        ...friend,
+        expanded: friend.id === id ? !friend.expanded : friend.expanded,
+      })),
+    );
   };
 
   const removeFriend = (event, id) => {
     event.stopPropagation();
-    setFriends(friends.filter(friend => friend.id !== id));
+    setFriends(friends.filter((friend) => friend.id !== id));
   };
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 600 }}>
-      <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', mt: 2 }}>
+    <Box sx={{ width: "100%", maxWidth: 600 }}>
+      <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
         Friends:
       </Typography>
       {friends.map((friend) => (
-        <Accordion 
+        <Accordion
           key={friend.id}
           expanded={friend.expanded}
           onChange={() => handleAccordionChange(friend.id)}
           sx={{
             mb: 1,
-            '&:before': {
-              display: 'none',
-            }
+            "&:before": {
+              display: "none",
+            },
           }}
         >
           <AccordionSummary
@@ -44,12 +46,12 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
             aria-controls={`panel${friend.id}-content`}
             id={`panel${friend.id}-header`}
             sx={{
-              '& .MuiAccordionSummary-content': {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mr: 1
-              }
+              "& .MuiAccordionSummary-content": {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mr: 1,
+              },
             }}
           >
             <Typography>{friend.name}</Typography>
@@ -58,20 +60,18 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
               onClick={(e) => removeFriend(e, friend.id)}
               sx={{
                 ml: 2,
-                color: 'error.main',
-                '&:hover': {
-                  backgroundColor: 'error.light',
-                  color: 'white'
-                }
+                color: "error.main",
+                "&:hover": {
+                  backgroundColor: "error.light",
+                  color: "white",
+                },
               }}
             >
               <CloseIcon fontSize="small" />
             </IconButton>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography>
-              {friend.details}
-            </Typography>
+            <Typography>{friend.details}</Typography>
           </AccordionDetails>
         </Accordion>
       ))}
@@ -81,7 +81,7 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
 
 FriendsAccordion.propTypes = {
   friends: PropTypes.array,
-  setFriends: PropTypes.func
+  setFriends: PropTypes.func,
 };
 
 export default FriendsAccordion;

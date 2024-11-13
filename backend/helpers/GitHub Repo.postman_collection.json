@@ -29,7 +29,13 @@
           "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets",
           "protocol": "https",
           "host": ["api", "github", "com"],
-          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "secrets"]
+          "path": [
+            "repos",
+            "mattyHerzig",
+            "SCU-Schedule-Helper",
+            "actions",
+            "secrets"
+          ]
         }
       },
       "response": []
@@ -56,7 +62,13 @@
           "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
           "protocol": "https",
           "host": ["api", "github", "com"],
-          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "variables"]
+          "path": [
+            "repos",
+            "mattyHerzig",
+            "SCU-Schedule-Helper",
+            "actions",
+            "variables"
+          ]
         }
       },
       "response": []
@@ -189,7 +201,13 @@
           "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
           "protocol": "https",
           "host": ["api", "github", "com"],
-          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "variables"]
+          "path": [
+            "repos",
+            "mattyHerzig",
+            "SCU-Schedule-Helper",
+            "actions",
+            "variables"
+          ]
         }
       },
       "response": []

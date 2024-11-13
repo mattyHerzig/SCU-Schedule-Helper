@@ -1,6 +1,10 @@
 import getAndProcessNewEvals from "./utils/get_eval_links.js";
 import generateAggregateEvalsFile from "./utils/generate_aggregate_evals_json.js";
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { authenticate } from "./utils/authentication.js";
 import zlib from "zlib";
 import fs from "fs";
@@ -44,18 +48,27 @@ async function initDirectoriesAndFiles() {
     if (!fs.existsSync(PERSISTENT_DATA_PATH)) {
       fs.mkdirSync(PERSISTENT_DATA_PATH);
     }
-    if (!fs.existsSync(path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`))) {
+    if (
+      !fs.existsSync(
+        path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`),
+      )
+    ) {
       fs.writeFileSync(
         path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`),
-        JSON.stringify(evalsAndTerms)
+        JSON.stringify(evalsAndTerms),
       );
     } else {
       evalsAndTerms = JSON.parse(
-        fs.readFileSync(path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`))
+        fs.readFileSync(
+          path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`),
+        ),
       );
     }
     if (!fs.existsSync(`${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`)) {
-      fs.writeFileSync(`${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`, "");
+      fs.writeFileSync(
+        `${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`,
+        "",
+      );
     }
   }
   // Running in a GitHub workflow. Retrieve from AWS. The objects should always exist.
@@ -66,7 +79,7 @@ async function initDirectoriesAndFiles() {
     });
     const evalsAndTermsObject = await s3.send(command);
     let evalsAndTermsBuffer = zlib.gunzipSync(
-      Buffer.from(await evalsAndTermsObject.Body.transformToByteArray())
+      Buffer.from(await evalsAndTermsObject.Body.transformToByteArray()),
     );
     evalsAndTerms = JSON.parse(evalsAndTermsBuffer.toString());
   }
@@ -82,7 +95,7 @@ export async function writeEvalsAndTerms() {
   if (process.env.GITHUB_WORKFLOW === undefined) {
     fs.writeFileSync(
       path.resolve(`${PERSISTENT_DATA_PATH}/${EVALS_AND_TERMS_FILENAME}`),
-      JSON.stringify(evalsAndTerms)
+      JSON.stringify(evalsAndTerms),
     );
   } else {
     // Upload to AWS.
@@ -92,8 +105,13 @@ export async function writeEvalsAndTerms() {
       Body: zlib.gzipSync(JSON.stringify(evalsAndTerms)),
     });
     const response = await s3.send(command);
-    if (response.$metadata.httpStatusCode < 200 || response.$metadata.httpStatusCode >= 300) {
-      console.error(`Failed to upload evals and terms to AWS: ${JSON.stringify(response)}`);
+    if (
+      response.$metadata.httpStatusCode < 200 ||
+      response.$metadata.httpStatusCode >= 300
+    ) {
+      console.error(
+        `Failed to upload evals and terms to AWS: ${JSON.stringify(response)}`,
+      );
     } else {
       console.log("Successfully uploaded evals and terms to AWS.");
     }
@@ -104,7 +122,7 @@ export async function writeAggregateEvals() {
   if (process.env.GITHUB_WORKFLOW === undefined) {
     fs.writeFileSync(
       path.resolve(`${PERSISTENT_DATA_PATH}/${AGGREGATE_EVALS_FILENAME}`),
-      JSON.stringify(aggregateEvals)
+      JSON.stringify(aggregateEvals),
     );
   } else {
     // Upload to AWS.
@@ -114,8 +132,13 @@ export async function writeAggregateEvals() {
       Body: zlib.gzipSync(JSON.stringify(aggregateEvals)),
     });
     const response = await s3.send(command);
-    if (response.$metadata.httpStatusCode < 200 || response.$metadata.httpStatusCode >= 300) {
-      console.error(`Failed to upload aggregate evals to AWS: ${JSON.stringify(response)}`);
+    if (
+      response.$metadata.httpStatusCode < 200 ||
+      response.$metadata.httpStatusCode >= 300
+    ) {
+      console.error(
+        `Failed to upload aggregate evals to AWS: ${JSON.stringify(response)}`,
+      );
     } else {
       console.log("Successfully uploaded aggregate evals to AWS.");
     }

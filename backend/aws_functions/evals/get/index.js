@@ -21,10 +21,14 @@ async function handleGetEvalsRequest(event, context, userId) {
     const data = await s3.send(command);
     return validResponse({
       dataExpirationDate: getDataExpirationDate(),
-      data: Buffer.from(await data.Body.transformToByteArray()).toString("base64"),
+      data: Buffer.from(await data.Body.transformToByteArray()).toString(
+        "base64",
+      ),
     });
   } catch (error) {
     console.error(`could not fetch evals JSON due to error ${error}`);
-    return internalServerError(`could not fetch evals JSON due to error ${error}`);
+    return internalServerError(
+      `could not fetch evals JSON due to error ${error}`,
+    );
   }
 }

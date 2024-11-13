@@ -1,54 +1,54 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Slider from '@mui/material/Slider';
-import Typography from '@mui/material/Typography';
+import * as React from "react";
+import Box from "@mui/material/Box";
+import Slider from "@mui/material/Slider";
+import Typography from "@mui/material/Typography";
 
 const marks = [
-  {value: 8, label: '8:00'},
-  {value: 9, label: '9:00'},
+  { value: 8, label: "8:00" },
+  { value: 9, label: "9:00" },
   {
     value: 10,
-    label: '10:00',
+    label: "10:00",
   },
   {
     value: 11,
-    label: '11:00',
+    label: "11:00",
   },
   {
     value: 12,
-    label: '12:00',
+    label: "12:00",
   },
   {
     value: 13,
-    label: '13:00',
+    label: "13:00",
   },
   {
     value: 14,
-    label: '14:00',
+    label: "14:00",
   },
   {
     value: 15,
-    label: '15:00',
+    label: "15:00",
   },
   {
     value: 16,
-    label: '16:00',
+    label: "16:00",
   },
   {
     value: 17,
-    label: '17:00',
+    label: "17:00",
   },
   {
     value: 18,
-    label: '18:00',
+    label: "18:00",
   },
   {
     value: 19,
-    label: '19:00',
+    label: "19:00",
   },
   {
     value: 20,
-    label: '20:00',
+    label: "20:00",
   },
 ];
 
@@ -78,15 +78,16 @@ export default function RangeSliderTime() {
         getAriaValueText={valuetext} // Custom value text for accessibility
         step={1}
         min={8}
-        max={20} 
+        max={20}
         marks={marks.map((mark) => ({
           ...mark,
-          label: (
-            <span style={{ fontSize: '0.55rem' }}>{mark.label}</span>
-          ),
-        }))}/>
+          label: <span style={{ fontSize: "0.55rem" }}>{mark.label}</span>,
+        }))}
+      />
       <Box sx={{ mt: 2 }}>
-        <Typography>{minValue}:00 - {maxValue}:00</Typography>
+        <Typography>
+          {minValue}:00 - {maxValue}:00
+        </Typography>
       </Box>
     </Box>
   );

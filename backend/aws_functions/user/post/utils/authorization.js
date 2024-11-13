@@ -10,7 +10,8 @@ const ERRORS = {
 
 export async function handleWithAuthorization(event, context, handler) {
   const userAuthorization = getUserAuthorization(event);
-  if (!userAuthorization.userId) return unauthorizedError(userAuthorization.authError);
+  if (!userAuthorization.userId)
+    return unauthorizedError(userAuthorization.authError);
   return await handler(event, context, userAuthorization.userId);
 }
 

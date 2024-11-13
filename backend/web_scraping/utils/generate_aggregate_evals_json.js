@@ -7,22 +7,33 @@ export default async function generateAggregateEvalsFile() {
     const profAggregateRatings = aggregateEvals[evaluation.profName] ?? {
       type: "prof",
     };
-    const profRatingTypes = ["overall", evaluation.deptName, evaluation.courseCode];
+    const profRatingTypes = [
+      "overall",
+      evaluation.deptName,
+      evaluation.courseCode,
+    ];
     for (let i = 0; i < profRatingTypes.length; i++) {
       const ratingType = profRatingTypes[i];
-      const currentRating = profAggregateRatings[ratingType] ?? getDefaultRating();
-      const newRating = generateNewAggregateRating(currentRating, evaluation, i === 2, false);
+      const currentRating =
+        profAggregateRatings[ratingType] ?? getDefaultRating();
+      const newRating = generateNewAggregateRating(
+        currentRating,
+        evaluation,
+        i === 2,
+        false,
+      );
       profAggregateRatings[ratingType] = newRating;
     }
     aggregateEvals[evaluation.profName] = profAggregateRatings;
 
     // Generate an aggregate rating for the course.
-    let courseAggregateRating = aggregateEvals[evaluation.courseCode] ?? getDefaultRating();
+    let courseAggregateRating =
+      aggregateEvals[evaluation.courseCode] ?? getDefaultRating();
     courseAggregateRating = generateNewAggregateRating(
       courseAggregateRating,
       evaluation,
       true,
-      true
+      true,
     );
     aggregateEvals[evaluation.courseCode] = courseAggregateRating;
   }
@@ -30,25 +41,38 @@ export default async function generateAggregateEvalsFile() {
   await writeAggregateEvals();
 }
 
-function generateNewAggregateRating(currentRating, evaluation, includeRecentTerms, isCourseEval) {
+function generateNewAggregateRating(
+  currentRating,
+  evaluation,
+  includeRecentTerms,
+  isCourseEval,
+) {
   const newRating = {
     qualityTotal: currentRating.qualityTotal + evaluation.qualityRating,
     qualityCount: currentRating.qualityCount + 1,
-    difficultyTotal: currentRating.difficultyTotal + evaluation.difficultyRating ?? 0,
-    difficultyCount: currentRating.difficultyCount + (evaluation.difficultyRating ? 1 : 0),
+    difficultyTotal:
+      currentRating.difficultyTotal + evaluation.difficultyRating ?? 0,
+    difficultyCount:
+      currentRating.difficultyCount + (evaluation.difficultyRating ? 1 : 0),
     workloadTotal: currentRating.workloadTotal + evaluation.workloadRating ?? 0,
-    workloadCount: currentRating.workloadCount + (evaluation.workloadRating ? 1 : 0),
+    workloadCount:
+      currentRating.workloadCount + (evaluation.workloadRating ? 1 : 0),
   };
   newRating.qualityAvg = newRating.qualityTotal / newRating.qualityCount;
-  newRating.difficultyAvg = newRating.difficultyTotal / newRating.difficultyCount;
+  newRating.difficultyAvg =
+    newRating.difficultyTotal / newRating.difficultyCount;
   newRating.workloadAvg = newRating.workloadTotal / newRating.workloadCount;
   if (includeRecentTerms) {
     const recentTermsSet = new Set(currentRating.recentTerms);
     recentTermsSet.add(evalsAndTerms.termIdsToTermNames[evaluation.term]);
-    newRating.recentTerms = Array.from(recentTermsSet).sort(mostRecentTermFirst);
+    newRating.recentTerms =
+      Array.from(recentTermsSet).sort(mostRecentTermFirst);
   }
   if (isCourseEval) {
-    if (newRating.recentTerms[0] === evalsAndTerms.termIdsToTermNames[evaluation.term]) {
+    if (
+      newRating.recentTerms[0] ===
+      evalsAndTerms.termIdsToTermNames[evaluation.term]
+    ) {
       newRating.courseName = evaluation.courseName;
     }
     const profsSet = new Set(currentRating.professors);

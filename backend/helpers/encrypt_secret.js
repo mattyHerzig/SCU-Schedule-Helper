@@ -1,6 +1,7 @@
 // Use for encrypting secrets to upload to GitHub.
 import libsodium from "libsodium-wrappers";
-const secret = process.argv.length == 3 ? process.argv[2] : "Secret value goes here.";
+const secret =
+  process.argv.length == 3 ? process.argv[2] : "Secret value goes here.";
 // This is the public key of the repo. Do not change.
 const key = "7oqDBKCm15zky3EQCVqEdX/urNnId+aN4a7uA7Pm9HU=";
 
@@ -14,7 +15,10 @@ libsodium.ready.then(() => {
   let encBytes = libsodium.crypto_box_seal(binsec, binkey);
 
   // Convert the encrypted Uint8Array to Base64
-  let output = libsodium.to_base64(encBytes, libsodium.base64_variants.ORIGINAL);
+  let output = libsodium.to_base64(
+    encBytes,
+    libsodium.base64_variants.ORIGINAL,
+  );
 
   // Print the output
   console.log(`Encrypted secret: (${output})`);

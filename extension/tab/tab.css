@@ -1,18 +1,18 @@
 h2 {
-    margin-top: 5px;
-    margin-bottom: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .downloading {
-    color: orange;
+  color: orange;
 }
 
 .downloaded {
-    color: green;
+  color: green;
 }
 
 .authorization-failed {
-    color: red;
+  color: red;
 }
 
 /* .fade-out {

@@ -531,13 +531,20 @@ components:
       allOf:
         - $ref: "#/components/schemas/ListUpdate"
       example:
-        { add: ["P{Natalie Linnell}S{CSCI187-1}"], remove: ["P{Natalie Linnell}S{CSCI187-2}"] }
+        {
+          add: ["P{Natalie Linnell}S{CSCI187-1}"],
+          remove: ["P{Natalie Linnell}S{CSCI187-2}"],
+        }
     CoursesTakenUpdate:
       type: object
       description: An object containing courses to add or remove from the user's taken courses.
       allOf:
         - $ref: "#/components/schemas/ListUpdate"
-      example: { add: ["P{Natalie Linnell}C{CSCI187}"], remove: ["P{Natalie Linnell}C{CSCI161}"] }
+      example:
+        {
+          add: ["P{Natalie Linnell}C{CSCI187}"],
+          remove: ["P{Natalie Linnell}C{CSCI161}"],
+        }
     FriendsUpdate:
       type: object
       description: An object containing users to add or remove from the user's friends list.

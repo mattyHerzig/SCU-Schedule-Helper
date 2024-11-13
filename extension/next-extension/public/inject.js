@@ -1,1 +1,1 @@
-console.log("Message from inject.js")
+console.log("Message from inject.js");
