@@ -1,8 +1,5 @@
 import { handler } from "./index.js";
 
-const JWT =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlc2FydG9yeSIsInR5cGUiOiJhY2Nlc3MifQ.zhZ5RuK-Hy6bM8HQZjijxDxJBrQYpLL48AbSj8t32D8";
-
 async function runTest() {
   const event = {
     requestContext: {
@@ -11,7 +8,7 @@ async function runTest() {
       },
     },
     headers: {
-      authorization: `Bearer ${JWT}`,
+      authorization: `Bearer ${process.env.TEST_ACCESS_JWT}`,
     },
   };
 

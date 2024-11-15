@@ -1,33 +1,6 @@
-export const validResponse = (response) => {
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(response),
-  };
-};
-
-export const createdResponse = (response) => {
-  return {
-    statusCode: 201,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(response),
-  };
-};
-
-export const badRequestResponse = (message) => {
-  return {
-    statusCode: 400,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message: `Bad request: ${message}`,
-    }),
-  };
+export const noContentValidResponse = {
+  statusCode: 204,
+  headers: {},
 };
 
 export const unauthorizedError = (message) => {
@@ -38,6 +11,18 @@ export const unauthorizedError = (message) => {
     },
     body: JSON.stringify({
       message: `Could not verify user authorization due to an error: ${message}`,
+    }),
+  };
+};
+
+export const notFoundError = (message) => {
+  return {
+    statusCode: 404,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message,
     }),
   };
 };

@@ -9,8 +9,6 @@ import {
   createdResponse,
   internalServerError,
   CreatedUserResponse,
-  Profile,
-  PublicInfo,
   badRequestResponse,
 } from "./model.js";
 import { handleWithAuthorization } from "./utils/authorization.js";
@@ -36,10 +34,10 @@ export async function handler(event, context) {
 async function handlePostUserRequest(event, context, userId) {
   // Check that the request contains name, email, notification_id, and photo.
   const request = JSON.parse(event.body);
-  if (!request.name || !request.notification_id) {
+  if (!request.name || !request.subscription) {
     const missingFields = [];
     if (!request.name) missingFields.push("name");
-    if (!request.notification_id) missingFields.push("notification_id");
+    if (!request.subscription) missingFields.push("subscription");
     return badRequestResponse(
       `missing required fields. Required fields: ${missingFields.join(", ")}.`,
     );
@@ -56,7 +54,7 @@ async function handlePostUserRequest(event, context, userId) {
   }
 
   // Upload the user's photo to S3, if they uploaded a photo.
-  let photoURL = request.photo_url;
+  let photoURL = request.photoUrl;
   if (!photoURL && request.photo) {
     try {
       photoURL = await uploadUserPhotoToS3(userId, request.photo);
@@ -71,7 +69,7 @@ async function handlePostUserRequest(event, context, userId) {
     return await addUserToDatabase(
       userId,
       request.name,
-      request.notification_id,
+      request.subscription,
       photoURL,
     );
   } catch (error) {
@@ -87,7 +85,7 @@ async function userAlreadyExists(userId) {
         S: `u#${userId}`,
       },
       sk: {
-        S: "info#profile",
+        S: "info#personal",
       },
     },
     TableName: tableName,
@@ -122,13 +120,13 @@ async function uploadUserPhotoToS3(userId, base64EncodedPhoto) {
   }.s3.amazonaws.com/${photoKey.replace("#", "%23")}`;
 }
 
-async function addUserToDatabase(userId, name, notificationId, photoUrl) {
+async function addUserToDatabase(userId, name, subscription, photoUrl) {
   const item = {
     pk: { S: `u#${userId}` },
-    sk: { S: "info#profile" },
+    sk: { S: "info#personal" },
     name: { S: name },
     email: { S: `${userId}@scu.edu` },
-    notification_ids: { SS: [notificationId] },
+    subscriptions: { SS: [subscription] },
     photo_url: { S: photoUrl },
   };
   const putInput = {
@@ -142,13 +140,13 @@ async function addUserToDatabase(userId, name, notificationId, photoUrl) {
       `error adding user to database (received HTTP status code from DynamoDB: ${dbResponse.$metadata.httpStatusCode}).`,
     );
   }
-  const createdUserProfile = new Profile(
-    name,
-    photoUrl,
-    `${userId}@scu.edu`,
-    notificationId,
-  );
   return createdResponse(
-    new CreatedUserResponse(userId, new PublicInfo(createdUserProfile)),
+    new CreatedUserResponse(
+      userId,
+      name,
+      photoUrl,
+      `${userId}@scu,.edu`,
+      subscription,
+    ),
   );
 }

@@ -8,10 +8,10 @@ export class GetAuthTokenResponse {
 }
 
 export class OAuthInfo {
-  constructor(email, name, picture) {
+  constructor(email, name, photoUrl) {
     this.email = email;
     this.name = name;
-    this.picture = picture;
+    this.photoUrl = photoUrl;
   }
 }
 

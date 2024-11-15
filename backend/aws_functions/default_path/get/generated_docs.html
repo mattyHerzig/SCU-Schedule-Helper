@@ -220,8 +220,16 @@
       .fmmJjS polygon {
         fill: white;
       } /*!sc*/
+      .ccTkAM {
+        height: 18px;
+        width: 18px;
+        min-width: 18px;
+        vertical-align: middle;
+        transition: transform 0.2s ease-out;
+        transform: rotateZ(-90deg);
+      } /*!sc*/
       data-styled.g15[id="sc-cHqXqK"] {
-        content: "gkUOTk,bEpxpV,hmCwJW,kVOWjS,fmmJjS,";
+        content: "gkUOTk,bEpxpV,hmCwJW,kVOWjS,fmmJjS,ccTkAM,";
       } /*!sc*/
       .iyKqKI {
         border-left: 1px solid #7c7cbb;
@@ -1185,6 +1193,33 @@
       } /*!sc*/
       data-styled.g56[id="sc-FFETS"] {
         content: "kqHNPM,";
+      } /*!sc*/
+      .buGHPE.deprecated span.property-name {
+        text-decoration: line-through;
+        color: #707070;
+      } /*!sc*/
+      .buGHPE button {
+        background-color: transparent;
+        border: 0;
+        outline: 0;
+        font-size: 13px;
+        font-family: Courier, monospace;
+        cursor: pointer;
+        padding: 0;
+        color: #333333;
+      } /*!sc*/
+      .buGHPE button:focus {
+        font-weight: 600;
+      } /*!sc*/
+      .buGHPE .sc-cHqXqK {
+        height: 1.1em;
+        width: 1.1em;
+      } /*!sc*/
+      .buGHPE .sc-cHqXqK polygon {
+        fill: #666;
+      } /*!sc*/
+      data-styled.g57[id="sc-hsfCcR"] {
+        content: "buGHPE,";
       } /*!sc*/
       .hPAOR {
         vertical-align: middle;
@@ -2439,7 +2474,7 @@
                   <button class="sc-iPHsxv ebcgbH">
                     <span type="get" class="sc-txhaY IVbnb http-verb get"
                       >get</span
-                    ><span class="sc-etPtWW iqHzp">/authToken</span
+                    ><span class="sc-etPtWW iqHzp">/auth_token</span
                     ><svg
                       class="sc-cHqXqK fmmJjS"
                       style="margin-right: -25px"
@@ -2467,7 +2502,7 @@
                       <div tabindex="0" role="button">
                         <div class="sc-hSyjfr gufODt">
                           <span>https://api.scu-schedule-helper.me</span
-                          >/authToken
+                          >/auth_token
                         </div>
                       </div>
                     </div>
@@ -2629,7 +2664,7 @@
                                               <div class="hoverable collapsed">
                                                 <span
                                                   class="property token string"
-                                                  >"picture"</span
+                                                  >"photoUrl"</span
                                                 >:
                                                 <span class="token string"
                                                   >&quot;string&quot;</span
@@ -3991,6 +4026,35 @@
                     <tr class="">
                       <td
                         kind="field"
+                        title="photoUrl"
+                        class="sc-ovuCP sc-eauhAA iyKqKI iQpMVv"
+                      >
+                        <span class="sc-gQaihK kPDxnK"></span
+                        ><span class="property-name">photoUrl</span>
+                      </td>
+                      <td class="sc-fFoeYl cHXoZJ">
+                        <div>
+                          <div>
+                            <span class="sc-CNKsk sc-cqgMZH hPAOR dWKYKL"></span
+                            ><span class="sc-CNKsk sc-gQkENW hPAOR bIEFFi"
+                              >string</span
+                            >
+                          </div>
+                          <div>
+                            <div
+                              html="&lt;p&gt;A URL to the user&amp;#39;s profile picture.&lt;/p&gt;
+"
+                              class="sc-epnzzT sc-eMwmJz drsioI ewnBNs"
+                            >
+                              <p>A URL to the user&#39;s profile picture.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="">
+                      <td
+                        kind="field"
                         title="name"
                         class="sc-ovuCP sc-eauhAA iyKqKI iQpMVv"
                       >
@@ -4015,42 +4079,6 @@
                               class="sc-epnzzT sc-eMwmJz drsioI ewnBNs"
                             >
                               <p>The user&#39;s full name.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr class="">
-                      <td
-                        kind="field"
-                        title="subscription"
-                        class="sc-ovuCP sc-eauhAA iyKqKI iQpMVv"
-                      >
-                        <span class="sc-gQaihK kPDxnK"></span
-                        ><span class="property-name">subscription</span>
-                        <div class="sc-CNKsk sc-hGZxvd hPAOR feFoaC">
-                          required
-                        </div>
-                      </td>
-                      <td class="sc-fFoeYl cHXoZJ">
-                        <div>
-                          <div>
-                            <span class="sc-CNKsk sc-cqgMZH hPAOR dWKYKL"></span
-                            ><span class="sc-CNKsk sc-gQkENW hPAOR bIEFFi"
-                              >string</span
-                            >
-                          </div>
-                          <div>
-                            <div
-                              html="&lt;p&gt;A stringified webpush subscription object (so that they can receive notifications from our server).&lt;/p&gt;
-"
-                              class="sc-epnzzT sc-eMwmJz drsioI ewnBNs"
-                            >
-                              <p>
-                                A stringified webpush subscription object (so
-                                that they can receive notifications from our
-                                server).
-                              </p>
                             </div>
                           </div>
                         </div>
@@ -4091,11 +4119,14 @@
                     <tr class="last">
                       <td
                         kind="field"
-                        title="photoUrl"
+                        title="subscription"
                         class="sc-ovuCP sc-eauhAA iyKqKI iQpMVv"
                       >
                         <span class="sc-gQaihK kPDxnK"></span
-                        ><span class="property-name">photoUrl</span>
+                        ><span class="property-name">subscription</span>
+                        <div class="sc-CNKsk sc-hGZxvd hPAOR feFoaC">
+                          required
+                        </div>
                       </td>
                       <td class="sc-fFoeYl cHXoZJ">
                         <div>
@@ -4107,11 +4138,11 @@
                           </div>
                           <div>
                             <div
-                              html="&lt;p&gt;A URL to the user&amp;#39;s profile picture.&lt;/p&gt;
+                              html="&lt;p&gt;A stringified webpush subscription object.&lt;/p&gt;
 "
                               class="sc-epnzzT sc-eMwmJz drsioI ewnBNs"
                             >
-                              <p>A URL to the user&#39;s profile picture.</p>
+                              <p>A stringified webpush subscription object.</p>
                             </div>
                           </div>
                         </div>
@@ -4122,8 +4153,20 @@
                 <div>
                   <h3 class="sc-edsqmr dheqgt">Responses</h3>
                   <div>
-                    <button class="sc-gohMHu kQgYHQ" disabled="">
-                      <strong class="sc-bKXUjo beMorW">201<!-- --> </strong>
+                    <button class="sc-gohMHu cnBopK">
+                      <svg
+                        class="sc-cHqXqK hmCwJW"
+                        version="1.1"
+                        viewBox="0 0 24 24"
+                        x="0"
+                        xmlns="http://www.w3.org/2000/svg"
+                        y="0"
+                        aria-hidden="true"
+                      >
+                        <polygon
+                          points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "
+                        ></polygon></svg
+                      ><strong class="sc-bKXUjo beMorW">201<!-- --> </strong>
                       <div
                         html="&lt;p&gt;Successfully created a new user.&lt;/p&gt;
 "
@@ -4217,7 +4260,7 @@
                   <button class="sc-iPHsxv ebcgbH">
                     <span type="post" class="sc-txhaY cpnVKx http-verb post"
                       >post</span
-                    ><span class="sc-etPtWW iqHzp">/users</span
+                    ><span class="sc-etPtWW iqHzp">/user</span
                     ><svg
                       class="sc-cHqXqK fmmJjS"
                       style="margin-right: -25px"
@@ -4244,7 +4287,7 @@
                       </div>
                       <div tabindex="0" role="button">
                         <div class="sc-hSyjfr gufODt">
-                          <span>https://api.scu-schedule-helper.me</span>/users
+                          <span>https://api.scu-schedule-helper.me</span>/user
                         </div>
                       </div>
                     </div>
@@ -4300,10 +4343,34 @@
                                     <li>
                                       <div class="hoverable">
                                         <span class="property token string"
+                                          >"photoUrl"</span
+                                        >:
+                                        <span class="token string"
+                                          >&quot;string&quot;</span
+                                        ><span class="token punctuation"
+                                          >,</span
+                                        >
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="hoverable">
+                                        <span class="property token string"
                                           >"name"</span
                                         >:
                                         <span class="token string"
                                           >&quot;John Doe&quot;</span
+                                        ><span class="token punctuation"
+                                          >,</span
+                                        >
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="hoverable">
+                                        <span class="property token string"
+                                          >"photo"</span
+                                        >:
+                                        <span class="token string"
+                                          >&quot;b64 image&quot;</span
                                         ><span class="token punctuation"
                                           >,</span
                                         >
@@ -4320,30 +4387,6 @@
                                           expirationTime: null, keys: { p256dh:
                                           \&quot;\&quot;, auth: \&quot;\&quot;,
                                           }, };&quot;</span
-                                        ><span class="token punctuation"
-                                          >,</span
-                                        >
-                                      </div>
-                                    </li>
-                                    <li>
-                                      <div class="hoverable">
-                                        <span class="property token string"
-                                          >"photo"</span
-                                        >:
-                                        <span class="token string"
-                                          >&quot;string&quot;</span
-                                        ><span class="token punctuation"
-                                          >,</span
-                                        >
-                                      </div>
-                                    </li>
-                                    <li>
-                                      <div class="hoverable">
-                                        <span class="property token string"
-                                          >"photoUrl"</span
-                                        >:
-                                        <span class="token string"
-                                          >&quot;string&quot;</span
                                         >
                                       </div>
                                     </li>
@@ -4365,7 +4408,7 @@
                   <div class="sc-bMTdWJ fbQvpV" data-rttabs="true">
                     <ul class="react-tabs__tab-list" role="tablist">
                       <li
-                        class="tab-error react-tabs__tab--selected"
+                        class="tab-success react-tabs__tab--selected"
                         role="tab"
                         id="tab:Rjidq:0"
                         aria-selected="true"
@@ -4374,7 +4417,7 @@
                         tabindex="0"
                         data-rttab="true"
                       >
-                        400
+                        201
                       </li>
                       <li
                         class="tab-error"
@@ -4385,7 +4428,7 @@
                         aria-controls="panel:Rjidq:1"
                         data-rttab="true"
                       >
-                        401
+                        400
                       </li>
                       <li
                         class="tab-error"
@@ -4394,6 +4437,17 @@
                         aria-selected="false"
                         aria-disabled="false"
                         aria-controls="panel:Rjidq:2"
+                        data-rttab="true"
+                      >
+                        401
+                      </li>
+                      <li
+                        class="tab-error"
+                        role="tab"
+                        id="tab:Rjidq:3"
+                        aria-selected="false"
+                        aria-disabled="false"
+                        aria-controls="panel:Rjidq:3"
                         data-rttab="true"
                       >
                         500
@@ -4414,8 +4468,9 @@
                           <div class="sc-eDHQDy mMhCU">
                             <div class="sc-uYFMi hhzNne">
                               <button>
-                                <div class="sc-eWPXlR ezdXRP">Copy</div>
-                              </button>
+                                <div class="sc-eWPXlR ezdXRP">Copy</div></button
+                              ><button>Expand all</button
+                              ><button>Collapse all</button>
                             </div>
                             <div class="sc-epnzzT drsioI sc-giBObj iyEpFV">
                               <div class="redoc-json">
@@ -4430,10 +4485,76 @@
                                     <li>
                                       <div class="hoverable">
                                         <span class="property token string"
-                                          >"message"</span
+                                          >"subscriptions"</span
+                                        >:
+                                        <button
+                                          class="collapser"
+                                          aria-label="collapse"
+                                        ></button
+                                        ><span class="token punctuation">[</span
+                                        ><span class="ellipsis"></span>
+                                        <ul class="array collapsible">
+                                          <li>
+                                            <div class="hoverable collapsed">
+                                              <span class="token string"
+                                                >&quot;string&quot;</span
+                                              >
+                                            </div>
+                                          </li>
+                                        </ul>
+                                        <span class="token punctuation">]</span
+                                        ><span class="token punctuation"
+                                          >,</span
+                                        >
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="hoverable">
+                                        <span class="property token string"
+                                          >"id"</span
                                         >:
                                         <span class="token string"
-                                          >&quot;Error message.&quot;</span
+                                          >&quot;jdoe&quot;</span
+                                        ><span class="token punctuation"
+                                          >,</span
+                                        >
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="hoverable">
+                                        <span class="property token string"
+                                          >"name"</span
+                                        >:
+                                        <span class="token string"
+                                          >&quot;John Doe&quot;</span
+                                        ><span class="token punctuation"
+                                          >,</span
+                                        >
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="hoverable">
+                                        <span class="property token string"
+                                          >"email"</span
+                                        >:
+                                        <span class="token string"
+                                          >&quot;jdoe@scu.edu&quot;</span
+                                        ><span class="token punctuation"
+                                          >,</span
+                                        >
+                                      </div>
+                                    </li>
+                                    <li>
+                                      <div class="hoverable">
+                                        <span class="property token string"
+                                          >"photoUrl"</span
+                                        >:
+                                        <span class="token string">&quot;</span
+                                        ><a
+                                          href="https://scu-schedule-helper.s3.amazonaws.com/u%2523jdoe/photo"
+                                          >https://scu-schedule-helper.s3.amazonaws.com/u%23jdoe/photo</a
+                                        ><span class="token string"
+                                          >&quot;</span
                                         >
                                       </div>
                                     </li>
@@ -4457,6 +4578,12 @@
                       role="tabpanel"
                       id="panel:Rjidq:2"
                       aria-labelledby="tab:Rjidq:2"
+                    ></div>
+                    <div
+                      class="react-tabs__tab-panel"
+                      role="tabpanel"
+                      id="panel:Rjidq:3"
+                      aria-labelledby="tab:Rjidq:3"
                     ></div>
                   </div>
                 </div>
@@ -4683,7 +4810,7 @@
                   <button class="sc-iPHsxv ebcgbH">
                     <span type="get" class="sc-txhaY IVbnb http-verb get"
                       >get</span
-                    ><span class="sc-etPtWW iqHzp">/users/{userId}</span
+                    ><span class="sc-etPtWW iqHzp">/user/{userId}</span
                     ><svg
                       class="sc-cHqXqK fmmJjS"
                       style="margin-right: -25px"
@@ -4711,7 +4838,7 @@
                       <div tabindex="0" role="button">
                         <div class="sc-hSyjfr gufODt">
                           <span>https://api.scu-schedule-helper.me</span
-                          >/users/{userId}
+                          >/user/{userId}
                         </div>
                       </div>
                     </div>
@@ -4852,10 +4979,80 @@
                                               <div class="hoverable collapsed">
                                                 <span
                                                   class="property token string"
-                                                  >"startHour"</span
+                                                  >"preferredSectionTimeRange"</span
                                                 >:
-                                                <span class="token number"
-                                                  >8</span
+                                                <button
+                                                  class="collapser"
+                                                  aria-label="expand"
+                                                ></button
+                                                ><span class="token punctuation"
+                                                  >{</span
+                                                ><span class="ellipsis"></span>
+                                                <ul class="obj collapsible">
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"startHour"</span
+                                                      >:
+                                                      <span class="token number"
+                                                        >8</span
+                                                      ><span
+                                                        class="token punctuation"
+                                                        >,</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"startMinute"</span
+                                                      >:
+                                                      <span class="token number"
+                                                        >0</span
+                                                      ><span
+                                                        class="token punctuation"
+                                                        >,</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"endHour"</span
+                                                      >:
+                                                      <span class="token number"
+                                                        >18</span
+                                                      ><span
+                                                        class="token punctuation"
+                                                        >,</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"endMinute"</span
+                                                      >:
+                                                      <span class="token number"
+                                                        >0</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                </ul>
+                                                <span class="token punctuation"
+                                                  >}</span
                                                 ><span class="token punctuation"
                                                   >,</span
                                                 >
@@ -4865,62 +5062,48 @@
                                               <div class="hoverable collapsed">
                                                 <span
                                                   class="property token string"
-                                                  >"startMinute"</span
+                                                  >"scoreWeighting"</span
                                                 >:
-                                                <span class="token number"
-                                                  >0</span
+                                                <button
+                                                  class="collapser"
+                                                  aria-label="expand"
+                                                ></button
                                                 ><span class="token punctuation"
-                                                  >,</span
-                                                >
-                                              </div>
-                                            </li>
-                                            <li>
-                                              <div class="hoverable collapsed">
-                                                <span
-                                                  class="property token string"
-                                                  >"endHour"</span
-                                                >:
-                                                <span class="token number"
-                                                  >18</span
-                                                ><span class="token punctuation"
-                                                  >,</span
-                                                >
-                                              </div>
-                                            </li>
-                                            <li>
-                                              <div class="hoverable collapsed">
-                                                <span
-                                                  class="property token string"
-                                                  >"endMinute"</span
-                                                >:
-                                                <span class="token number"
-                                                  >0</span
-                                                ><span class="token punctuation"
-                                                  >,</span
-                                                >
-                                              </div>
-                                            </li>
-                                            <li>
-                                              <div class="hoverable collapsed">
-                                                <span
-                                                  class="property token string"
-                                                  >"weightScuEvals"</span
-                                                >:
-                                                <span class="token number"
-                                                  >50</span
-                                                ><span class="token punctuation"
-                                                  >,</span
-                                                >
-                                              </div>
-                                            </li>
-                                            <li>
-                                              <div class="hoverable collapsed">
-                                                <span
-                                                  class="property token string"
-                                                  >"weightRmp"</span
-                                                >:
-                                                <span class="token number"
-                                                  >50</span
+                                                  >{</span
+                                                ><span class="ellipsis"></span>
+                                                <ul class="obj collapsible">
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"weightScuEvals"</span
+                                                      >:
+                                                      <span class="token number"
+                                                        >50</span
+                                                      ><span
+                                                        class="token punctuation"
+                                                        >,</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"weightRmp"</span
+                                                      >:
+                                                      <span class="token number"
+                                                        >50</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                </ul>
+                                                <span class="token punctuation"
+                                                  >}</span
                                                 >
                                               </div>
                                             </li>
@@ -5078,7 +5261,23 @@
                                                     >
                                                       <span
                                                         class="property token string"
-                                                        >"photo"</span
+                                                        >"email"</span
+                                                      >:
+                                                      <span class="token string"
+                                                        >&quot;jdoe@scu.edu&quot;</span
+                                                      ><span
+                                                        class="token punctuation"
+                                                        >,</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"photoUrl"</span
                                                       >:
                                                       <span class="token string"
                                                         >&quot;</span
@@ -5183,7 +5382,23 @@
                                                     >
                                                       <span
                                                         class="property token string"
-                                                        >"photo"</span
+                                                        >"email"</span
+                                                      >:
+                                                      <span class="token string"
+                                                        >&quot;jdoe@scu.edu&quot;</span
+                                                      ><span
+                                                        class="token punctuation"
+                                                        >,</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span
+                                                        class="property token string"
+                                                        >"photoUrl"</span
                                                       >:
                                                       <span class="token string"
                                                         >&quot;</span
@@ -5295,7 +5510,19 @@
                                       <li>
                                         <div class="hoverable">
                                           <span class="property token string"
-                                            >"photo"</span
+                                            >"email"</span
+                                          >:
+                                          <span class="token string"
+                                            >&quot;jdoe@scu.edu&quot;</span
+                                          ><span class="token punctuation"
+                                            >,</span
+                                          >
+                                        </div>
+                                      </li>
+                                      <li>
+                                        <div class="hoverable">
+                                          <span class="property token string"
+                                            >"photoUrl"</span
                                           >:
                                           <span class="token string"
                                             >&quot;</span
@@ -5458,62 +5685,45 @@
                   <div></div>
                   <table class="sc-dprtRQ eNFxPe">
                     <tbody>
-                      <tr class="">
-                        <td
-                          kind="field"
-                          title="add"
-                          class="sc-ovuCP sc-eauhAA iyKqKI iQpMVv"
-                        >
-                          <span class="sc-gQaihK kPDxnK"></span
-                          ><span class="property-name">add</span>
-                        </td>
-                        <td class="sc-fFoeYl cHXoZJ">
-                          <div>
-                            <div>
-                              <span class="sc-CNKsk sc-cqgMZH hPAOR dWKYKL"
-                                >Array of </span
-                              ><span class="sc-CNKsk sc-gQkENW hPAOR bIEFFi"
-                                >strings</span
-                              >
-                            </div>
-                            <div>
-                              <div
-                                html="&lt;p&gt;Items to add to the list.&lt;/p&gt;
-"
-                                class="sc-epnzzT sc-eMwmJz drsioI ewnBNs"
-                              >
-                                <p>Items to add to the list.</p>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
                       <tr class="last">
                         <td
                           kind="field"
-                          title="remove"
-                          class="sc-ovuCP sc-eauhAA iyKqKI iQpMVv"
+                          title="interestedSections"
+                          class="sc-ovuCP sc-eauhAA sc-hsfCcR iyKqKI iQpMVv buGHPE"
                         >
                           <span class="sc-gQaihK kPDxnK"></span
-                          ><span class="property-name">remove</span>
+                          ><button aria-label="expand interestedSections">
+                            <span class="property-name">interestedSections</span
+                            ><svg
+                              class="sc-cHqXqK ccTkAM"
+                              version="1.1"
+                              viewBox="0 0 24 24"
+                              x="0"
+                              xmlns="http://www.w3.org/2000/svg"
+                              y="0"
+                              aria-hidden="true"
+                            >
+                              <polygon
+                                points="17.3 8.3 12 13.6 6.7 8.3 5.3 9.7 12 16.4 18.7 9.7 "
+                              ></polygon>
+                            </svg>
+                          </button>
                         </td>
                         <td class="sc-fFoeYl cHXoZJ">
                           <div>
                             <div>
-                              <span class="sc-CNKsk sc-cqgMZH hPAOR dWKYKL"
-                                >Array of </span
+                              <span
+                                class="sc-CNKsk sc-cqgMZH hPAOR dWKYKL"
+                              ></span
                               ><span class="sc-CNKsk sc-gQkENW hPAOR bIEFFi"
-                                >strings</span
+                                >object</span
                               >
                             </div>
                             <div>
                               <div
-                                html="&lt;p&gt;Items to remove from the list.&lt;/p&gt;
-"
+                                html=""
                                 class="sc-epnzzT sc-eMwmJz drsioI ewnBNs"
-                              >
-                                <p>Items to remove from the list.</p>
-                              </div>
+                              ></div>
                             </div>
                           </div>
                         </td>
@@ -5650,7 +5860,7 @@
                   <button class="sc-iPHsxv ebcgbH">
                     <span type="put" class="sc-txhaY fzqXJO http-verb put"
                       >put</span
-                    ><span class="sc-etPtWW iqHzp">/users/{userId}</span
+                    ><span class="sc-etPtWW iqHzp">/user/{userId}</span
                     ><svg
                       class="sc-cHqXqK fmmJjS"
                       style="margin-right: -25px"
@@ -5678,7 +5888,7 @@
                       <div tabindex="0" role="button">
                         <div class="sc-hSyjfr gufODt">
                           <span>https://api.scu-schedule-helper.me</span
-                          >/users/{userId}
+                          >/user/{userId}
                         </div>
                       </div>
                     </div>
@@ -5774,56 +5984,81 @@
                                       <li>
                                         <div class="hoverable">
                                           <span class="property token string"
-                                            >"add"</span
+                                            >"interestedSections"</span
                                           >:
                                           <button
                                             class="collapser"
                                             aria-label="collapse"
                                           ></button
                                           ><span class="token punctuation"
-                                            >[</span
+                                            >{</span
                                           ><span class="ellipsis"></span>
-                                          <ul class="array collapsible">
+                                          <ul class="obj collapsible">
                                             <li>
                                               <div class="hoverable collapsed">
-                                                <span class="token string"
-                                                  >&quot;P{Natalie
-                                                  Linnell}S{CSCI187-1}&quot;</span
+                                                <span
+                                                  class="property token string"
+                                                  >"add"</span
+                                                >:
+                                                <button
+                                                  class="collapser"
+                                                  aria-label="expand"
+                                                ></button
+                                                ><span class="token punctuation"
+                                                  >[</span
+                                                ><span class="ellipsis"></span>
+                                                <ul class="array collapsible">
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span class="token string"
+                                                        >&quot;P{Natalie
+                                                        Linnell}S{CSCI187-1}&quot;</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                </ul>
+                                                <span class="token punctuation"
+                                                  >]</span
+                                                ><span class="token punctuation"
+                                                  >,</span
+                                                >
+                                              </div>
+                                            </li>
+                                            <li>
+                                              <div class="hoverable collapsed">
+                                                <span
+                                                  class="property token string"
+                                                  >"remove"</span
+                                                >:
+                                                <button
+                                                  class="collapser"
+                                                  aria-label="expand"
+                                                ></button
+                                                ><span class="token punctuation"
+                                                  >[</span
+                                                ><span class="ellipsis"></span>
+                                                <ul class="array collapsible">
+                                                  <li>
+                                                    <div
+                                                      class="hoverable collapsed"
+                                                    >
+                                                      <span class="token string"
+                                                        >&quot;P{Natalie
+                                                        Linnell}S{CSCI187-2}&quot;</span
+                                                      >
+                                                    </div>
+                                                  </li>
+                                                </ul>
+                                                <span class="token punctuation"
+                                                  >]</span
                                                 >
                                               </div>
                                             </li>
                                           </ul>
                                           <span class="token punctuation"
-                                            >]</span
-                                          ><span class="token punctuation"
-                                            >,</span
-                                          >
-                                        </div>
-                                      </li>
-                                      <li>
-                                        <div class="hoverable">
-                                          <span class="property token string"
-                                            >"remove"</span
-                                          >:
-                                          <button
-                                            class="collapser"
-                                            aria-label="collapse"
-                                          ></button
-                                          ><span class="token punctuation"
-                                            >[</span
-                                          ><span class="ellipsis"></span>
-                                          <ul class="array collapsible">
-                                            <li>
-                                              <div class="hoverable collapsed">
-                                                <span class="token string"
-                                                  >&quot;P{Natalie
-                                                  Linnell}S{CSCI187-2}&quot;</span
-                                                >
-                                              </div>
-                                            </li>
-                                          </ul>
-                                          <span class="token punctuation"
-                                            >]</span
+                                            >}</span
                                           >
                                         </div>
                                       </li>
@@ -6173,7 +6408,7 @@
                   <button class="sc-iPHsxv ebcgbH">
                     <span type="delete" class="sc-txhaY gtVIQH http-verb delete"
                       >delete</span
-                    ><span class="sc-etPtWW iqHzp">/users/{userId}</span
+                    ><span class="sc-etPtWW iqHzp">/user/{userId}</span
                     ><svg
                       class="sc-cHqXqK fmmJjS"
                       style="margin-right: -25px"
@@ -6201,7 +6436,7 @@
                       <div tabindex="0" role="button">
                         <div class="sc-hSyjfr gufODt">
                           <span>https://api.scu-schedule-helper.me</span
-                          >/users/{userId}
+                          >/user/{userId}
                         </div>
                       </div>
                     </div>
@@ -6341,7 +6576,7 @@
               },
             ],
             paths: {
-              "/authToken": {
+              "/auth_token": {
                 get: {
                   tags: ["Authentication"],
                   security: [{ oauth: [] }, { bearerRefreshToken: [] }],
@@ -6384,7 +6619,7 @@
                                         type: "string",
                                         description: "The user's full name.",
                                       },
-                                      picture: {
+                                      photoUrl: {
                                         type: "string",
                                         description:
                                           "A URL to the user's Google profile picture.",
@@ -6553,7 +6788,7 @@
                   },
                 },
               },
-              "/users": {
+              "/user": {
                 post: {
                   summary: "Create a new user",
                   tags: ["Users"],
@@ -6566,25 +6801,11 @@
                       "application/json": {
                         schema: {
                           type: "object",
+                          allOf: [
+                            { $ref: "#/components/schemas/PersonalInfo" },
+                          ],
                           required: ["name", "subscription"],
                           properties: {
-                            name: {
-                              type: "string",
-                              description: "The user's full name.",
-                              example: "John Doe",
-                            },
-                            subscription: {
-                              type: "string",
-                              description:
-                                "A stringified webpush subscription object (so that they can receive notifications from our server).",
-                              example:
-                                '{ endpoint: "https://fcm.googleapis.com/fcm/send/id", expirationTime: null, keys: { p256dh: "", auth: "", }, };',
-                            },
-                            photo: {
-                              type: "string",
-                              description:
-                                "A base64-encoded image of the user's profile picture.",
-                            },
                             photoUrl: {
                               type: "string",
                               description:
@@ -6596,7 +6817,29 @@
                     },
                   },
                   responses: {
-                    201: { description: "Successfully created a new user." },
+                    201: {
+                      description: "Successfully created a new user.",
+                      content: {
+                        "application/json": {
+                          schema: {
+                            type: "object",
+                            allOf: [
+                              {
+                                $ref: "#/components/schemas/UserLimitedProfile",
+                              },
+                            ],
+                            properties: {
+                              subscriptions: {
+                                type: "array",
+                                description:
+                                  "An array of stringified webpush subscription objects.",
+                                items: { type: "string" },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
                     400: {
                       description:
                         "Bad Request - Invalid data (probably an invalid photo) provided.",
@@ -6626,7 +6869,7 @@
                   },
                 },
               },
-              "/users/{userId}": {
+              "/user/{userId}": {
                 get: {
                   operationId: "getUser",
                   tags: ["Users"],
@@ -6732,12 +6975,12 @@
                             {
                               type: "object",
                               title: "personal information",
-                              $ref: "#/components/schemas/PersonalInfo",
+                              $ref: "#/components/schemas/PersonalInfoUpdate",
                             },
                             {
                               type: "object",
                               title: "preferences",
-                              $ref: "#/components/schemas/Preferences",
+                              $ref: "#/components/schemas/PreferencesUpdate",
                             },
                             {
                               type: "object",
@@ -6951,7 +7194,12 @@
                       description: "The user's full name.",
                       example: "John Doe",
                     },
-                    photo: {
+                    email: {
+                      type: "string",
+                      description: "The user's email address.",
+                      example: "jdoe@scu.edu",
+                    },
+                    photoUrl: {
                       type: "string",
                       description: "A URL to the user's profile picture.",
                       example:
@@ -6986,7 +7234,7 @@
                 Preferences: {
                   type: "object",
                   properties: {
-                    preferredTimeRange: {
+                    preferredSectionTimeRange: {
                       type: "object",
                       description:
                         "The user's preferred time range for classes.",
@@ -7008,12 +7256,13 @@
                     },
                   },
                   example: {
-                    startHour: 8,
-                    startMinute: 0,
-                    endHour: 18,
-                    endMinute: 0,
-                    weightScuEvals: 50,
-                    weightRmp: 50,
+                    preferredSectionTimeRange: {
+                      startHour: 8,
+                      startMinute: 0,
+                      endHour: 18,
+                      endMinute: 0,
+                    },
+                    scoreWeighting: { weightScuEvals: 50, weightRmp: 50 },
                   },
                 },
                 ListUpdate: {
@@ -7035,57 +7284,104 @@
                   type: "object",
                   description:
                     "An object containing sections to add or remove from the user's interested sections.",
-                  allOf: [{ $ref: "#/components/schemas/ListUpdate" }],
+                  properties: {
+                    interestedSections: {
+                      type: "object",
+                      allOf: [{ $ref: "#/components/schemas/ListUpdate" }],
+                    },
+                  },
                   example: {
-                    add: ["P{Natalie Linnell}S{CSCI187-1}"],
-                    remove: ["P{Natalie Linnell}S{CSCI187-2}"],
+                    interestedSections: {
+                      add: ["P{Natalie Linnell}S{CSCI187-1}"],
+                      remove: ["P{Natalie Linnell}S{CSCI187-2}"],
+                    },
                   },
                 },
                 CoursesTakenUpdate: {
                   type: "object",
                   description:
                     "An object containing courses to add or remove from the user's taken courses.",
-                  allOf: [{ $ref: "#/components/schemas/ListUpdate" }],
+                  properties: {
+                    coursesTaken: {
+                      type: "object",
+                      allOf: [{ $ref: "#/components/schemas/ListUpdate" }],
+                    },
+                  },
                   example: {
-                    add: ["P{Natalie Linnell}C{CSCI187}"],
-                    remove: ["P{Natalie Linnell}C{CSCI161}"],
+                    coursesTaken: {
+                      add: ["P{Natalie Linnell}C{CSCI187}"],
+                      remove: ["P{Natalie Linnell}C{CSCI161}"],
+                    },
+                  },
+                },
+                PersonalInfoUpdate: {
+                  type: "object",
+                  properties: {
+                    personalInfo: {
+                      type: "object",
+                      allOf: [{ $ref: "#/components/schemas/PersonalInfo" }],
+                    },
+                  },
+                },
+                PreferencesUpdate: {
+                  type: "object",
+                  properties: {
+                    preferences: {
+                      type: "object",
+                      allOf: [{ $ref: "#/components/schemas/Preferences" }],
+                    },
                   },
                 },
                 FriendsUpdate: {
                   type: "object",
                   description:
                     "An object containing users to add or remove from the user's friends list.",
-                  allOf: [{ $ref: "#/components/schemas/ListUpdate" }],
+                  properties: {
+                    friends: {
+                      type: "object",
+                      allOf: [{ $ref: "#/components/schemas/ListUpdate" }],
+                    },
+                  },
                   example: {
-                    add: ["userd1", "userId2"],
-                    remove: ["userId3", "userId4"],
+                    friends: {
+                      add: ["userd1", "userId2"],
+                      remove: ["userId3", "userId4"],
+                    },
                   },
                 },
                 FriendRequestsUpdate: {
                   type: "object",
                   properties: {
-                    send: {
-                      type: "array",
-                      description: "Friend requests to send to other users.",
-                      items: { type: "string" },
-                    },
-                    removeIncoming: {
-                      type: "array",
-                      description:
-                        "Friend requests to remove from the user's incoming friend requests.",
-                      items: { type: "string" },
-                    },
-                    removeOutgoing: {
-                      type: "array",
-                      description:
-                        "Friend requests to remove from the user's outgoing friend requests.",
-                      items: { type: "string" },
+                    friendRequests: {
+                      type: "object",
+                      properties: {
+                        send: {
+                          type: "array",
+                          description:
+                            "Friend requests to send to other users.",
+                          items: { type: "string" },
+                        },
+                        removeIncoming: {
+                          type: "array",
+                          description:
+                            "Friend requests to remove from the user's incoming friend requests.",
+                          items: { type: "string" },
+                        },
+                        removeOutgoing: {
+                          type: "array",
+                          description:
+                            "Friend requests to remove from the user's outgoing friend requests.",
+                          items: { type: "string" },
+                        },
+                      },
                     },
                   },
                   example: {
-                    send: ["userd1", "userId2"],
-                    removeIncoming: ["userId3", "userId4"],
-                    removeOutgoing: ["userId5", "userId6"],
+                    friendRequests: {
+                      send: ["userd1", "userId2"],
+                      removeIncoming: ["userId3", "userId4"],
+                      removeOutgoing: ["userId5", "userId6"],
+                    },
                   },
                 },
                 ProfessorAggregateRatings: {
@@ -7353,12 +7649,12 @@
               ["aggreg", { _index: 15, title: {}, description: { 3: {} } }],
               ["amount", { _index: 25, title: {}, description: { 6: {} } }],
               ["associ", { _index: 32, title: {}, description: { 8: {} } }],
+              ["auth_token", { _index: 11, title: {}, description: { 1: {} } }],
               ["authent", { _index: 0, title: { 0: {} }, description: {} }],
               [
                 "author",
                 { _index: 26, title: {}, description: { 6: {}, 8: {} } },
               ],
-              ["authtoken", { _index: 11, title: {}, description: { 1: {} } }],
               ["cours", { _index: 17, title: {}, description: { 3: {} } }],
               [
                 "creat",
@@ -7420,11 +7716,11 @@
                 },
               ],
               ["user'", { _index: 22, title: { 6: {} }, description: {} }],
-              ["userid", { _index: 34, title: {}, description: { 8: {} } }],
               [
-                "users/{userid",
+                "user/{userid",
                 { _index: 28, title: {}, description: { 6: {}, 7: {}, 8: {} } },
               ],
+              ["userid", { _index: 34, title: {}, description: { 8: {} } }],
             ],
             pipeline: [],
           },

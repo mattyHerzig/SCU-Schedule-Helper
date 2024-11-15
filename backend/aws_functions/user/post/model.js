@@ -1,22 +1,10 @@
 export class CreatedUserResponse {
-  constructor(id, publicInfo) {
+  constructor(id, name, photoUrl, email, subscription) {
     this.id = id;
-    this.publicInfo = publicInfo;
-  }
-}
-
-export class PublicInfo {
-  constructor(profile) {
-    this.profile = profile;
-  }
-}
-
-export class Profile {
-  constructor(name, photoUrl, email, notificationId) {
     this.name = name;
     this.photoUrl = photoUrl;
     this.email = email;
-    this.notificationIds = new Set(notificationId);
+    this.subscriptions = [subscription];
   }
 }
 

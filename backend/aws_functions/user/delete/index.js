@@ -1,14 +1,18 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
+  DynamoDBClient,
   QueryCommand,
-  BatchWriteCommand,
-} from "@aws-sdk/lib-dynamodb";
+  BatchWriteItemCommand,
+} from "@aws-sdk/client-dynamodb";
 import { handleWithAuthorization } from "./utils/authorization.js";
+import {
+  internalServerError,
+  noContentValidResponse,
+  notFoundError,
+} from "./model.js";
 
-const docClient = DynamoDBDocumentClient.from(
-  new DynamoDBClient({ region: process.env.AWS_DDB_REGION }),
-);
+const dynamoDBClient = new DynamoDBClient({
+  region: process.env.AWS_DDB_REGION,
+});
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
@@ -16,11 +20,16 @@ export async function handler(event, context) {
 }
 
 async function deleteUser(event, context, userId) {
-  const sortKeys = await getSortKeys(`u#${userId}`);
-
+  let sortKeys = [];
+  try {
+    sortKeys = await getSortKeys(`u#${userId}`);
+  } catch (error) {
+    console.error("Error getting sort keys:", error);
+    return internalServerError("Could not get the user's entries.");
+  }
   if (sortKeys.length === 0) {
     console.log(`No sort keys for primary key u#${userId}`);
-    return;
+    return notFoundError(`No sort keys for primary key u#${userId}`);
   }
   const batches = [];
   while (sortKeys.length > 0) {
@@ -30,12 +39,12 @@ async function deleteUser(event, context, userId) {
     const delete_requests = batch.map((sk) => ({
       DeleteRequest: {
         Key: {
-          pk: `u#${userId}`,
-          sk: sk,
+          pk: { S: `u#${userId}` },
+          sk: { S: sk },
         },
       },
     }));
-
+    if (delete_requests.length === 0) return noContentValidResponse;
     const params = {
       RequestItems: {
         [tableName]: delete_requests,
@@ -43,31 +52,25 @@ async function deleteUser(event, context, userId) {
     };
 
     try {
-      const result = await docClient.send(new BatchWriteCommand(params));
-      console.log(`Deleted ${delete_requests.length} items from the table.`);
+      await dynamoDBClient.send(new BatchWriteItemCommand(params));
     } catch (error) {
       console.error("Error deleting items:", error);
-      throw error;
+      return internalServerError("Error deleting items.");
     }
   }
+  return noContentValidResponse;
 }
 
 const getSortKeys = async (pk) => {
-  const params = {
+  const userQuery = {
     TableName: tableName,
     KeyConditionExpression: "pk = :primaryKey",
     ExpressionAttributeValues: {
-      ":primaryKey": pk,
+      ":primaryKey": { S: pk },
     },
   };
 
-  try {
-    const data = await docClient.send(new QueryCommand(params));
-    const sortKeys = data.Items.map((item) => item.sk);
-    console.log("Sort keys:", sortKeys);
-    return sortKeys;
-  } catch (error) {
-    console.error("Error querying items:", error);
-    throw error;
-  }
+  const data = await dynamoDBClient.send(new QueryCommand(userQuery));
+  const sortKeys = data.Items.map((item) => item.sk.S);
+  return sortKeys;
 };
