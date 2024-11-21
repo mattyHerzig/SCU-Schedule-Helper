@@ -10,7 +10,7 @@ async function runTest() {
       },
     },
     headers: {
-      authorization: `Bearer ${process.env.TEST_JWT_SECRET}`,
+      authorization: `Bearer ${process.env.TEST_ACCESS_JWT}`,
     },
     body: JSON.stringify({
       preferences: {
@@ -22,14 +22,27 @@ async function runTest() {
         },
         scoreWeighting: { scuEvals: 75, rmp: 25 },
       },
-      friends: {
-        add: ["swdean"],
-        remove: ["1"],
+      interestedSections: {
+        // add: ["test"],
+        // remove: ["test"],
+      },
+      coursesTaken: {
+        // add: ["test"],
+        // remove: ["test"],
+      },
+      personal: {
+        name: "Test Update",
+        subscriptions: ["test"],
+        photo: null,
       },
       friendRequests: {
-        send: ["3"],
-        removeIncoming: ["4"],
-        removeOutgoing: ["5"],
+        // send: ["esartory"],
+        // removeIncoming: ["2"],
+        // removeOutgoing: ["swdean"],
+      },
+      friends: {
+        add: ["swdean"],
+        // remove: ["esartory"],
       },
     }),
   };

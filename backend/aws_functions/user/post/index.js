@@ -1,4 +1,5 @@
 import {
+  BatchWriteItemCommand,
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
@@ -21,11 +22,11 @@ const ddbRegion = process.env.AWS_DDB_REGION;
 const s3Region = process.env.AWS_S3_REGION;
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 const dynamoDBClient = new DynamoDBClient({
-  ddbRegion,
+  region: ddbRegion,
   maxAttempts,
   retryMode,
 });
-const s3Client = new S3Client({ s3Region });
+const s3Client = new S3Client({ region: s3Region });
 
 export async function handler(event, context) {
   return await handleWithAuthorization(event, context, handlePostUserRequest);
@@ -97,7 +98,7 @@ async function userAlreadyExists(userId) {
       `error checking if user already exists (received HTTP status code from DynamoDB: ${response.$metadata.httpStatusCode}).`,
     );
   }
-  return response.Item !== undefined;
+  return response.Item;
 }
 
 async function uploadUserPhotoToS3(userId, base64EncodedPhoto) {
@@ -121,20 +122,48 @@ async function uploadUserPhotoToS3(userId, base64EncodedPhoto) {
 }
 
 async function addUserToDatabase(userId, name, subscription, photoUrl) {
-  const item = {
+  const personalItem = {
     pk: { S: `u#${userId}` },
     sk: { S: "info#personal" },
     name: { S: name },
     email: { S: `${userId}@scu.edu` },
     subscriptions: { SS: [subscription] },
-    photo_url: { S: photoUrl },
+    photoUrl: { S: photoUrl },
   };
-  const putInput = {
-    Item: item,
-    TableName: tableName,
+  const preferencesItem = {
+    pk: { S: `u#${userId}` },
+    sk: { S: "info#preferences" },
+    preferredSectionTimeRange: { N: getTimeRange(6, 0, 20, 0) },
+    scoreWeighting: { N: getScoreWeighting(50, 50) },
   };
-  dynamoDBClient.send(new PutItemCommand(putInput));
-  const dbResponse = await dynamoDBClient.send(new PutItemCommand(putInput));
+  const coursesTakenItem = {
+    pk: { S: `u#${userId}` },
+    sk: { S: "info#coursesTaken" },
+    courses: { NULL: true },
+  };
+  const interestedSectionsItem = {
+    pk: { S: `u#${userId}` },
+    sk: { S: "info#interestedSections" },
+    sections: { NULL: true },
+  };
+  const batchPutItem = {
+    RequestItems: {
+      [tableName]: [
+        personalItem,
+        preferencesItem,
+        coursesTakenItem,
+        interestedSectionsItem,
+      ].map((item) => ({
+        PutRequest: {
+          Item: item,
+        },
+      })),
+    },
+  };
+  // console.log(JSON.stringify(batchPutItem, 0, 2));
+  const dbResponse = await dynamoDBClient.send(
+    new BatchWriteItemCommand(batchPutItem),
+  );
   if (dbResponse.$metadata.httpStatusCode !== 200) {
     throw new Error(
       `error adding user to database (received HTTP status code from DynamoDB: ${dbResponse.$metadata.httpStatusCode}).`,
@@ -149,4 +178,14 @@ async function addUserToDatabase(userId, name, subscription, photoUrl) {
       subscription,
     ),
   );
+}
+
+function getTimeRange(startHour, startMinute, endHour, endMinute) {
+  return new String(
+    (startHour << 17) + (startMinute << 11) + (endHour << 6) + endMinute,
+  );
+}
+
+function getScoreWeighting(scuEvals, rmp) {
+  return new String((scuEvals << 7) + rmp);
 }

@@ -1,89 +1,135 @@
 import { client } from "./dynamoClient.js";
-import { PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
-import { removeIncomingRequest } from "./friendRequests.js";
+import {
+  GetItemCommand,
+  BatchWriteItemCommand,
+} from "@aws-sdk/client-dynamodb";
+import { removeFriendRequest } from "./friendRequests.js";
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function friends(userId, friendsData) {
+  const updates = [];
   if (friendsData.add && Array.isArray(friendsData.add)) {
     for (const friendId of friendsData.add) {
-      await addFriend(userId, friendId);
+      updates.push(addFriend(userId, friendId));
     }
   }
-
   if (friendsData.remove && Array.isArray(friendsData.remove)) {
     for (const friendId of friendsData.remove) {
-      await removeFriend(userId, friendId);
+      updates.push(removeFriend(userId, friendId));
     }
   }
+  await Promise.all(updates);
 }
 
-export async function addFriend(userId, friendId) {
-  const params = {
-    TableName: tableName,
-    Item: {
-      pk: { S: `u#${userId}` },
-      sk: { S: `friend#cur#${friendId}` },
+async function addFriend(userId, friendId) {
+  if (!(await receivedIncomingFriendRequest(userId, friendId))) {
+    console.error(
+      `Error adding friend ${friendId} to user ${userId}: user ${userId} has not received friend request from (or is already friends with) ${friendId}`,
+    );
+    throw new Error(
+      `user ${userId} has not received friend request from ${friendId}, or is already friends with ${friendId}`,
+      { cause: 400 },
+    );
+  }
+
+  const addFriendForCurrentUser = {
+    PutRequest: {
+      Item: {
+        pk: { S: `u#${userId}` },
+        sk: { S: `friend#cur#${friendId}` },
+      },
     },
   };
 
-  try {
-    await client.send(new PutItemCommand(params)); 
-    console.log(`Friend ${friendId} added for user ${userId}`);
-  } catch (error) {
-    console.error(`Error adding friend ${friendId} to user ${userId}:`, error);
-    throw error;
-  }
-
-  const paramsFriend = {
-    TableName: tableName,
-    Item: {
-      pk: { S: `u#${friendId}` },
-      sk: { S: `friend#cur#${userId}` },
+  const addFriendForOtherUser = {
+    PutRequest: {
+      Item: {
+        pk: { S: `u#${friendId}` },
+        sk: { S: `friend#cur#${userId}` },
+      },
     },
   };
 
-  try {
-    await client.send(new PutItemCommand(paramsFriend));
-    console.log(`Friend ${userId} added for user ${friendId}`);
-  } catch (error) {
-    console.error(`Error adding friend ${userId} to user ${friendId}:`, error);
-    throw error;
-  }
+  const batchPutItem = {
+    RequestItems: {
+      [tableName]: [addFriendForCurrentUser, addFriendForOtherUser],
+    },
+  };
 
-  removeIncomingRequest(userId, friendId);
+  const putResponse = await client.send(
+    new BatchWriteItemCommand(batchPutItem),
+  );
+  if (putResponse.$metadata.httpStatusCode !== 200) {
+    console.error(
+      `Error adding friend ${friendId} to user ${userId}: received HTTP status code ${putResponse.$metadata.httpStatusCode} from DDB`,
+    );
+    throw new Error(`error adding friend ${friendId} to user ${userId}`, {
+      cause: 500,
+    });
+  }
+  await removeFriendRequest(userId, friendId);
 }
 
-export async function removeFriend(userId, friendId) {
-  const params = {
-    TableName: tableName,
+async function removeFriend(userId, friendId) {
+  const removeFriendFromCurrentUser = {
+    DeleteRequest: {
+      Key: {
+        pk: { S: `u#${userId}` },
+        sk: { S: `friend#cur#${friendId}` },
+      },
+    },
+  };
+
+  const removeFriendFromOtherUser = {
+    DeleteRequest: {
+      Key: {
+        pk: { S: `u#${friendId}` },
+        sk: { S: `friend#cur#${userId}` },
+      },
+    },
+  };
+
+  const batchDeleteItem = {
+    RequestItems: {
+      [tableName]: [removeFriendFromCurrentUser, removeFriendFromOtherUser],
+    },
+  };
+
+  const deleteResponse = await client.send(
+    new BatchWriteItemCommand(batchDeleteItem),
+  );
+  if (deleteResponse.$metadata.httpStatusCode !== 200) {
+    console.error(
+      `Error removing friend ${friendId} from user ${userId}: received HTTP status code ${deleteResponse.$metadata.httpStatusCode} from DDB`,
+    );
+    throw new Error(`error removing friend ${friendId} from user ${userId}`, {
+      cause: 500,
+    });
+  }
+}
+
+async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
+  const input = {
     Key: {
-      pk: { S: `u#${userId}` },
-      sk: { S: `friend#cur#${friendId}` },
+      pk: {
+        S: `u#${userIdReceiving}`,
+      },
+      sk: {
+        S: `friend#req#in#${userIdSending}`,
+      },
     },
-  };
-
-  try {
-    await client.send(new DeleteItemCommand(params)); 
-    console.log(`Friend ${friendId} removed for user ${userId}`);
-  } catch (error) {
-    console.error(`Error removing friend ${friendId} from user ${userId}:`, error);
-    throw error;
-  }
-
-  const params2 = {
     TableName: tableName,
-    Key: {
-      pk: { S: `u#${friendId}` },
-      sk: { S: `friend#cur#${userId}` },
-    },
   };
-
-  try {
-    await client.send(new DeleteItemCommand(params2)); 
-    console.log(`Friend ${userId} removed for user ${friendId}`);
-  } catch (error) {
-    console.error(`Error removing friend ${userId} from user ${friendId}:`, error);
-    throw error;
+  const command = new GetItemCommand(input);
+  const response = await client.send(command);
+  if (response.$metadata.httpStatusCode !== 200) {
+    console.error(
+      `Error checking if friend request exists (received HTTP status code from DynamoDB: ${response.$metadata.httpStatusCode}).`,
+    );
+    throw new Error(
+      `error checking if friend request exists for user ${userIdReceiving} from user ${userIdSending}`,
+      { cause: 500 },
+    );
   }
+  return response.Item;
 }
-

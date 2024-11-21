@@ -4,7 +4,7 @@ import { handleWithAuthorization } from "./utils/authorization.js";
 import { internalServerError, validResponse } from "./model.js";
 
 const s3 = new S3Client({
-  region: process.env.AWS_S3_BUCKET_REGION,
+  region: process.env.AWS_S3_REGION,
 });
 
 export async function handler(event, context) {

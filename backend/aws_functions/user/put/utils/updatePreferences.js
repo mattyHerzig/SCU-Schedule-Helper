@@ -18,32 +18,60 @@ export async function updatePreferences(userId, updateData) {
   const expressionAttributeValues = {};
 
   if (preferredSectionTimeRange) {
-    const { startHour, startMinute, endHour, endMinute } = preferredSectionTimeRange;
-
-    if (startHour != null && startMinute != null && endHour != null && endMinute != null) {
-      const preferredSectionTimeRangeValue = getTimeRange(startHour, startMinute, endHour, endMinute);
-      updateExpressionParts.push("#preferredSectionTimeRange = :preferredSectionTimeRange");
-      expressionAttributeNames["#preferredSectionTimeRange"] = "preferredSectionTimeRange";
-      expressionAttributeValues[":preferredSectionTimeRange"] = { N: `${preferredSectionTimeRangeValue}` };
+    const { startHour, startMinute, endHour, endMinute } =
+      preferredSectionTimeRange;
+    if (
+      !startHour ||
+      !startMinute ||
+      !endHour ||
+      !endMinute ||
+      startHour < 0 ||
+      startHour > 23 ||
+      endHour < 0 ||
+      endHour > 23 ||
+      startMinute < 0 ||
+      startMinute > 59 ||
+      endMinute < 0 ||
+      endMinute > 59
+    ) {
+      throw new Error("Invalid preferred time range.", { cause: 400 });
     }
+    const preferredSectionTimeRangeValue = getTimeRange(
+      startHour,
+      startMinute,
+      endHour,
+      endMinute,
+    );
+    updateExpressionParts.push(
+      "#preferredSectionTimeRange = :preferredSectionTimeRange",
+    );
+    expressionAttributeNames["#preferredSectionTimeRange"] =
+      "preferredSectionTimeRange";
+    expressionAttributeValues[":preferredSectionTimeRange"] = {
+      N: `${preferredSectionTimeRangeValue}`,
+    };
   }
 
   if (scoreWeighting) {
+    if (
+      !scoreWeighting.scuEvals ||
+      !scoreWeighting.rmp ||
+      scoreWeighting.scuEvals + scoreWeighting.rmp > 100
+    ) {
+      throw new Error("Invalid score weighting.", { cause: 400 });
+    }
     const { scuEvals, rmp } = scoreWeighting;
 
-    if (scuEvals != null && rmp != null) {
-      const scoreWeightingValue = getScoreWeighting(scuEvals, rmp);
-      updateExpressionParts.push("#scoreWeighting = :scoreWeighting");
-      expressionAttributeNames["#scoreWeighting"] = "scoreWeighting";
-      expressionAttributeValues[":scoreWeighting"] = { N: `${scoreWeightingValue}` };
-    }
+    const scoreWeightingValue = getScoreWeighting(scuEvals, rmp);
+    updateExpressionParts.push("#scoreWeighting = :scoreWeighting");
+    expressionAttributeNames["#scoreWeighting"] = "scoreWeighting";
+    expressionAttributeValues[":scoreWeighting"] = {
+      N: `${scoreWeightingValue}`,
+    };
   }
 
   if (updateExpressionParts.length === 0) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: "No valid fields provided for update." }),
-    };
+    throw new Error("No valid preferences to update.", { cause: 400 });
   }
 
   const updateExpression = `SET ${updateExpressionParts.join(", ")}`;
@@ -51,28 +79,19 @@ export async function updatePreferences(userId, updateData) {
   const params = {
     TableName: tableName,
     Key: {
-      pk: { S: userId },
+      pk: { S: `u#${userId}` },
       sk: { S: "info#preferences" },
     },
     UpdateExpression: updateExpression,
     ExpressionAttributeNames: expressionAttributeNames,
     ExpressionAttributeValues: expressionAttributeValues,
-    ReturnValues: "ALL_NEW",
   };
 
-  try {
-    const result = await client.send(new UpdateItemCommand(params));
-    console.log("Update successful:", result);
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result.Attributes),
-    };
-  } catch (error) {
-    console.error("Error updating preferences:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Failed to update preferences." }),
-    };
+  const result = await client.send(new UpdateItemCommand(params));
+  if (result.$metadata.httpStatusCode !== 200) {
+    console.error(`Error updating preferences for user ${userId}`);
+    throw new Error(`Error updating preferences for user ${userId}`, {
+      cause: 500,
+    });
   }
 }
-
