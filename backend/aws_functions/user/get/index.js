@@ -141,7 +141,7 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
       userProfile.interestedSections = item.sections.SS;
       break;
     case `info#personal`:
-      if (!itemsToGet.has("personalInfo")) break;
+      if (!itemsToGet.has("personal")) break;
       userProfile.name = item.name.S;
       userProfile.email = item.email.S;
       userProfile.photoUrl = item.photoUrl.S;

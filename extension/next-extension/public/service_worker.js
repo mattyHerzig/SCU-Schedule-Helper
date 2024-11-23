@@ -17,20 +17,42 @@ async function authorize() {
     const { token } = await chrome.identity.getAuthToken({
       interactive: true,
     });
-    const response = await fetch(
-      "https://api.scu-schedule-helper.me/auth_token",
-      {
-        method: "GET",
-        headers: {
-          Authorization: `OAuth ${token}`,
-        },
+    let subscription =
+      (await self.registration.pushManager.getSubscription()) || null;
+    if (!subscription) {
+      console.log("No subscription found");
+      subscription = await subscribe();
+    }
+
+    let response = fetch("https://api.scu-schedule-helper.me/auth_token", {
+      method: "GET",
+      headers: {
+        Authorization: `OAuth ${token}`,
       },
-    );
+    });
+    [response, subscription] = await Promise.all([response, subscription]);
     const data = await response.json();
 
     if (response.status !== 200) {
       return `Authorization failed. ${data.message}`;
     }
+
+    console.log(data.oAuthInfo);
+    const createdUser = await fetch("https://api.scu-schedule-helper.me/user", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + data.accessToken,
+      },
+      body: JSON.stringify({
+        name: data.oAuthInfo.name,
+        photoUrl: data.oAuthInfo.photoUrl,
+        subscription: JSON.stringify(subscription),
+      }),
+    });
+    console.log(await createdUser.json());
+    console.log(
+      "Created account with sub" + JSON.stringify(subscription, null, 2),
+    );
 
     await chrome.storage.sync.set({
       accessToken: data.accessToken,
@@ -58,6 +80,7 @@ async function downloadEvals() {
 
   const evalsExpirationDate = data.dataExpirationDate;
   const evals = await decodeAndDecompress(data.data);
+  await chrome.storage.local.set({ evals, evalsExpirationDate });
 }
 
 async function decodeAndDecompress(base64EncodedGzippedData) {
@@ -117,9 +140,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "authorize":
-      authorize().then(([authorized, failStatus]) =>
-        sendResponse([authorized, failStatus]),
-      );
+      authorize().then((errorMessage) => sendResponse(errorMessage));
       return true; // Keep the message channel open for asynchronous response
 
     case "downloadEvals":
@@ -169,9 +190,8 @@ self.addEventListener("push", function (event) {
   console.log(`Push had this data/text: "${event.data.text()}"`);
 });
 
-self.addEventListener("activate", (event) => {
-  const serverSubscription = subscribe();
-  chrome.storage.sync.set({ serverSubscription });
+self.addEventListener("activate", async (event) => {
+  await subscribe();
 });
 
 /*
@@ -186,14 +206,16 @@ const SERVER_PUBLIC_KEY =
 const applicationServerKey = urlB64ToUint8Array(SERVER_PUBLIC_KEY);
 
 async function subscribe() {
+  const existingSubscription =
+    await self.registration.pushManager.getSubscription();
+  if (existingSubscription) {
+    return existingSubscription;
+  }
   try {
     let subscription = await self.registration.pushManager.subscribe({
       userVisibleOnly: false,
       applicationServerKey,
     });
-
-    console.log(`Subscribed: ${JSON.stringify(subscription, 0, 2)}`);
-
     return subscription;
   } catch (error) {
     console.error("Subscribe error: ", error);

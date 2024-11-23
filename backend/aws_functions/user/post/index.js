@@ -2,7 +2,6 @@ import {
   BatchWriteItemCommand,
   DynamoDBClient,
   GetItemCommand,
-  PutItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {
@@ -55,15 +54,15 @@ async function handlePostUserRequest(event, context, userId) {
   }
 
   // Upload the user's photo to S3, if they uploaded a photo.
-  let photoURL = request.photoUrl;
-  if (!photoURL && request.photo) {
+  let photoUrl = request.photoUrl;
+  if (request.photo) {
     try {
-      photoURL = await uploadUserPhotoToS3(userId, request.photo);
+      photoUrl = await uploadUserPhotoToS3(userId, request.photo);
     } catch (error) {
       console.error(error);
       return internalServerError(`error uploading profile photo to S3.`);
     }
-  } else photoURL = DEFAULT_PHOTO_URL;
+  } else if (!photoUrl) photoUrl = DEFAULT_PHOTO_URL;
 
   // Add the user to the database.
   try {
@@ -71,7 +70,7 @@ async function handlePostUserRequest(event, context, userId) {
       userId,
       request.name,
       request.subscription,
-      photoURL,
+      photoUrl,
     );
   } catch (error) {
     console.error(error);

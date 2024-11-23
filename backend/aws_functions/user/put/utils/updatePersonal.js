@@ -1,9 +1,7 @@
 import { UpdateItemCommand } from "@aws-sdk/client-dynamodb";
-import { client } from "./dynamoClient.js";
+import { dynamoClient, s3Client, tableName } from "../index.js";
 import { getSetItems } from "./getSetItems.js";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
-const s3Client = new S3Client({ region: process.env.AWS_S3_REGION });
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export async function updatePersonal(userId, updateData) {
   const updatedSubscriptions = await getSetItems(
@@ -15,8 +13,9 @@ export async function updatePersonal(userId, updateData) {
   if (updateData.photo) {
     updateData.photoUrl = await uploadUserPhotoToS3(userId, updateData.photo);
   }
-  if(updateData.photo == null) {
-    updateData.photoUrl = "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
+  if (updateData.photoUrl == "default") {
+    updateData.photoUrl =
+      "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
   }
 
   if (updateData.subscriptions && Array.isArray(updateData.subscriptions)) {
@@ -60,7 +59,9 @@ export async function updatePersonal(userId, updateData) {
     ReturnValues: "ALL_NEW",
   };
 
-  const result = await client.send(new UpdateItemCommand(updatePersonalInfo));
+  const result = await dynamoClient.send(
+    new UpdateItemCommand(updatePersonalInfo),
+  );
   if (result.$metadata.httpStatusCode !== 200) {
     throw new Error(`Error updating personal info for user ${userId}`, {
       cause: 500,

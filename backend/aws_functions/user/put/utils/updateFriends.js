@@ -1,12 +1,11 @@
-import { client } from "./dynamoClient.js";
+import { dynamoClient, tableName } from "../index.js";
 import {
   GetItemCommand,
   BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
-import { removeFriendRequest } from "./friendRequests.js";
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
+import { removeFriendRequest } from "./updateFriendRequests.js";
 
-export async function friends(userId, friendsData) {
+export async function updateFriends(userId, friendsData) {
   const updates = [];
   if (friendsData.add && Array.isArray(friendsData.add)) {
     for (const friendId of friendsData.add) {
@@ -56,7 +55,7 @@ async function addFriend(userId, friendId) {
     },
   };
 
-  const putResponse = await client.send(
+  const putResponse = await dynamoClient.send(
     new BatchWriteItemCommand(batchPutItem),
   );
   if (putResponse.$metadata.httpStatusCode !== 200) {
@@ -95,7 +94,7 @@ async function removeFriend(userId, friendId) {
     },
   };
 
-  const deleteResponse = await client.send(
+  const deleteResponse = await dynamoClient.send(
     new BatchWriteItemCommand(batchDeleteItem),
   );
   if (deleteResponse.$metadata.httpStatusCode !== 200) {
@@ -108,7 +107,7 @@ async function removeFriend(userId, friendId) {
   }
 }
 
-async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
+export async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
   const input = {
     Key: {
       pk: {
@@ -121,7 +120,7 @@ async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
     TableName: tableName,
   };
   const command = new GetItemCommand(input);
-  const response = await client.send(command);
+  const response = await dynamoClient.send(command);
   if (response.$metadata.httpStatusCode !== 200) {
     console.error(
       `Error checking if friend request exists (received HTTP status code from DynamoDB: ${response.$metadata.httpStatusCode}).`,

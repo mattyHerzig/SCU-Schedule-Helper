@@ -1,7 +1,6 @@
-import { PutItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { getSetItems } from "./getSetItems.js";
-import { client } from "./dynamoClient.js";
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
+import { dynamoClient, tableName } from "../index.js";
 
 export async function updateCourses(userId, updateData) {
   const updatedCourses = await getSetItems(
@@ -29,7 +28,9 @@ export async function updateCourses(userId, updateData) {
     },
   };
 
-  const result = await client.send(new PutItemCommand(updatedCoursesItem));
+  const result = await dynamoClient.send(
+    new PutItemCommand(updatedCoursesItem),
+  );
   if (result.$metadata.httpStatusCode !== 200) {
     console.error(`Error updating courses for user ${userId}`);
     throw new Error(`Error updating courses for user ${userId}`, {
