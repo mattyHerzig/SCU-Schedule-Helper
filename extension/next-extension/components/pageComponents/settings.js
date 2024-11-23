@@ -12,17 +12,14 @@ export default function Settings() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Load user info when component mounts
     checkUserInfo();
 
-    // Listen for auth status changes
     window.addEventListener("auth-status-changed", handleAuthStatusChange);
     return () => {
       window.removeEventListener("auth-status-changed", handleAuthStatusChange);
     };
   }, []);
 
-  // Handle custom event to check user info when auth status changes
   const handleAuthStatusChange = async (event) => {
     if (event.detail.isLoggedIn) {
       await checkUserInfo();
@@ -39,7 +36,6 @@ export default function Settings() {
     }
   };
 
-  // Check user info from chrome.storage.sync
   const checkUserInfo = async () => {
     try {
       const data = await chrome.storage.sync.get(["accessToken", "oAuthInfo"]);
@@ -57,7 +53,6 @@ export default function Settings() {
     }
   };
 
-  // Handle sign out action
   const handleSignOut = async () => {
     try {
       await chrome.storage.sync.remove(["accessToken", "userInfo"]);
@@ -73,7 +68,6 @@ export default function Settings() {
     }
   };
 
-  // Handle delete history action
   const handleDeleteHistory = async () => {
     try {
       console.log("Deleting history...");
@@ -82,7 +76,6 @@ export default function Settings() {
     }
   };
 
-  // Handle delete account action
   const handleDeleteAccount = async () => {
     try {
       console.log("Deleting account...");
@@ -93,7 +86,7 @@ export default function Settings() {
   };
 
   return (
-    <Box sx={{ width: 450, height: 600, overflow: "auto" }}>
+    <Box sx={{ width: 500, height: 600, overflow: "auto" }}>
       <Typography variant="h6">Settings</Typography>
       <Typography sx={{ mb: 2 }}>
         Logged in as: {userName || "Guest"}

@@ -32,7 +32,7 @@ export default function Friends() {
   ]);
 
   return (
-    <Box sx={{ width: 450, height: 600, overflow: "auto" }}>
+    <Box sx={{ width: 500, height: 600, overflow: "auto" }}>
       <RequestsAccordion
         requests={requests}
         setRequests={setRequests}

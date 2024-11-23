@@ -9,7 +9,7 @@ import Checkbox from "@mui/material/Checkbox";
 
 export default function Preferences() {
   return (
-    <Box sx={{ width: 450, height: 600, overflow: "auto" }}>
+    <Box sx={{ width: 500, height: 600, overflow: "auto" }}>
       <Box
         sx={{
           display: "flex",
