@@ -123,11 +123,21 @@ async function getFriendRequestProfile(userId, incoming) {
 async function setItemInUser(item, userProfile, scope, itemsToGet) {
   switch (item.sk.S) {
     case `info#coursesTaken`:
-      if (scope === "limited" || !itemsToGet.has("coursesTaken")) break;
+      if (
+        scope === "limited" ||
+        !itemsToGet.has("coursesTaken") ||
+        !item.courses.SS
+      )
+        break;
       userProfile.coursesTaken = item.courses.SS;
       break;
     case `info#interestedSections`:
-      if (scope === "limited" || !itemsToGet.has("interestedSections")) break;
+      if (
+        scope === "limited" ||
+        !itemsToGet.has("interestedSections") ||
+        !item.sections.SS
+      )
+        break;
       userProfile.interestedSections = item.sections.SS;
       break;
     case `info#personal`:
@@ -195,7 +205,7 @@ async function usersAreFriends(userId, friendId) {
   });
   try {
     const getFriend = await dynamoDBClient.send(getItemCommand);
-    return getFriend.Item !== undefined;
+    return getFriend.Item;
   } catch (error) {
     console.error("Error getting friend item: ", error);
     return internalServerError("could not check if users are friends.");

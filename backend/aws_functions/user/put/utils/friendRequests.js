@@ -1,125 +1,141 @@
 import { client } from "./dynamoClient.js";
-import { PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  BatchWriteItemCommand,
+  GetItemCommand,
+} from "@aws-sdk/client-dynamodb";
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function friendRequests(userId, friendRequestsData) {
+  const updates = [];
   if (friendRequestsData.send && Array.isArray(friendRequestsData.send)) {
     for (const friendId of friendRequestsData.send) {
-      await sendFriendRequest(userId, friendId);
+      updates.push(sendFriendRequest(userId, friendId));
     }
   }
-
-  if (friendRequestsData.removeIncoming && Array.isArray(friendRequestsData.removeIncoming)) {
+  if (
+    friendRequestsData.removeIncoming &&
+    Array.isArray(friendRequestsData.removeIncoming)
+  ) {
     for (const friendId of friendRequestsData.removeIncoming) {
-      await removeIncomingRequest(userId, friendId);
+      updates.push(removeFriendRequest(userId, friendId));
     }
   }
-
-  if (friendRequestsData.removeOutgoing && Array.isArray(friendRequestsData.removeOutgoing)) {
+  if (
+    friendRequestsData.removeOutgoing &&
+    Array.isArray(friendRequestsData.removeOutgoing)
+  ) {
     for (const friendId of friendRequestsData.removeOutgoing) {
-      await removeOutgoingRequest(userId, friendId);
+      updates.push(removeFriendRequest(friendId, userId));
     }
   }
+  await Promise.all(updates);
 }
 
 async function sendFriendRequest(userId, friendId) {
-  const params = {
-    TableName: tableName,
-    Item: {
-      pk: { S: `u#${userId}` },
-      sk: { S: `friend#req#out#${friendId}` },
-    },
-  };
-
-  try {
-    await client.send(new PutItemCommand(params)); 
-    console.log(`Outgoing friend request added for ${userId}`);
-  } catch (error) {
-    console.error(`Outgoing friend request not added for ${userId}:`, error);
-    throw error;
+  if (userId === friendId) {
+    console.error(
+      `Error sending friend request to ${friendId} from ${userId}: user cannot send friend request to themselves`,
+    );
+    throw new Error(`user cannot send friend request to themselves`, {
+      cause: 400,
+    });
   }
-
-  const params2 = {
-    TableName: tableName,
-    Item: {
-      pk: { S: `u#${friendId}` },
-      sk: { S: `friend#req#in#${userId}` },
-    },
-  };
-
-  try {
-    await client.send(new PutItemCommand(params2)); 
-    console.log(`Incoming friend request added for ${friendId}`);
-  } catch (error) {
-    console.error(`Incoming friend request not added for ${friendId}:`, error);
-    throw error;
+  if (!(await userExists(friendId))) {
+    console.error(
+      `Error sending friend request to ${friendId} from ${userId}: user ${friendId} does not exist`,
+    );
+    throw new Error(`user ${friendId} does not exist`, { cause: 400 });
   }
-}
-
-export async function removeIncomingRequest(userId, friendId) {
-  const params = {
-    TableName: tableName,
-    Key: {
-      pk: { S: `u#${userId}` },
-      sk: { S: `friend#req#in#${friendId}` },
+  const outgoingReq = {
+    PutRequest: {
+      Item: {
+        pk: { S: `u#${userId}` },
+        sk: { S: `friend#req#out#${friendId}` },
+      },
+    },
+  };
+  const incomingReq = {
+    PutRequest: {
+      Item: {
+        pk: { S: `u#${friendId}` },
+        sk: { S: `friend#req#in#${userId}` },
+      },
+    },
+  };
+  const batchPutItem = {
+    RequestItems: {
+      [tableName]: [outgoingReq, incomingReq],
     },
   };
 
-  try {
-    await client.send(new DeleteItemCommand(params)); 
-    console.log(`Incoming friend request removed for ${userId}`);
-  } catch (error) {
-    console.error(`Incoming friend request not removed for ${userId}:`, error);
-    throw error;
-  }
-
-  const params2 = {
-    TableName: tableName,
-    Key: {
-      pk: { S: `u#${friendId}` },
-      sk: { S: `friend#req#out#${userId}` },
-    },
-  };
-
-  try {
-    await client.send(new DeleteItemCommand(params2)); 
-    console.log(`Outgoing friend request removed for ${friendId}`);
-  } catch (error) {
-    console.error(`Outgoing friend request not removed for ${friendId}:`, error);
-    throw error;
+  const batchWriteResponse = await client.send(
+    new BatchWriteItemCommand(batchPutItem),
+  );
+  if (
+    batchWriteResponse.$metadata.httpStatusCode !== 200 ||
+    !batchWriteResponse.UnprocessedItems
+  ) {
+    console.error(`Batch write failed for friend request from ${userId} to ${friendId},
+         received HTTP status code from DynamoDB: ${batchWriteResponse.$metadata.httpStatusCode}
+         and unprocessed items: ${batchWriteResponse.UnprocessedItems}`);
+    throw new Error(`failed to send friend request to ${friendId}`, {
+      cause: 500,
+    });
   }
 }
 
-async function removeOutgoingRequest(userId, friendId) {
-  const params = {
-    TableName: tableName,
-    Key: {
-      pk: { S: `u#${userId}` },
-      sk: { S: `friend#req#out#${friendId}` },
+export async function removeFriendRequest(userIdReceiving, userIdSending) {
+  const deleteIncoming = {
+    DeleteRequest: {
+      Key: {
+        pk: { S: `u#${userIdReceiving}` },
+        sk: { S: `friend#req#in#${userIdSending}` },
+      },
+    },
+  };
+  const deleteOutgoing = {
+    DeleteRequest: {
+      Key: {
+        pk: { S: `u#${userIdSending}` },
+        sk: { S: `friend#req#out#${userIdReceiving}` },
+      },
+    },
+  };
+  const batchDeleteItem = {
+    RequestItems: {
+      [tableName]: [deleteIncoming, deleteOutgoing],
     },
   };
 
-  try {
-    await client.send(new DeleteItemCommand(params)); 
-    console.log(`Outgoing friend request removed for ${userId}`);
-  } catch (error) {
-    console.error(`Outgoing friend request not removed for ${userId}:`, error);
-    throw error;
+  const batchWriteResponse = await client.send(
+    new BatchWriteItemCommand(batchDeleteItem),
+  );
+  if (
+    batchWriteResponse.$metadata.httpStatusCode !== 200 ||
+    !batchWriteResponse.UnprocessedItems
+  ) {
+    console.error(`Batch delete failed for friend request from ${userIdReceiving} to ${userIdSending},
+         received HTTP status code from DynamoDB: ${batchWriteResponse.$metadata.httpStatusCode}
+         and unprocessed items: ${batchWriteResponse.UnprocessedItems}`);
+    throw new Error(`failed to remove friend request from ${userIdSending}`, {
+      cause: 500,
+    });
   }
+}
 
-  const params2 = {
-    TableName: tableName,
+async function userExists(userId) {
+  const input = {
     Key: {
-      pk: { S: `u#${friendId}` },
-      sk: { S: `friend#req#in#${userId}` },
+      pk: {
+        S: `u#${userId}`,
+      },
+      sk: {
+        S: "info#personal",
+      },
     },
+    TableName: tableName,
   };
-
-  try {
-    await client.send(new DeleteItemCommand(params2)); 
-    console.log(`Incoming friend request removed for ${friendId}`);
-  } catch (error) {
-    console.error(`Incoming friend request not removed for ${friendId}:`, error);
-    throw error;
-  }
+  const command = new GetItemCommand(input);
+  const response = await client.send(command);
+  return response.Item;
 }

@@ -1,41 +1,39 @@
-import { UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { PutItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { getSetItems } from "./getSetItems.js";
 import { client } from "./dynamoClient.js";
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function updateCourses(userId, updateData) {
-  const updatedCourses = await getSetItems(userId, "info#coursestaken", "courses");
-  
-  updateData.courses.forEach(course => updatedCourses.add(course));
+  const updatedCourses = await getSetItems(
+    userId,
+    "info#coursesTaken",
+    "courses",
+  );
 
-  const params = {
+  if (updateData.add)
+    updateData.add.forEach((course) => updatedCourses.add(course));
+  if (updateData.remove)
+    updateData.remove.forEach((course) => updatedCourses.delete(course));
+
+  const courseUpdateObj =
+    updatedCourses.size > 0
+      ? { SS: Array.from(updatedCourses) }
+      : { NULL: true };
+
+  const updatedCoursesItem = {
     TableName: tableName,
-    Key: {
-      pk: { S: userId },
-      sk: { S: "info#coursestaken" },
+    Item: {
+      pk: { S: `u#${userId}` },
+      sk: { S: "info#coursesTaken" },
+      courses: courseUpdateObj,
     },
-    UpdateExpression: "SET #courses = :courses",
-    ExpressionAttributeNames: {
-      "#courses": "courses",
-    },
-    ExpressionAttributeValues: {
-      ":courses": { SS: Array.from(updatedCourses) },
-    },
-    ReturnValues: "ALL_NEW"
   };
 
-  try {
-    const result = await client.send(new UpdateItemCommand(params));
-    console.log("Courses update successful:", result);
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result.Attributes),
-    };
-  } catch (error) {
-    console.error("Error updating courses:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Failed to update courses." }),
-    };
+  const result = await client.send(new PutItemCommand(updatedCoursesItem));
+  if (result.$metadata.httpStatusCode !== 200) {
+    console.error(`Error updating courses for user ${userId}`);
+    throw new Error(`Error updating courses for user ${userId}`, {
+      cause: 500,
+    });
   }
 }

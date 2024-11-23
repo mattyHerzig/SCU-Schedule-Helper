@@ -14,11 +14,11 @@ async function test() {
     headers: {
       authorization: `Bearer ${process.env.TEST_ACCESS_JWT}`,
     },
-    body: {
+    body: JSON.stringify({
       name: "John Doe",
       photo: testImage.toString("base64"),
-      notification_id: "1234567890",
-    },
+      subscription: "1234567890",
+    }),
   };
   const response = await handler(event, null);
   console.log(response);

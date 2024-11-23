@@ -20,27 +20,27 @@ export async function handler(event, context) {
 }
 
 async function deleteUser(event, context, userId) {
-  let sortKeys = [];
+  let keys = [];
   try {
-    sortKeys = await getSortKeys(`u#${userId}`);
+    keys = await getKeysForDeletion(`u#${userId}`);
   } catch (error) {
     console.error("Error getting sort keys:", error);
     return internalServerError("Could not get the user's entries.");
   }
-  if (sortKeys.length === 0) {
+  if (keys.length === 0) {
     console.log(`No sort keys for primary key u#${userId}`);
     return notFoundError(`No sort keys for primary key u#${userId}`);
   }
   const batches = [];
-  while (sortKeys.length > 0) {
-    batches.push(sortKeys.splice(0, 25));
+  while (keys.length > 0) {
+    batches.push(keys.splice(0, 25));
   }
   for (const batch of batches) {
-    const delete_requests = batch.map((sk) => ({
+    const delete_requests = batch.map((key) => ({
       DeleteRequest: {
         Key: {
-          pk: { S: `u#${userId}` },
-          sk: { S: sk },
+          pk: { S: key.pk },
+          sk: { S: key.sk },
         },
       },
     }));
@@ -61,7 +61,7 @@ async function deleteUser(event, context, userId) {
   return noContentValidResponse;
 }
 
-const getSortKeys = async (pk) => {
+async function getKeysForDeletion(pk) {
   const userQuery = {
     TableName: tableName,
     KeyConditionExpression: "pk = :primaryKey",
@@ -71,6 +71,33 @@ const getSortKeys = async (pk) => {
   };
 
   const data = await dynamoDBClient.send(new QueryCommand(userQuery));
-  const sortKeys = data.Items.map((item) => item.sk.S);
-  return sortKeys;
-};
+  const keys = data.Items.map((item) => ({
+    pk,
+    sk: item.sk.S,
+  }));
+  const keysToDelete = Array.from(keys);
+  for (const key of keys) {
+    if (key.sk.startsWith("friend#cur#")) {
+      const friendId = key.sk.split("friend#cur#")[1];
+      keysToDelete.push({
+        pk: `u#${friendId}`,
+        sk: `friend#cur#${pk.split("u#")[1]}`,
+      });
+    }
+    if (key.sk.startsWith("friend#req#in#")) {
+      const friendId = key.sk.split("friend#req#in#")[1];
+      keysToDelete.push({
+        pk: `u#${friendId}`,
+        sk: `friend#req#out#${pk.split("u#")[1]}`,
+      });
+    }
+    if (key.sk.startsWith("friend#req#out#")) {
+      const friendId = key.sk.split("friend#req#out#")[1];
+      keysToDelete.push({
+        pk: `u#${friendId}`,
+        sk: `friend#req#in#${pk.split("u#")[1]}`,
+      });
+    }
+  }
+  return keysToDelete;
+}
