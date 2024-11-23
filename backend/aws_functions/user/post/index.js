@@ -2,7 +2,6 @@ import {
   BatchWriteItemCommand,
   DynamoDBClient,
   GetItemCommand,
-  PutItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {

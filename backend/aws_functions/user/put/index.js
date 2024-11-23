@@ -2,8 +2,8 @@ import { updateCourses } from "./utils/updateCourses.js";
 import { updatePersonal } from "./utils/updatePersonal.js";
 import { updateInterestedSections } from "./utils/updateInterestedSections.js";
 import { updatePreferences } from "./utils/updatePreferences.js";
-import { friends } from "./utils/friends.js";
-import { friendRequests } from "./utils/friendRequests.js";
+import { updateFriends } from "./utils/updateFriends.js";
+import { updateFriendRequests } from "./utils/updateFriendRequests.js";
 import { handleWithAuthorization } from "./utils/authorization.js";
 import { internalServerError, validResponse } from "./model.js";
 import { badRequestResponse } from "./model.js";
@@ -33,11 +33,11 @@ export async function putUser(event, context, userId) {
     }
 
     if (body.friends) {
-      updates.push(friends(userId, body.friends));
+      updates.push(updateFriends(userId, body.friends));
     }
 
     if (body.friendRequests) {
-      updates.push(friendRequests(userId, body.friendRequests));
+      updates.push(updateFriendRequests(userId, body.friendRequests));
     }
 
     await Promise.all(updates);

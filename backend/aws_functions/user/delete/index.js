@@ -3,6 +3,7 @@ import {
   QueryCommand,
   BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { handleWithAuthorization } from "./utils/authorization.js";
 import {
   internalServerError,
@@ -12,6 +13,9 @@ import {
 
 const dynamoDBClient = new DynamoDBClient({
   region: process.env.AWS_DDB_REGION,
+});
+const s3Client = new S3Client({
+  region: process.env.AWS_S3_REGION,
 });
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
@@ -57,6 +61,23 @@ async function deleteUser(event, context, userId) {
       console.error("Error deleting items:", error);
       return internalServerError("Error deleting items.");
     }
+  }
+  try {
+    // Delete the user's profile picture from S3.
+    const photoKey = `u#${userId}/photo`;
+    const photoParams = {
+      Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
+      Key: photoKey,
+    };
+    const s3Response = await s3Client.send(new DeleteObjectCommand(photoParams));
+    if (s3Response.$metadata.httpStatusCode !== 204) {
+      console.error(`Error deleting profile photo from S3: ${s3Response}`);
+      return internalServerError("Error deleting user's profile picture.");
+    }
+  }
+  catch (error) {
+    console.error("Error deleting user's profile picture:", error);
+    return internalServerError("Error deleting user's profile picture.");
   }
   return noContentValidResponse;
 }

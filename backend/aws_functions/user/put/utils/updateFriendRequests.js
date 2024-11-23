@@ -5,7 +5,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
-export async function friendRequests(userId, friendRequestsData) {
+export async function updateFriendRequests(userId, friendRequestsData) {
   const updates = [];
   if (friendRequestsData.send && Array.isArray(friendRequestsData.send)) {
     for (const friendId of friendRequestsData.send) {
@@ -45,6 +45,15 @@ async function sendFriendRequest(userId, friendId) {
       `Error sending friend request to ${friendId} from ${userId}: user ${friendId} does not exist`,
     );
     throw new Error(`user ${friendId} does not exist`, { cause: 400 });
+  }
+  if (await receivedIncomingFriendRequest(userId, friendId)) {
+    console.error(
+      `Error sending friend request to ${friendId} from ${userId}: user ${userId} has already received friend request from ${friendId}`,
+    );
+    throw new Error(
+      `user ${userId} has already received friend request from ${friendId}`,
+      { cause: 400 },
+    );
   }
   const outgoingReq = {
     PutRequest: {
@@ -131,6 +140,23 @@ async function userExists(userId) {
       },
       sk: {
         S: "info#personal",
+      },
+    },
+    TableName: tableName,
+  };
+  const command = new GetItemCommand(input);
+  const response = await client.send(command);
+  return response.Item;
+}
+
+async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
+  const input = {
+    Key: {
+      pk: {
+        S: `u#${userIdReceiving}`,
+      },
+      sk: {
+        S: `friend#req#in#${userIdSending}`,
       },
     },
     TableName: tableName,

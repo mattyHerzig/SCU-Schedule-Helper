@@ -1,4 +1,4 @@
-import { PutItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { getSetItems } from "./getSetItems.js";
 import { client } from "./dynamoClient.js";
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;

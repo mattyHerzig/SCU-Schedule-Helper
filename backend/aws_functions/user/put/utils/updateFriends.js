@@ -3,10 +3,10 @@ import {
   GetItemCommand,
   BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
-import { removeFriendRequest } from "./friendRequests.js";
+import { removeFriendRequest } from "./updateFriendRequests.js";
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
-export async function friends(userId, friendsData) {
+export async function updateFriends(userId, friendsData) {
   const updates = [];
   if (friendsData.add && Array.isArray(friendsData.add)) {
     for (const friendId of friendsData.add) {
