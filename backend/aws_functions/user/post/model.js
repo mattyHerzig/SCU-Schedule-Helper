@@ -17,6 +17,8 @@ export class CreatedUserResponse {
         rmp: 50,
       },
     };
+    this.coursesTaken = [];
+    this.interestedSections = [];
   }
 }
 

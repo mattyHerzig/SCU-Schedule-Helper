@@ -10,7 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.693.0",
     "web-push": "^3.6.7"
   }
 }

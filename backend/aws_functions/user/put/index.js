@@ -10,6 +10,11 @@ import { badRequestResponse } from "./model.js";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { LambdaClient } from "@aws-sdk/client-lambda";
 import { S3Client } from "@aws-sdk/client-s3";
+import {
+  sendFriendAndFriendRequestNotifications,
+  sendProfileUpdateNotifications,
+  sendSelfUpdateNotifications,
+} from "./utils/notifications.js";
 
 export const dynamoClient = new DynamoDBClient({
   region: process.env.AWS_DDB_REGION,
@@ -32,32 +37,41 @@ export async function handler(event, context) {
 async function putUser(event, context, userId) {
   try {
     const body = JSON.parse(event.body);
-    const updates = [];
+    const profileUpdates = [];
+    const friendUpdates = [];
     if (body.coursesTaken) {
-      updates.push(updateCourses(userId, body.coursesTaken));
+      profileUpdates.push(updateCourses(userId, body.coursesTaken));
     }
 
     if (body.interestedSections) {
-      updates.push(updateInterestedSections(userId, body.interestedSections));
+      profileUpdates.push(
+        updateInterestedSections(userId, body.interestedSections),
+      );
     }
 
     if (body.personal) {
-      updates.push(updatePersonal(userId, body.personal));
+      profileUpdates.push(updatePersonal(userId, body.personal));
     }
 
     if (body.preferences) {
-      updates.push(updatePreferences(userId, body.preferences));
+      profileUpdates.push(updatePreferences(userId, body.preferences));
     }
+    await Promise.all(profileUpdates);
+    await sendProfileUpdateNotifications(userId, body);
 
     if (body.friends) {
-      updates.push(updateFriends(userId, body.friends));
+      friendUpdates.push(updateFriends(userId, body.friends));
     }
 
     if (body.friendRequests) {
-      updates.push(updateFriendRequests(userId, body.friendRequests));
+      friendUpdates.push(updateFriendRequests(userId, body.friendRequests));
     }
 
-    await Promise.all(updates);
+    await Promise.all(friendUpdates);
+    await Promise.all([
+      sendFriendAndFriendRequestNotifications(userId, body),
+      sendSelfUpdateNotifications(userId, body),
+    ]);
 
     return validResponse("All actions processed successfully");
   } catch (error) {

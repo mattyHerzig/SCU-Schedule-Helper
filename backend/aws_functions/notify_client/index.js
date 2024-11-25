@@ -115,19 +115,26 @@ async function getFriendIds(userId) {
     },
   });
   const response = await ddbClient.send(command);
+  let friendIds = [];
+  let friendReqInIds = [];
+  let friendReqOutIds = [];
   if (!response || !response.Items) {
     return [];
   }
-  // Delete the prefix from the sort key to get the friend's user ID.
-  const friendIds = response.Items.map((item) =>
-    item.sk.S.slice("friend#cur#".length),
-  );
-  const friendReqInIds = response.Items.map((item) =>
-    item.sk.S.slice("friend#req#in#".length),
-  );
-  const friendReqOutIds = response.Items.map((item) =>
-    item.sk.S.slice("friend#req#out#".length),
-  );
+  for (const item of response.Items) {
+    if (!item.sk || !item.sk.S) {
+      continue;
+    }
+    if (item.sk.S.startsWith("friend#cur")) {
+      friendIds.push(item.sk.S.slice("friend#cur#".length));
+    }
+    if (item.sk.S.startsWith("friend#req#in")) {
+      friendReqInIds.push(item.sk.S.slice("friend#req#in#".length));
+    }
+    if (item.sk.S.startsWith("friend#req#out")) {
+      friendReqOutIds.push(item.sk.S.slice("friend#req#out#".length));
+    }
+  }
   return {
     friendIds,
     friendReqInIds,

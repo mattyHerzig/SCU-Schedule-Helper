@@ -5,7 +5,6 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {
-  validResponse,
   createdResponse,
   internalServerError,
   CreatedUserResponse,
@@ -46,7 +45,7 @@ async function handlePostUserRequest(event, context, userId) {
   // Check if the user already exists;
   try {
     if (await userAlreadyExists(userId)) {
-      return validResponse({ message: `User already exists.` });
+      return badRequestResponse(`user already exists.`);
     }
   } catch (error) {
     console.error(error);

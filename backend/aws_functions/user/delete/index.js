@@ -98,6 +98,7 @@ async function getSubsAndKeysForDeletion(pk) {
       ":primaryKey": { S: pk },
     },
   };
+  const userId = pk.split("u#")[1];
 
   const data = await dynamoDBClient.send(new QueryCommand(userQuery));
   const keys = [];
@@ -122,7 +123,7 @@ async function getSubsAndKeysForDeletion(pk) {
       friendIds.push(friendId);
       keys.push({
         pk: `u#${friendId}`,
-        sk: `friend#cur#${pk}`,
+        sk: `friend#cur#${userId}`,
       });
     }
     if (dataItem.sk.S.startsWith("friend#req#in")) {
@@ -130,7 +131,7 @@ async function getSubsAndKeysForDeletion(pk) {
       friendReqInIds.push(friendId);
       keys.push({
         pk: `u#${friendId}`,
-        sk: `friend#req#out#${pk}`,
+        sk: `friend#req#out#${userId}`,
       });
     }
     if (dataItem.sk.S.startsWith("friend#req#out")) {
@@ -138,7 +139,7 @@ async function getSubsAndKeysForDeletion(pk) {
       friendReqOutIds.push(friendId);
       keys.push({
         pk: `u#${friendId}`,
-        sk: `friend#req#in#${pk}`,
+        sk: `friend#req#in#${userId}`,
       });
     }
   }
