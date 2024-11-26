@@ -34,7 +34,8 @@ async function authorize() {
     const data = await response.json();
 
     if (response.status !== 200) {
-      return `Authorization failed. ${data.message}`;
+      // Return a tuple with false and the error message
+      return [false, `Authorization failed. ${data.message}`];
     }
 
     console.log(data.oAuthInfo);
@@ -61,27 +62,111 @@ async function authorize() {
       oAuthInfo: data.oAuthInfo,
     });
 
-    return null;
+    // Return a tuple with true and null (no error)
+    return [true, null];
   } catch (error) {
-    return "Authorization failed. User cancelled.";
+    // Return a tuple with false and the error message
+    return [false, "Authorization failed. User cancelled."];
+  }
+}
+async function downloadEvals() {
+  try {
+    // Get access token
+    const { accessToken } = await chrome.storage.sync.get(["accessToken"]);
+    
+    console.log("Access Token:", accessToken);
+    
+    if (!accessToken) {
+      console.error("No access token found. User may need to authorize.");
+      // Trigger authorization if needed
+      await authorize();
+      return null;
+    }
+
+    // Fetch evals
+    const response = await fetch(downloadEvalsUrl, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + accessToken,
+      },
+    });
+
+    console.log("Fetch Response Status:", response.status);
+
+    // Check if response is successful
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Failed to fetch evals:", errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    // Parse response
+    const data = await response.json();
+    console.log("Raw Eval Data:", data);
+
+    // Validate data structure
+    if (!data || !data.data) {
+      console.error("Invalid data structure. Expected data.data to exist.");
+      throw new Error("No evaluation data found in response");
+    }
+
+    // Decode and decompress
+    const evals = await decodeAndDecompress(data.data);
+    const evalsExpirationDate = data.dataExpirationDate;
+
+    console.log("Decoded Evals:", evals);
+
+    // Store in multiple keys
+    await chrome.storage.local.set({ 
+      evals: evals, 
+      courseEvals: evals,
+      evalsExpirationDate: evalsExpirationDate 
+    });
+
+    // Verify storage
+    const storedData = await chrome.storage.local.get(['evals', 'courseEvals', 'evalsExpirationDate']);
+    console.log("Stored Eval Data:", storedData);
+
+    return evals;
+  } catch (error) {
+    console.error("Complete Error in downloadEvals:", error);
+    
+    if (error.message.includes("Failed to fetch")) {
+      console.error("Network error. Check internet connection and API endpoint.");
+    }
+    
+    throw error;
   }
 }
 
-async function downloadEvals() {
-  const accessToken = await chrome.storage.sync.get(["accessToken"]);
+async function downloadEvalsIfNeeded() {
+  try {
+    console.log('SERVICE WORKER: Starting downloadEvalsIfNeeded');
+    
+    const { accessToken } = await chrome.storage.sync.get(["accessToken"]);
+    console.log('SERVICE WORKER: Access Token', accessToken ? 'EXISTS' : 'NOT FOUND');
 
-  const response = await fetch(downloadEvalsUrl, {
-    method: "GET",
-    headers: {
-      Authorization: "Bearer " + accessToken.accessToken,
-    },
-  });
-  const data = await response.json();
+    if (!accessToken) {
+      console.warn('SERVICE WORKER: No access token. Attempting to authorize.');
+      await authorize();
+    }
 
-  const evalsExpirationDate = data.dataExpirationDate;
-  const evals = await decodeAndDecompress(data.data);
-  await chrome.storage.local.set({ evals, evalsExpirationDate });
+    const { evalsExpirationDate } = await chrome.storage.local.get("evalsExpirationDate");
+    console.log('SERVICE WORKER: Evals Expiration', evalsExpirationDate);
+
+    const shouldDownload = !evalsExpirationDate || new Date(evalsExpirationDate) < new Date();
+    console.log('SERVICE WORKER: Should download evals?', shouldDownload);
+
+    if (shouldDownload) {
+      console.log('SERVICE WORKER: Triggering evals download');
+      await downloadEvals();
+    }
+  } catch (error) {
+    console.error('SERVICE WORKER: Error in downloadEvalsIfNeeded', error);
+    throw error;
+  }
 }
+
 
 async function decodeAndDecompress(base64EncodedGzippedData) {
   const binaryString = atob(base64EncodedGzippedData);
@@ -98,19 +183,7 @@ async function decodeAndDecompress(base64EncodedGzippedData) {
   return jsonData;
 }
 
-async function downloadEvalsIfNeeded() {
-  const { oauth_token: oAuthToken, accessToken } =
-    await chrome.storage.sync.get(["oauth_token", "accessToken"]);
-  const { evals_expiration_date: evalsExpirationDate } =
-    await chrome.storage.local.get("evals_expiration_date");
 
-  if (
-    oAuthToken &&
-    (evalsExpirationDate === undefined || evalsExpirationDate < new Date())
-  ) {
-    await downloadEvals(accessToken);
-  }
-}
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
@@ -140,9 +213,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "authorize":
-      authorize().then((errorMessage) => sendResponse(errorMessage));
-      return true; // Keep the message channel open for asynchronous response
-
+      authorize().then(([authorized, failStatus]) => {
+        console.log('Authorization result:', authorized, failStatus);
+        sendResponse({ authorized, failStatus });
+      });
+      return true; 
     case "downloadEvals":
       downloadEvals().then(() => sendResponse());
       return true;
