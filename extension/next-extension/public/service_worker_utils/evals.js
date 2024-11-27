@@ -16,6 +16,9 @@ export async function downloadEvals() {
     return;
   }
   const evalsResponse = await fetchWithAuth(prodEvalsEndpoint);
+  if (!evalsResponse || !evalsResponse.ok) {
+    return;
+  }
   const evalsObject = await evalsResponse.json();
   const evalsExpirationDate = evalsObject.dataExpirationDate;
   const evals = await decodeAndDecompress(evalsObject.data);

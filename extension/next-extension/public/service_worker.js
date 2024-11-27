@@ -4,6 +4,7 @@ import {
   handleNotification,
   subscribe,
 } from "./service_worker_utils/notifications.js";
+import { getRmpRatings } from "./service_worker_utils/rmp.js";
 import { deleteAccount, updateUser } from "./service_worker_utils/user.js";
 
 const defaults = {
@@ -23,11 +24,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then((response) => response.text())
       .then((data) => sendResponse(data))
       .catch((error) => console.error(error));
-    return true;
   }
 
-  if (request.updateUser) {
+  if (request.type === "updateUser") {
     updateUser(request.updateItems).then((response) => {
+      sendResponse(response);
+    });
+  }
+
+  if (request.type === "getRmpRatings") {
+    getRmpRatings(request.profName, false).then((response) => {
       sendResponse(response);
     });
   }
@@ -45,7 +51,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       });
       break;
-
     case "getDefaults":
       sendResponse(defaults);
       break;
@@ -53,23 +58,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       signIn().then((response) => {
         sendResponse(response);
       });
-      return true;
+      break;
     case "signOut":
       signOut().then((response) => {
         sendResponse(response);
       });
-      return true;
+      break;
     case "deleteAccount":
       deleteAccount().then((response) => {
         sendResponse(response);
       });
-      return true;
+      break;
     case "downloadEvals":
       downloadEvals().then(() => {
         sendResponse();
       });
-      return true;
+      break;
+    default:
+      break;
   }
+  return true;
 });
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
