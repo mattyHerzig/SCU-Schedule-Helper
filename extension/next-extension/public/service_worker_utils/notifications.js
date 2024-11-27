@@ -1,4 +1,4 @@
-import { signOut } from "./authorization.js";
+import { fetchWithAuth, signOut } from "./authorization.js";
 import {
   addFriendLocally,
   refreshUserData,
@@ -55,10 +55,10 @@ export async function handleNotification(notification) {
       await handleFriendProfileUpdated(data.userId);
       break;
     case "FriendRequestProfileUpdated":
-      await addFriendRequestLocally(friendId, type);
+      await addFriendRequestLocally(data.userId, data.type);
       break;
     case "SelfProfileUpdated":
-      await refreshUserData(items);
+      await refreshUserData(data.items);
       break;
     case "SelfProfileDeleted":
       await signOut();

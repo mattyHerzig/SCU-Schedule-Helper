@@ -4,37 +4,55 @@ import { fetchWithAuth, signOut } from "./authorization.js";
 export async function refreshUserData(items = []) {
   const itemsQuery = items.length > 0 ? `?items=${items.join(",")}` : "";
   const response = await fetchWithAuth(`${prodUserEndpoint}/me${itemsQuery}`);
-
   if (!response || !response.ok) {
     return "Error fetching user data. Please try again later.";
   }
   const data = await response.json();
-  const friends = {};
-  const friendRequestsIn = {};
-  const friendRequestsOut = {};
-  for (const friendObj of data.friends) {
-    friends[friendObj.id] = friendObj;
+  if (items.includes("friends") || items.length === 0) {
+    const friends = {};
+    for (const friendObj of data.friends) {
+      friends[friendObj.id] = friendObj;
+    }
+    await chrome.storage.local.set({
+      friends,
+    });
   }
-  for (const friendReqObj of data.friendRequests) {
-    if (friendReqObj.type === "incoming") {
-      friendRequestsIn[friendReqObj.id] = friendReqObj;
+  if (items.includes("friendRequests") || items.length === 0) {
+    const friendRequestsIn = {};
+    const friendRequestsOut = {};
+    for (const friendReqObj of data.friendRequests) {
+      if (friendReqObj.type === "incoming") {
+        friendRequestsIn[friendReqObj.id] = friendReqObj;
+      }
+      if (friendReqObj.type === "outgoing") {
+        friendRequestsOut[friendReqObj.id] = friendReqObj;
+      }
     }
-    if (friendReqObj.type === "outgoing") {
-      friendRequestsOut[friendReqObj.id] = friendReqObj;
-    }
+    await chrome.storage.local.set({
+      friendRequestsIn,
+      friendRequestsOut,
+    });
+  }
+  const currentUserInfo =
+    (await chrome.storage.local.get("userInfo")).userInfo || {};
+  if (items.includes("personal") || items.length === 0) {
+    currentUserInfo.id = data.id;
+    currentUserInfo.name = data.name;
+    currentUserInfo.photoUrl = data.photoUrl;
+  }
+  if (items.includes("preferences") || items.length === 0) {
+    currentUserInfo.preferences = data.preferences;
+  }
+  if (items.includes("coursesTaken") || items.length === 0) {
+    currentUserInfo.coursesTaken = data.coursesTaken;
+  }
+  if (items.includes("interestedSections") || items.length === 0) {
+    currentUserInfo.interestedSections = data.interestedSections;
   }
   await chrome.storage.local.set({
     userInfo: {
-      id: data.id,
-      name: data.name,
-      photoUrl: data.photoUrl,
-      preferences: data.preferences,
-      coursesTaken: data.coursesTaken,
-      interestedSections: data.interestedSections,
+      ...currentUserInfo,
     },
-    friends,
-    friendRequestsIn,
-    friendRequestsOut,
   });
   return null;
 }
@@ -176,7 +194,7 @@ export async function addFriendRequestLocally(friendId, type) {
   if (!getUserPublicProfileResponse || !getUserPublicProfileResponse.ok) {
     return "Error adding friend. Please try again later.";
   }
-  const userData = await getFriendProfileResponse.json();
+  const userData = await getUserPublicProfileResponse.json();
   const friendRequestsKey =
     type === "incoming" ? "friendRequestsIn" : "friendRequestsOut";
   const existingFriendRequests =

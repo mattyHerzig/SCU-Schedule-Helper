@@ -35,10 +35,7 @@ async function deleteUser(event, context, userId) {
     console.error("Error getting sort keys:", error);
     return internalServerError("Could not get the user's entries.");
   }
-  console.log(`Deleting user u#${userId} with ${keys.length} sort keys.`);
-  console.log(`User's info: ${JSON.stringify(userInfo)}`);
   if (keys.length === 0) {
-    console.log(`No sort keys for primary key u#${userId}`);
     return notFoundError(`No sort keys for primary key u#${userId}`);
   }
   const batches = [];
@@ -87,6 +84,7 @@ async function deleteUser(event, context, userId) {
     return internalServerError("Error deleting user's profile picture.");
   }
   await tryNotifyClients(userId, userInfo);
+  await deleteNameFromIndex(userId, userInfo.name);
   return noContentValidResponse;
 }
 
@@ -103,6 +101,7 @@ async function getSubsAndKeysForDeletion(pk) {
   const data = await dynamoDBClient.send(new QueryCommand(userQuery));
   const keys = [];
   let selfSubs = [];
+  let name = "";
   let friendIds = [];
   let friendReqInIds = [];
   let friendReqOutIds = [];
@@ -111,12 +110,10 @@ async function getSubsAndKeysForDeletion(pk) {
       pk,
       sk: dataItem.sk.S,
     });
-    if (
-      dataItem.sk.S.startsWith("info#personal") &&
-      dataItem.subscriptions &&
-      dataItem.subscriptions.SS
-    ) {
-      selfSubs = dataItem.subscriptions.SS.map((sub) => JSON.parse(sub));
+    if (dataItem.sk.S.startsWith("info#personal")) {
+      if (dataItem.subscriptions && dataItem.subscriptions.SS)
+        selfSubs = dataItem.subscriptions.SS.map((sub) => JSON.parse(sub));
+      if (dataItem.name && dataItem.name.S) name = dataItem.name.S;
     }
     if (dataItem.sk.S.startsWith("friend#cur")) {
       const friendId = dataItem.sk.S.split("friend#cur#")[1];
@@ -144,9 +141,30 @@ async function getSubsAndKeysForDeletion(pk) {
     }
   }
   return {
-    userInfo: { selfSubs, friendIds, friendReqInIds, friendReqOutIds },
+    userInfo: { selfSubs, name, friendIds, friendReqInIds, friendReqOutIds },
     keys,
   };
+}
+
+async function deleteNameFromIndex(userId, currentName) {
+  const invokeNameIndexUpdater = {
+    FunctionName: process.env.UPDATE_NAME_INDEX_FUNCTION_NAME,
+    InvocationType: "Event",
+    Payload: JSON.stringify({
+      userId,
+      currentName,
+    }),
+  };
+  try {
+    const response = await lambdaClient.send(
+      new InvokeCommand(invokeNameIndexUpdater),
+    );
+    if (response.$metadata.httpStatusCode !== 202) {
+      throw new Error(`Error updating name index for user ${userId}`);
+    }
+  } catch (error) {
+    console.error("Error updating name index for user:", error);
+  }
 }
 
 async function tryNotifyClients(userId, userInfo) {

@@ -88,11 +88,12 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 
 self.addEventListener("push", function (event) {
-  console.log(`Push had this data: "${event.data.json()}"`);
+  console.log(
+    `Push had this data: "${JSON.stringify(event.data.json(), null, 2)}"`,
+  );
   handleNotification(event.data.json());
 });
 
 self.addEventListener("activate", async (event) => {
   await subscribe();
-  console.log("Service worker activated and subscribed");
 });

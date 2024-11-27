@@ -16,7 +16,7 @@ import {
 import { handleWithAuthorization } from "./utils/authorization.js";
 
 const ALL_ITEMS = new Set([
-  "personalInfo",
+  "personal",
   "preferences",
   "coursesTaken",
   "interestedSections",

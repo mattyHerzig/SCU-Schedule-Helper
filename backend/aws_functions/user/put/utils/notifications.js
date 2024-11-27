@@ -109,6 +109,12 @@ export async function sendFriendAndFriendRequestNotifications(userId, body) {
 }
 
 export async function sendSelfUpdateNotifications(userId, requestBody) {
+  if (requestBody?.personal) {
+    const personalKeys = Object.keys(requestBody.personal);
+    if (personalKeys.length === 1 && personalKeys[0] === "subscriptions") {
+      return;
+    }
+  }
   const updatedItems = Object.keys(requestBody);
   if (updatedItems.length === 0) {
     return;

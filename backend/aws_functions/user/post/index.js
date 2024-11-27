@@ -4,6 +4,7 @@ import {
   GetItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import {
   createdResponse,
   internalServerError,
@@ -18,6 +19,7 @@ const maxAttempts = 5;
 const retryMode = "standard";
 const ddbRegion = process.env.AWS_DDB_REGION;
 const s3Region = process.env.AWS_S3_REGION;
+const lambdaRegion = process.env.AWS_LAMBDA_REGION;
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 const dynamoDBClient = new DynamoDBClient({
   region: ddbRegion,
@@ -25,6 +27,7 @@ const dynamoDBClient = new DynamoDBClient({
   retryMode,
 });
 const s3Client = new S3Client({ region: s3Region });
+const lambdaClient = new LambdaClient({ region: lambdaRegion });
 
 export async function handler(event, context) {
   return await handleWithAuthorization(event, context, handlePostUserRequest);
@@ -158,7 +161,6 @@ async function addUserToDatabase(userId, name, subscription, photoUrl) {
       })),
     },
   };
-  // console.log(JSON.stringify(batchPutItem, 0, 2));
   const dbResponse = await dynamoDBClient.send(
     new BatchWriteItemCommand(batchPutItem),
   );
@@ -167,6 +169,8 @@ async function addUserToDatabase(userId, name, subscription, photoUrl) {
       `error adding user to database (received HTTP status code from DynamoDB: ${dbResponse.$metadata.httpStatusCode}).`,
     );
   }
+
+  await addNameToIndex(userId, name, photoUrl);
   return createdResponse(
     new CreatedUserResponse(
       userId,
@@ -176,6 +180,26 @@ async function addUserToDatabase(userId, name, subscription, photoUrl) {
       subscription,
     ),
   );
+}
+
+async function addNameToIndex(userId, name, photoUrl) {
+  const invokeNameIndexUpdater = {
+    FunctionName: process.env.UPDATE_NAME_INDEX_FUNCTION_NAME,
+    InvocationType: "Event",
+    Payload: JSON.stringify({
+      userId,
+      newName: name,
+      photoUrl,
+    }),
+  };
+  const result = await lambdaClient.send(
+    new InvokeCommand(invokeNameIndexUpdater),
+  );
+  if (result.$metadata.httpStatusCode !== 202) {
+    throw new Error(
+      `received non-202 status code from name index updater: ${result}`,
+    );
+  }
 }
 
 function getTimeRange(startHour, startMinute, endHour, endMinute) {

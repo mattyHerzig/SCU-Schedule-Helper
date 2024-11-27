@@ -83,7 +83,7 @@ async function putUser(event, context, userId) {
       return internalServerError(error.message);
     }
     return internalServerError(
-      "An error occurred while processing the request. Please contact support at swdean@scu.edu.",
+      "an unknown error occurred while processing the request. Please contact support at swdean@scu.edu.",
     );
   }
 }
