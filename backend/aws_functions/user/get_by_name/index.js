@@ -14,7 +14,7 @@ export async function handler(event, context) {
   );
 }
 
-const USER_INFO_PATTERN = /U{(.*?)}P{(.*?)}/;
+const USER_INFO_PATTERN = /U{(.*?)}N{(.*?)}P{(.*?)}/;
 const dynamoClient = new DynamoDBClient({
   region: process.env.AWS_DDB_REGION,
 });
@@ -25,12 +25,13 @@ async function handleGetUserByNameRequest(event, context, userId) {
   if (!nameQueryParam) {
     return badRequestError(`missing required query parameter 'name'.`);
   }
+  const caseInsensitiveName = nameQueryParam.toLowerCase();
   const nameIndexQuery = await dynamoClient.send(
     new QueryCommand({
       KeyConditionExpression: "pk = :pk and begins_with(sk, :sk)",
       ExpressionAttributeValues: {
-        ":pk": { S: `name-index#${nameQueryParam.toUpperCase().charAt(0)}` },
-        ":sk": { S: nameQueryParam },
+        ":pk": { S: `name-index#${caseInsensitiveName.charAt(0)}` },
+        ":sk": { S: caseInsensitiveName },
       },
       TableName: tableName,
     }),
@@ -47,8 +48,8 @@ async function handleGetUserByNameRequest(event, context, userId) {
       if (!userInfo) continue;
       responseItems.push({
         email: `${userInfo[1]}@scu.edu`,
-        name: userItem.sk.S,
-        photoUrl: userInfo[2],
+        name: userInfo[2],
+        photoUrl: userInfo[3],
       });
     }
   }

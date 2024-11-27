@@ -83,8 +83,10 @@ async function deleteUser(event, context, userId) {
     console.error("Error deleting user's profile picture:", error);
     return internalServerError("Error deleting user's profile picture.");
   }
-  await tryNotifyClients(userId, userInfo);
-  await deleteNameFromIndex(userId, userInfo.name);
+  await Promise.all([
+    tryNotifyClients(userId, userInfo),
+    deleteNameFromIndex(userId, userInfo.name),
+  ]);
   return noContentValidResponse;
 }
 

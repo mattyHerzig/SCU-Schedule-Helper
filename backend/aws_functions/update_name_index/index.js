@@ -30,9 +30,10 @@ export async function handler(event, context) {
 }
 
 async function addNameToIndex(userId, newName, photoUrl) {
+  const caseInsensitiveName = newName.toLowerCase();
   const nameIndex = {
-    pk: { S: `name-index#${newName.toUpperCase().charAt(0)}` },
-    sk: { S: newName },
+    pk: { S: `name-index#${caseInsensitiveName.charAt(0)}` },
+    sk: { S: caseInsensitiveName },
   };
   const nameIndexResponse = await dynamoClient.send(
     new GetItemCommand({
@@ -46,10 +47,10 @@ async function addNameToIndex(userId, newName, photoUrl) {
     );
   }
   const usersWithName = nameIndexResponse?.Item?.users?.SS || [];
-  usersWithName.push(`U{${userId}}P{${photoUrl}}`);
+  usersWithName.push(`U{${userId}}N{${newName}}P{${photoUrl}}`);
   const updatedNameIndexItem = {
-    pk: { S: `name-index#${newName.toUpperCase().charAt(0)}` },
-    sk: { S: newName },
+    pk: { S: `name-index#${caseInsensitiveName.charAt(0)}` },
+    sk: { S: caseInsensitiveName },
     users: { SS: usersWithName },
   };
   const putCommand = new PutItemCommand({
@@ -65,9 +66,10 @@ async function addNameToIndex(userId, newName, photoUrl) {
 }
 
 async function updateNameIndexEntry(userId, currentName, newName, photoUrl) {
+  const caseInsensitiveName = currentName.toLowerCase();
   const currentNameIndex = {
-    pk: { S: `name-index#${currentName.toUpperCase().charAt(0)}` },
-    sk: { S: currentName },
+    pk: { S: `name-index#${caseInsensitiveName.charAt(0)}` },
+    sk: { S: caseInsensitiveName },
   };
   const currentNameIndexResponse = await dynamoClient.send(
     new GetItemCommand({
@@ -90,27 +92,27 @@ async function updateNameIndexEntry(userId, currentName, newName, photoUrl) {
   }
   const usersWithName = currentNameIndexResponse.Item.users.SS;
   const currentUserNameIndexEntry = usersWithName.find((user) =>
-    user.includes(`U{${userId}}P{`),
+    user.includes(`U{${userId}}`),
   );
   const updatedUsers = usersWithName.filter(
-    (user) => !user.includes(`U{${userId}}P{`),
+    (user) => !user.includes(`U{${userId}}`),
   );
-  const nameIndexPattern = /U{(?:.*)}P{(.*)}/;
+  const nameIndexPattern = /U{(?:.*)}N{(?:.*)}P{(.*)}/;
   const [, photoUrlInIndex] = nameIndexPattern.exec(currentUserNameIndexEntry);
   if (!photoUrl) {
     photoUrl = photoUrlInIndex;
   }
-  if (!newName) {
+  if (!newName || newName === currentName) {
     newName = currentName;
-    updatedUsers.push(`U{${userId}}P{${photoUrl}}`);
+    updatedUsers.push(`U{${userId}}N{${currentName}}P{${photoUrl}}`);
   }
   if (updatedUsers.length === 0) {
     await deleteNameIndex(currentNameIndex);
   } else {
     const putOldNameIndex = new PutItemCommand({
       Item: {
-        pk: { S: `name-index#${currentName.toUpperCase().charAt(0)}` },
-        sk: { S: currentName },
+        pk: { S: `name-index#${caseInsensitiveName.charAt(0)}` },
+        sk: { S: caseInsensitiveName },
         users: { SS: updatedUsers },
       },
       TableName: tableName,
@@ -128,9 +130,10 @@ async function updateNameIndexEntry(userId, currentName, newName, photoUrl) {
 }
 
 async function deleteNameFromIndexEntry(userId, currentName) {
+  const caseInsensitiveName = currentName.toLowerCase();
   const currentNameIndex = {
-    pk: { S: `name-index#${currentName.toUpperCase().charAt(0)}` },
-    sk: { S: currentName },
+    pk: { S: `name-index#${caseInsensitiveName.charAt(0)}` },
+    sk: { S: caseInsensitiveName },
   };
   const currentNameIndexResponse = await dynamoClient.send(
     new GetItemCommand({
@@ -153,7 +156,7 @@ async function deleteNameFromIndexEntry(userId, currentName) {
   }
   const usersWithName = currentNameIndexResponse.Item.users.SS;
   const updatedUsers = usersWithName.filter(
-    (user) => !user.includes(`U{${userId}}P{`),
+    (user) => !user.includes(`U{${userId}}`),
   );
   if (updatedUsers.length === 0) {
     await deleteNameIndex(currentNameIndex);
@@ -161,8 +164,7 @@ async function deleteNameFromIndexEntry(userId, currentName) {
   }
   const putNameIndex = new PutItemCommand({
     Item: {
-      pk: { S: `name-index#${currentName.toUpperCase().charAt(0)}` },
-      sk: { S: currentName },
+      ...currentNameIndex,
       users: { SS: updatedUsers },
     },
     TableName: tableName,
