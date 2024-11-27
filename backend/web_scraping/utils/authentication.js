@@ -8,7 +8,7 @@ export async function authenticate(username, password) {
   const page = await browser.newPage();
 
   console.log("Starting authentication...");
-  await page.goto("https://scu.edu/apps/evaluations");
+  await page.goto("https://www.scu.edu/apps/evaluations");
   await page.waitForNetworkIdle();
 
   // Fill username and password.

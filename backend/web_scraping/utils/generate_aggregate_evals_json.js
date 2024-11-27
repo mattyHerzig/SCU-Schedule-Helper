@@ -35,7 +35,10 @@ export default async function generateAggregateEvalsFile() {
       true,
       true,
     );
-    aggregateEvals[evaluation.courseCode] = courseAggregateRating;
+    aggregateEvals[evaluation.courseCode] = {
+      ...aggregateEvals[evaluation.courseCode],
+      ...courseAggregateRating,
+    };
   }
   console.log("Finished generating aggregate evals.");
   await writeAggregateEvals();
