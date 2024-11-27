@@ -40,7 +40,6 @@ export default function Settings() {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      // Simulate login response with user info and token
       const errorMsg = await chrome.runtime.sendMessage("signIn");
       setIsLoggedIn(!errorMsg);
       if (errorMsg) {
@@ -77,7 +76,7 @@ export default function Settings() {
   };
 
   return (
-    <Box sx={{ width: 500, height: 600, overflow: "auto" }}>
+    <Box sx={{overflow: "auto" }}>
       <Typography variant="h6">Settings</Typography>
       <Typography sx={{ mb: 2 }}>
         Logged in as: {userName || "Guest"}
@@ -110,7 +109,6 @@ export default function Settings() {
           </>
         )}
         <FormControlLabel
-          required
           control={<Switch />}
           label="Enable data sharing"
         />

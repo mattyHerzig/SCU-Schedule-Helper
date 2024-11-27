@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Box from "@mui/material/Box";
 import Main from "../components/pageComponents/main";
 import Preferences from "../components/pageComponents/preferences";
 import Menu from "../components/Menu";
@@ -17,16 +18,35 @@ export default function Home() {
   };
 
   return (
-    <>
+    <Box 
+      sx={{
+        width: '500px',
+        height: '500px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
+    >
       <Menu navigateToPage={navigateToPage} openLandingPage={openLandingPage} />
-      {activePage === "main" && <Main navigateToPage={navigateToPage} />}
-      {activePage === "preferences" && (
-        <Preferences navigateToPage={navigateToPage} />
-      )}
-      {activePage === "friends" && <Friends navigateToPage={navigateToPage} />}
-      {activePage === "settings" && (
-        <Settings navigateToPage={navigateToPage} />
-      )}
-    </>
+      
+      <Box 
+        sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          width: '100%'
+        }}
+      >
+        {activePage === "main" && <Main navigateToPage={navigateToPage} />}
+        {activePage === "preferences" && (
+          <Preferences navigateToPage={navigateToPage} />
+        )}
+        {activePage === "friends" && <Friends navigateToPage={navigateToPage} />}
+        {activePage === "settings" && (
+          <Settings navigateToPage={navigateToPage} />
+        )}
+      </Box>
+    </Box>
   );
 }

@@ -5,7 +5,7 @@ import ProfCourseSearch from '../ProfCourseSearch';
 
 export default function Main({ navigateToPage }) {
   return (
-    <Box sx={{ width: 500, height: 600, overflow: "auto"}}>
+    <Box sx={{ overflow: "auto"}}>
       <Box
         sx={{
           mb: 3,
@@ -16,7 +16,7 @@ export default function Main({ navigateToPage }) {
         }}
       >
         <Typography sx={{ mb: 3 }}>
-          Search Professors and Course Information:
+          Search Professor and Course Information:
         </Typography>
         
         <Box sx={{ width: "100%", maxWidth: "420px" }}>
