@@ -6,13 +6,10 @@ import { prodEvalsEndpoint } from "./constants.js";
  * @returns {Promise<void>}
  */
 export async function downloadEvals() {
-  const currentExpirationDate = await chrome.storage.local.get(
-    "evalsExpirationDate",
-  )?.evalsExpirationDate;
-  if (
-    currentExpirationDate !== undefined &&
-    new Date() < new Date(currentExpirationDate)
-  ) {
+  const currentExpirationDate = (
+    await chrome.storage.local.get("evalsExpirationDate")
+  ).evalsExpirationDate;
+  if (currentExpirationDate && new Date() < new Date(currentExpirationDate)) {
     return;
   }
   const evalsResponse = await fetchWithAuth(prodEvalsEndpoint);

@@ -85,7 +85,7 @@ async function handleFriendProfileUpdated(friendId) {
   }
   const friendProfile = await friendProfileResponse.json();
   const existingFriends =
-    (await chrome.storage.local.get("friends"))?.friends || {};
+    (await chrome.storage.local.get("friends")).friends || {};
   await chrome.storage.local.set({
     friends: {
       ...existingFriends,

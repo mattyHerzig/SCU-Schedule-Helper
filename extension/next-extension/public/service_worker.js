@@ -5,7 +5,13 @@ import {
   subscribe,
 } from "./service_worker_utils/notifications.js";
 import { getRmpRatings } from "./service_worker_utils/rmp.js";
-import { deleteAccount, updateUser } from "./service_worker_utils/user.js";
+import {
+  deleteAccount,
+  queryUserByName,
+  refreshInterestedSections,
+  refreshUserData,
+  updateUser,
+} from "./service_worker_utils/user.js";
 
 const defaults = {
   extendColorHorizontally: false,
@@ -34,6 +40,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.type === "getRmpRatings") {
     getRmpRatings(request.profName, false).then((response) => {
+      sendResponse(response);
+    });
+  }
+
+  if (request.type === "queryUserByName") {
+    queryUserByName(request.name).then((response) => {
       sendResponse(response);
     });
   }
@@ -74,6 +86,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse();
       });
       break;
+    case "popupOpened":
+      runStartupChecks().then(() => {
+        sendResponse();
+      });
     default:
       break;
   }
@@ -103,5 +119,27 @@ self.addEventListener("push", function (event) {
 });
 
 self.addEventListener("activate", async (event) => {
+  // Set refresh date to 4 days from now.
+  await chrome.storage.local.set({
+    refreshSelfDataDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+  });
   await subscribe();
 });
+
+async function runStartupChecks() {
+  console.log("Running startup checks...");
+  const refreshSelfDataDate = (
+    await chrome.storage.local.get("refreshSelfDataDate")
+  ).refreshSelfDataDate;
+  if (
+    refreshSelfDataDate === undefined ||
+    new Date() > new Date(refreshSelfDataDate)
+  ) {
+    console.log("Refreshing self data...");
+    await refreshUserData();
+  }
+  // Check if the evals need to be redownloaded.
+  await downloadEvals();
+  // Check if we need to expire any interestedSections.
+  await refreshInterestedSections();
+}

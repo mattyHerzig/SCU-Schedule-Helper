@@ -74,7 +74,7 @@ export async function updateUser(updateItems) {
 }
 
 async function updateLocalCache(updateItems) {
-  const userInfo = (await chrome.storage.local.get("userInfo"))?.userInfo || {};
+  const userInfo = (await chrome.storage.local.get("userInfo")).userInfo || {};
   if (updateItems.personal) {
     userInfo.name = updateItems.personal.name;
     if (updateItems.personal.photoUrl === "default")
@@ -172,9 +172,9 @@ export async function addFriendLocally(friendId) {
     ...userData,
   };
   const currentFriends =
-    (await chrome.storage.local.get("friends"))?.friends || {};
+    (await chrome.storage.local.get("friends")).friends || {};
   const currentFriendRequestsOut =
-    (await chrome.storage.local.get("friendRequestsOut"))?.friendRequestsOut ||
+    (await chrome.storage.local.get("friendRequestsOut")).friendRequestsOut ||
     {};
   delete currentFriendRequestsOut.friendRequestsOut[friendId];
   await chrome.storage.local.set({
@@ -198,7 +198,7 @@ export async function addFriendRequestLocally(friendId, type) {
   const friendRequestsKey =
     type === "incoming" ? "friendRequestsIn" : "friendRequestsOut";
   const existingFriendRequests =
-    (await chrome.storage.local.get(friendRequestsKey))?.[friendRequestsKey] ||
+    (await chrome.storage.local.get(friendRequestsKey))[friendRequestsKey] ||
     {};
   existingFriendRequests[friendId] = {
     ...userData,
@@ -210,7 +210,7 @@ export async function addFriendRequestLocally(friendId, type) {
 
 export async function removeFriendLocally(friendId) {
   const currentFriends =
-    (await chrome.storage.local.get("friends"))?.friends || {};
+    (await chrome.storage.local.get("friends")).friends || {};
   delete currentFriends[friendId];
   await chrome.storage.local.set({ friends: currentFriends });
 }
@@ -219,12 +219,36 @@ export async function removeFriendRequestLocally(friendId, type) {
   const friendRequestsKey =
     type === "incoming" ? "friendRequestsIn" : "friendRequestsOut";
   const existingFriendRequests =
-    (await chrome.storage.local.get(friendRequestsKey))?.[friendRequestsKey] ||
+    (await chrome.storage.local.get(friendRequestsKey))[friendRequestsKey] ||
     {};
   delete existingFriendRequests[friendId];
   await chrome.storage.local.set({
     [friendRequestsKey]: existingFriendRequests,
   });
+}
+
+const interestedSectionPattern = /S{(.*?)}P{(.*?)}E{(.*?)}/;
+export async function refreshInterestedSections() {
+  // Check the expiration date of the interestedSections, delete if expired, and also delete from the remote server.
+  const userInfo = (await chrome.storage.local.get("userInfo")).userInfo || {};
+  const interestedSections = userInfo.interestedSections || [];
+  for (const section of interestedSections) {
+    const [, , expirationDate] = interestedSectionPattern.exec(section);
+    if (new Date() > new Date(expirationDate)) {
+      await updateUser({ interestedSections: { remove: [section] } });
+    }
+  }
+}
+
+export async function queryUserByName(name) {
+  const response = await fetchWithAuth(
+    `${prodUserEndpoint}/query?name=${encodeURIComponent(name)}`,
+  );
+  if (!response || !response.ok) {
+    return "Error fetching user data. Please try again later.";
+  }
+  const data = await response.json();
+  return data;
 }
 
 function getS3PhotoUrl(userId) {

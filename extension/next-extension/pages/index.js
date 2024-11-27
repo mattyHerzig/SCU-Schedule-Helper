@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Main from "../components/pageComponents/main";
 import Preferences from "../components/pageComponents/preferences";
@@ -16,6 +16,10 @@ export default function Home() {
   const openLandingPage = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("tab/index.html") });
   };
+
+  useEffect(() => {
+    chrome.runtime.sendMessage("popupOpened");
+  }, []);
 
   return (
     <Box 
