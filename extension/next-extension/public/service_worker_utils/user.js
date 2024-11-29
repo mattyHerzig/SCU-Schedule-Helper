@@ -1,4 +1,8 @@
-import { prodUserEndpoint } from "./constants.js";
+import {
+  courseTakenPattern,
+  interestedSectionPattern,
+  prodUserEndpoint,
+} from "./constants.js";
 import { fetchWithAuth, signOut } from "./authorization.js";
 
 export async function refreshUserData(items = []) {
@@ -95,16 +99,20 @@ async function updateLocalCache(updateItems) {
     }
   }
   if (updateItems.coursesTaken) {
+    userInfo.coursesTaken = userInfo.coursesTaken.concat(
+      updateItems.coursesTaken.add,
+    );
     const coursesTaken = new Set(userInfo.coursesTaken);
-    userInfo.coursesTaken.concat(updateItems.coursesTaken.add);
     updateItems.coursesTaken.remove.forEach((course) => {
       coursesTaken.delete(course);
     });
     userInfo.coursesTaken = Array.from(coursesTaken);
   }
   if (updateItems.interestedSections) {
+    userInfo.interestedSections = userInfo.interestedSections.concat(
+      updateItems.interestedSections.add,
+    );
     const interestedSections = new Set(userInfo.interestedSections);
-    userInfo.interestedSections.concat(updateItems.interestedSections.add);
     updateItems.interestedSections.remove.forEach((section) => {
       interestedSections.delete(section);
     });
@@ -168,6 +176,11 @@ export async function addFriendLocally(friendId) {
   if (!userData.coursesTaken || !userData.interestedSections) {
     return "Error adding friend.";
   }
+  await updateFriendCourseAndSectionIndexes(
+    friendId,
+    userData.coursesTaken,
+    userData.interestedSections,
+  );
   const friendProfile = {
     ...userData,
   };
@@ -185,6 +198,92 @@ export async function addFriendLocally(friendId) {
     friendRequestsOut: currentFriendRequestsOut.friendRequestsOut,
   });
   return null;
+}
+
+export async function updateFriendCourseAndSectionIndexes(
+  friendId,
+  coursesTaken,
+  interestedSections,
+) {
+  coursesTaken = coursesTaken || [];
+  interestedSections = interestedSections || [];
+  const friendCoursesTaken =
+    (await chrome.storage.local.get("friendCoursesTaken")).friendCoursesTaken ||
+    {};
+  for (const course of coursesTaken) {
+    const courseMatch = courseTakenPattern.exec(course.courseCode);
+    if (!courseMatch) {
+      continue;
+    }
+    const profName = courseMatch[1];
+    const courseCode = courseMatch[2].replace(/\s/g, "");
+    const curCourseIndex = friendCoursesTaken[courseCode] || {};
+    const curProfIndex = friendCoursesTaken[profName] || {};
+    curCourseIndex[friendId] = curCourseIndex[friendId] || [];
+    curCourseIndex[friendId].push(course);
+    curProfIndex[friendId] = curProfIndex[friendId] || [];
+    curProfIndex[friendId].push(course);
+    friendCoursesTaken[courseCode] = curCourseIndex;
+    friendCoursesTaken[profName] = curProfIndex;
+  }
+  const friendInterestedSections =
+    (await chrome.storage.local.get("friendInterestedSections"))
+      .friendInterestedSections || {};
+  for (const section of interestedSections) {
+    const sectionMatch = interestedSectionPattern.exec(section);
+    if (!sectionMatch) {
+      continue;
+    }
+    const profName = sectionMatch[1];
+    const courseCode = sectionFullString
+      .substring(0, sectionMatch[2].indexOf("-"))
+      .replace(/\s/g, "");
+    curCourseIndex = friendInterestedSections[courseCode] || {};
+    curProfIndex = friendInterestedSections[profName] || {};
+    curCourseIndex[friendId] = curCourseIndex[friendId] || [];
+    curCourseIndex[friendId].push(section);
+    curProfIndex[friendId] = curProfIndex[friendId] || [];
+    curProfIndex[friendId].push(section);
+    friendInterestedSections[courseCode] = curCourseIndex;
+    friendInterestedSections[profName] = curProfIndex;
+  }
+  await chrome.storage.local.set({
+    friendCoursesTaken,
+    friendInterestedSections,
+  });
+}
+
+export async function clearFriendCourseAndSectionIndexes(friendId) {
+  const friendCoursesTaken =
+    (await chrome.storage.local.get("friendCoursesTaken")).friendCoursesTaken ||
+    {};
+  const friendInterestedSections =
+    (await chrome.storage.local.get("friendInterestedSections"))
+      .friendInterestedSections || {};
+  for (const courseCode in friendCoursesTaken) {
+    if (friendCoursesTaken[courseCode][friendId]) {
+      delete friendCoursesTaken[courseCode][friendId];
+    }
+  }
+  for (const profName in friendCoursesTaken) {
+    if (friendCoursesTaken[profName][friendId]) {
+      delete friendCoursesTaken[profName][friendId];
+    }
+  }
+  for (const courseCode in friendInterestedSections) {
+    if (friendInterestedSections[courseCode][friendId]) {
+      delete friendInterestedSections[courseCode][friendId];
+    }
+  }
+  for (const profName in friendInterestedSections) {
+    if (friendInterestedSections[profName][friendId]) {
+      delete friendInterestedSections[profName][friendId];
+    }
+  }
+  await chrome.storage.local.set({
+    friendCoursesTaken,
+    friendInterestedSections,
+  });
 }
 
 export async function addFriendRequestLocally(friendId, type) {
@@ -213,6 +312,7 @@ export async function removeFriendLocally(friendId) {
     (await chrome.storage.local.get("friends")).friends || {};
   delete currentFriends[friendId];
   await chrome.storage.local.set({ friends: currentFriends });
+  await clearFriendCourseAndSectionIndexes(friendId);
 }
 
 export async function removeFriendRequestLocally(friendId, type) {
@@ -227,13 +327,16 @@ export async function removeFriendRequestLocally(friendId, type) {
   });
 }
 
-const interestedSectionPattern = /S{(.*?)}P{(.*?)}E{(.*?)}/;
 export async function refreshInterestedSections() {
   // Check the expiration date of the interestedSections, delete if expired, and also delete from the remote server.
   const userInfo = (await chrome.storage.local.get("userInfo")).userInfo || {};
   const interestedSections = userInfo.interestedSections || [];
   for (const section of interestedSections) {
-    const [, , expirationDate] = interestedSectionPattern.exec(section);
+    const sectionMatch = interestedSectionPattern.exec(section);
+    if (!sectionMatch) {
+      continue;
+    }
+    const expirationDate = sectionMatch[4];
     if (new Date() > new Date(expirationDate)) {
       await updateUser({ interestedSections: { remove: [section] } });
     }

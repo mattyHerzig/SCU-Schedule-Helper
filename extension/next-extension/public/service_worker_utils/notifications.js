@@ -5,6 +5,8 @@ import {
   addFriendRequestLocally,
   removeFriendRequestLocally,
   removeFriendLocally,
+  clearFriendCourseAndSectionIndexes,
+  updateFriendCourseAndSectionIndexes,
 } from "./user.js";
 
 const SERVER_PUBLIC_KEY =
@@ -92,6 +94,8 @@ async function handleFriendProfileUpdated(friendId) {
       [friendId]: friendProfile,
     },
   });
+  await clearFriendCourseAndSectionIndexes(friendId);
+  await updateFriendCourseAndSectionIndexes(friendId, friendProfile.coursesTaken, friendProfile.interestedSections);
 }
 
 function urlB64ToUint8Array(base64String) {
