@@ -10,7 +10,8 @@ function getScoreWeighting(scuEvals, rmp) {
 }
 
 export async function updatePreferences(userId, updateData) {
-  const { preferredSectionTimeRange, scoreWeighting } = updateData;
+  let { preferredSectionTimeRange, scoreWeighting, courseTracking } =
+    updateData;
 
   const updateExpressionParts = [];
   const expressionAttributeNames = {};
@@ -66,6 +67,19 @@ export async function updatePreferences(userId, updateData) {
     expressionAttributeNames["#scoreWeighting"] = "scoreWeighting";
     expressionAttributeValues[":scoreWeighting"] = {
       N: `${scoreWeightingValue}`,
+    };
+  }
+
+  if (courseTracking !== undefined && courseTracking !== null) {
+    if (typeof courseTracking === "boolean")
+      courseTracking = courseTracking.toString();
+    if (courseTracking !== "true" && courseTracking !== "false") {
+      throw new Error("Invalid course tracking value.", { cause: 400 });
+    }
+    updateExpressionParts.push("#courseTracking = :courseTracking");
+    expressionAttributeNames["#courseTracking"] = "courseTracking";
+    expressionAttributeValues[":courseTracking"] = {
+      BOOL: courseTracking,
     };
   }
 

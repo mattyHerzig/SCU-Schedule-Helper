@@ -67,11 +67,12 @@ export async function updateUser(updateItems) {
     body: JSON.stringify(updateItems),
   });
   if (!response) {
-    return "Error updating user data. Please try again later.";
+    return "Error updating user data (are you signed in?)";
   }
   const data = await response.json();
-  if (response.status !== 200) {
-    return data.message;
+  if (!response.ok) {
+    if (data.message) return data.message;
+    return "Error updating user data. Please try again later.";
   }
   await updateLocalCache(updateItems);
   return null;
@@ -97,15 +98,19 @@ async function updateLocalCache(updateItems) {
       userInfo.preferences.preferredSectionTimeRange =
         updateItems.preferences.preferredSectionTimeRange;
     }
+    if (updateItems.preferences.courseTracking) {
+      userInfo.preferences.courseTracking =
+        updateItems.preferences.courseTracking;
+    }
   }
   if (updateItems.coursesTaken) {
     userInfo.coursesTaken = userInfo.coursesTaken.concat(
       updateItems.coursesTaken.add,
     );
     const coursesTaken = new Set(userInfo.coursesTaken);
-    updateItems.coursesTaken.remove.forEach((course) => {
-      coursesTaken.delete(course);
-    });
+    if (updateItems.coursesTaken.remove)
+      for (const course of updateItems.coursesTaken.remove)
+        coursesTaken.delete(course);
     userInfo.coursesTaken = Array.from(coursesTaken);
   }
   if (updateItems.interestedSections) {
@@ -113,9 +118,9 @@ async function updateLocalCache(updateItems) {
       updateItems.interestedSections.add,
     );
     const interestedSections = new Set(userInfo.interestedSections);
-    updateItems.interestedSections.remove.forEach((section) => {
-      interestedSections.delete(section);
-    });
+    if (updateItems.interestedSections.remove)
+      for (const section of updateItems.interestedSections.remove)
+        interestedSections.delete(section);
     userInfo.interestedSections = Array.from(interestedSections);
   }
   if (updateItems.friends) {
@@ -219,8 +224,7 @@ export async function updateFriendCourseAndSectionIndexes(
     const courseCode = courseMatch[2].replace(/\s/g, "");
     const curCourseIndex = friendCoursesTaken[courseCode] || {};
     const curProfIndex = friendCoursesTaken[profName] || {};
-    curCourseIndex[friendId] = curCourseIndex[friendId] || [];
-    curCourseIndex[friendId].push(course);
+    curCourseIndex[friendId] = course; // A friend should only have one course entry per course code.
     curProfIndex[friendId] = curProfIndex[friendId] || [];
     curProfIndex[friendId].push(course);
     friendCoursesTaken[courseCode] = curCourseIndex;
@@ -240,8 +244,7 @@ export async function updateFriendCourseAndSectionIndexes(
       .replace(/\s/g, "");
     curCourseIndex = friendInterestedSections[courseCode] || {};
     curProfIndex = friendInterestedSections[profName] || {};
-    curCourseIndex[friendId] = curCourseIndex[friendId] || [];
-    curCourseIndex[friendId].push(section);
+    curCourseIndex[friendId] = section; // A friend should only have one section entry per course code.
     curProfIndex[friendId] = curProfIndex[friendId] || [];
     curProfIndex[friendId].push(section);
     friendInterestedSections[courseCode] = curCourseIndex;

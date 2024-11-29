@@ -136,6 +136,7 @@ async function addUserToDatabase(userId, name, subscription, photoUrl) {
     sk: { S: "info#preferences" },
     preferredSectionTimeRange: { N: getTimeRange(6, 0, 20, 0) },
     scoreWeighting: { N: getScoreWeighting(50, 50) },
+    courseTracking: { BOOL: true },
   };
   const coursesTakenItem = {
     pk: { S: `u#${userId}` },

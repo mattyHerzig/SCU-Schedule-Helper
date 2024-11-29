@@ -18,35 +18,37 @@ export default function Home() {
   };
 
   useEffect(() => {
-    chrome.runtime.sendMessage("popupOpened");
+    chrome.runtime.sendMessage("runStartupChecks");
   }, []);
 
   return (
-    <Box 
+    <Box
       sx={{
-        width: '500px',
-        height: '500px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative'
+        width: "500px",
+        height: "500px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
       <Menu navigateToPage={navigateToPage} openLandingPage={openLandingPage} />
-      
-      <Box 
+
+      <Box
         sx={{
           flexGrow: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          width: '100%'
+          overflowY: "auto",
+          overflowX: "hidden",
+          width: "100%",
         }}
       >
         {activePage === "main" && <Main navigateToPage={navigateToPage} />}
         {activePage === "preferences" && (
           <Preferences navigateToPage={navigateToPage} />
         )}
-        {activePage === "friends" && <Friends navigateToPage={navigateToPage} />}
+        {activePage === "friends" && (
+          <Friends navigateToPage={navigateToPage} />
+        )}
         {activePage === "settings" && (
           <Settings navigateToPage={navigateToPage} />
         )}

@@ -86,7 +86,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse();
       });
       break;
-    case "popupOpened":
+    case "runStartupChecks":
       runStartupChecks().then(() => {
         sendResponse();
       });
@@ -121,7 +121,9 @@ self.addEventListener("push", function (event) {
 self.addEventListener("activate", async (event) => {
   // Set refresh date to 4 days from now.
   await chrome.storage.local.set({
-    refreshSelfDataDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    refreshSelfDataDate: new Date(
+      Date.now() + 4 * 24 * 60 * 60 * 1000,
+    ).getTime(),
   });
   await subscribe();
 });
@@ -137,6 +139,11 @@ async function runStartupChecks() {
   ) {
     console.log("Refreshing self data...");
     await refreshUserData();
+    await chrome.storage.local.set({
+      refreshSelfDataDate: new Date(
+        Date.now() + 4 * 24 * 60 * 60 * 1000,
+      ).getTime(),
+    });
   }
   // Check if the evals need to be redownloaded.
   await downloadEvals();

@@ -139,9 +139,6 @@ async function trySendNotification(notificationBody) {
     InvocationType: "Event",
     Payload: JSON.stringify(notificationBody),
   };
-  console.log(
-    `Sending notification: ${JSON.stringify(invokeClientNotifierParams, null, 2)}`,
-  );
   try {
     const result = await lambdaClient.send(
       new InvokeCommand(invokeClientNotifierParams),

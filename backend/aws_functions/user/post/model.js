@@ -16,6 +16,7 @@ export class CreatedUserResponse {
         scuEvals: 50,
         rmp: 50,
       },
+      courseTracking: true,
     };
     this.coursesTaken = [];
     this.interestedSections = [];
