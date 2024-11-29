@@ -77,6 +77,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                   fontSize: 30,
                   color: activeMenu === "home" ? "#703331" : "#d1d1d1",
                   marginRight: 1,
+                  transition: "color 0.3s",
                 }}
               />
               <span
@@ -103,6 +104,9 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                   color: "black",
                   "&:hover": {
                     backgroundColor: "#f0f0f0",
+                    "& .menu-icon": {
+                      color: "#703331",
+                    }
                   },
                   "&:hover::after, &.active::after": {
                     backgroundColor: "#703331",
@@ -125,7 +129,12 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                 className={activeMenu === item.id ? "active" : ""}
               >
                 {React.cloneElement(item.icon, {
-                  sx: { fontSize: 30, color: activeMenu === item.id ? "#703331" : "#d1d1d1" },
+                  className: "menu-icon",
+                  sx: { 
+                    fontSize: 30, 
+                    color: activeMenu === item.id ? "#703331" : "#d1d1d1",
+                    transition: "color 0.3s",
+                  },
                 })}
               </Button>
             ))}
@@ -135,6 +144,5 @@ export default function Menu({ navigateToPage, openLandingPage }) {
     </Box>
   );
 }
-
 
 

@@ -1,4 +1,3 @@
-// TODO: transfer oldfetchRMP.js stuff over
 const edgecases = {
   not_mismatches: new Set([
     "dongsoo shin",
@@ -21,11 +20,21 @@ const edgecases = {
   actual_mismatches: new Set(["eun park"]),
 };
 
+async function getHtml(url) {
+  const response = await fetch(url);
+  return await response.text();
+}
+``;
 async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   const url = `https://www.ratemyprofessors.com/professor/${profId}`;
   if (debuggingEnabled) console.log("Querying " + url + "...");
+  const cache =
+    (await chrome.storage.local.get(new String(profId)))[profId] || {};
+  if (cache.teacherData && cache.exp > Date.now()) {
+    return cache.teacherData;
+  }
 
-  const html = await chrome.runtime.sendMessage({ url: url });
+  const html = await getHtml(url);
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let openingBraceIndex = html.lastIndexOf("{", indexOfTeacher);
   // Find closing brace that matches the opening brace
@@ -41,6 +50,9 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
     closingBraceIndex + 1,
   );
   let teacherData = JSON.parse(teacherInfoString);
+  chrome.storage.local.set({
+    [new String(profId)]: { teacherData, exp: Date.now() + 86400000 },
+  });
   if (debuggingEnabled) console.log(teacherData);
   return teacherData;
 }
@@ -51,7 +63,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   let teachers = [];
   if (debuggingEnabled) console.log("Querying " + url + "...");
 
-  const html = await chrome.runtime.sendMessage({ url: url });
+  const html = await getHtml(url);
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let indexOfSchool = html.indexOf('"__typename":"School"');
   // Find SCU school id.
@@ -100,7 +112,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   return teachers;
 }
 
-async function getRmpRatings(rawProfName, debuggingEnabled = false) {
+export async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   let profName = rawProfName.trim();
   // Empirical testing showed that including middle names in the query does not improve accuracy.
   // Therefore, we only query by the first first name and the last last name.

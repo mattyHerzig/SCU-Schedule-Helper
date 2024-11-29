@@ -1,5 +1,5 @@
 {
-  "name": "notify_client",
+  "name": "get_by_name",
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
@@ -10,6 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "web-push": "^3.6.7"
+    "jsonwebtoken": "^9.0.2"
   }
 }

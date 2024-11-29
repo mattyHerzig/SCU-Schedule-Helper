@@ -1,9 +1,8 @@
-import { UpdateItemCommand } from "@aws-sdk/client-dynamodb";
-import { client } from "./dynamoClient.js";
+import { GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { InvokeCommand } from "@aws-sdk/client-lambda";
+import { dynamoClient, lambdaClient, s3Client, tableName } from "../index.js";
 import { getSetItems } from "./getSetItems.js";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
-const s3Client = new S3Client({ region: process.env.AWS_S3_REGION });
 
 export async function updatePersonal(userId, updateData) {
   const updatedSubscriptions = await getSetItems(
@@ -15,8 +14,12 @@ export async function updatePersonal(userId, updateData) {
   if (updateData.photo) {
     updateData.photoUrl = await uploadUserPhotoToS3(userId, updateData.photo);
   }
-  if(updateData.photo == null) {
-    updateData.photoUrl = "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
+  if (updateData.photoUrl == "default") {
+    updateData.photoUrl =
+      "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
+  }
+  if (updateData.photoUrl || updateData.name) {
+    await updateNameIndex(userId, updateData.name, updateData.photoUrl);
   }
 
   if (updateData.subscriptions && Array.isArray(updateData.subscriptions)) {
@@ -60,9 +63,51 @@ export async function updatePersonal(userId, updateData) {
     ReturnValues: "ALL_NEW",
   };
 
-  const result = await client.send(new UpdateItemCommand(updatePersonalInfo));
+  const result = await dynamoClient.send(
+    new UpdateItemCommand(updatePersonalInfo),
+  );
   if (result.$metadata.httpStatusCode !== 200) {
     throw new Error(`Error updating personal info for user ${userId}`, {
+      cause: 500,
+    });
+  }
+}
+
+async function updateNameIndex(userId, newName, photoUrl) {
+  const getCurrentUser = {
+    TableName: tableName,
+    Key: {
+      pk: { S: `u#${userId}` },
+      sk: { S: "info#personal" },
+    },
+  };
+  const currentUser = await dynamoClient.send(
+    new GetItemCommand(getCurrentUser),
+  );
+  if (currentUser.$metadata.httpStatusCode !== 200) {
+    throw new Error(`Error getting current user info for user ${userId}`, {
+      cause: 500,
+    });
+  }
+  if (!currentUser.Item || !currentUser.Item.name || !currentUser.Item.name.S) {
+    throw new Error(`user ${userId} not found`, { cause: 404 });
+  }
+  const currentName = currentUser.Item.name.S;
+  const invokeNameIndexUpdater = {
+    FunctionName: process.env.UPDATE_NAME_INDEX_FUNCTION_NAME,
+    InvocationType: "Event",
+    Payload: JSON.stringify({
+      userId,
+      currentName,
+      newName,
+      photoUrl,
+    }),
+  };
+  const response = await lambdaClient.send(
+    new InvokeCommand(invokeNameIndexUpdater),
+  );
+  if (response.$metadata.httpStatusCode !== 202) {
+    throw new Error(`Error updating name index for user ${userId}`, {
       cause: 500,
     });
   }

@@ -9,7 +9,7 @@ import Checkbox from "@mui/material/Checkbox";
 
 export default function Preferences() {
   return (
-    <Box sx={{ width: 500, height: 600, overflow: "auto" }}>
+    <Box sx={{ overflow: "auto" }}>
       <Box
         sx={{
           display: "flex",
@@ -29,80 +29,9 @@ export default function Preferences() {
           How would you like RateMyProfessor and SCU Course Evaluation ratings
           to be weighed:
         </Typography>
+
         <PercentSlider></PercentSlider>
 
-        <Typography sx={{ pt: 5 }}>
-          Select subjects of interest for electives:
-        </Typography>
-        <Box sx={{ "& .MuiFormControlLabel-root": { fontSize: "0.75rem" } }}>
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="History"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Film"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Art"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Music"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Religion"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Philosophy"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Science"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Social Science"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Ethics"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Anthropology"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Business"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Finance"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Literature"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Architecture"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Foreign Language"
-          />
-          <FormControlLabel
-            control={<Checkbox sx={{ transform: "scale(0.75)" }} />}
-            label="Law"
-          />
-        </Box>
-        <Typography sx={{ pt: 5 }}>
-          Select core requirements you are interested in:
-        </Typography>
         <Box
           sx={{
             display: "flex",

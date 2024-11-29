@@ -1,6 +1,5 @@
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 import { GetItemCommand } from "@aws-sdk/client-dynamodb";
-import { client } from "./dynamoClient.js";
+import { dynamoClient, tableName } from "../index.js";
 
 export async function getSetItems(userId, sk, attributeName) {
   const params = {
@@ -11,7 +10,7 @@ export async function getSetItems(userId, sk, attributeName) {
     },
   };
 
-  const data = await client.send(new GetItemCommand(params));
+  const data = await dynamoClient.send(new GetItemCommand(params));
   if (!data.Item || !data.Item[attributeName] || !data.Item[attributeName].SS) {
     return new Set();
   }

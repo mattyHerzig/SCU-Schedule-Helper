@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { handleWithAuthorization } from "./utils/authorization.js";
+import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import {
   internalServerError,
   noContentValidResponse,
@@ -17,6 +18,9 @@ const dynamoDBClient = new DynamoDBClient({
 const s3Client = new S3Client({
   region: process.env.AWS_S3_REGION,
 });
+const lambdaClient = new LambdaClient({
+  region: process.env.AWS_LAMBDA_REGION,
+});
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
@@ -24,15 +28,14 @@ export async function handler(event, context) {
 }
 
 async function deleteUser(event, context, userId) {
-  let keys = [];
+  let userInfo, keys;
   try {
-    keys = await getKeysForDeletion(`u#${userId}`);
+    ({ userInfo, keys } = await getSubsAndKeysForDeletion(`u#${userId}`));
   } catch (error) {
     console.error("Error getting sort keys:", error);
     return internalServerError("Could not get the user's entries.");
   }
   if (keys.length === 0) {
-    console.log(`No sort keys for primary key u#${userId}`);
     return notFoundError(`No sort keys for primary key u#${userId}`);
   }
   const batches = [];
@@ -69,20 +72,25 @@ async function deleteUser(event, context, userId) {
       Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
       Key: photoKey,
     };
-    const s3Response = await s3Client.send(new DeleteObjectCommand(photoParams));
+    const s3Response = await s3Client.send(
+      new DeleteObjectCommand(photoParams),
+    );
     if (s3Response.$metadata.httpStatusCode !== 204) {
       console.error(`Error deleting profile photo from S3: ${s3Response}`);
       return internalServerError("Error deleting user's profile picture.");
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error("Error deleting user's profile picture:", error);
     return internalServerError("Error deleting user's profile picture.");
   }
+  await Promise.all([
+    tryNotifyClients(userId, userInfo),
+    deleteNameFromIndex(userId, userInfo.name),
+  ]);
   return noContentValidResponse;
 }
 
-async function getKeysForDeletion(pk) {
+async function getSubsAndKeysForDeletion(pk) {
   const userQuery = {
     TableName: tableName,
     KeyConditionExpression: "pk = :primaryKey",
@@ -90,35 +98,112 @@ async function getKeysForDeletion(pk) {
       ":primaryKey": { S: pk },
     },
   };
+  const userId = pk.split("u#")[1];
 
   const data = await dynamoDBClient.send(new QueryCommand(userQuery));
-  const keys = data.Items.map((item) => ({
-    pk,
-    sk: item.sk.S,
-  }));
-  const keysToDelete = Array.from(keys);
-  for (const key of keys) {
-    if (key.sk.startsWith("friend#cur#")) {
-      const friendId = key.sk.split("friend#cur#")[1];
-      keysToDelete.push({
+  const keys = [];
+  let selfSubs = [];
+  let name = "";
+  let friendIds = [];
+  let friendReqInIds = [];
+  let friendReqOutIds = [];
+  for (const dataItem of data.Items) {
+    keys.push({
+      pk,
+      sk: dataItem.sk.S,
+    });
+    if (dataItem.sk.S.startsWith("info#personal")) {
+      if (dataItem.subscriptions && dataItem.subscriptions.SS)
+        selfSubs = dataItem.subscriptions.SS.map((sub) => JSON.parse(sub));
+      if (dataItem.name && dataItem.name.S) name = dataItem.name.S;
+    }
+    if (dataItem.sk.S.startsWith("friend#cur")) {
+      const friendId = dataItem.sk.S.split("friend#cur#")[1];
+      friendIds.push(friendId);
+      keys.push({
         pk: `u#${friendId}`,
-        sk: `friend#cur#${pk.split("u#")[1]}`,
+        sk: `friend#cur#${userId}`,
       });
     }
-    if (key.sk.startsWith("friend#req#in#")) {
-      const friendId = key.sk.split("friend#req#in#")[1];
-      keysToDelete.push({
+    if (dataItem.sk.S.startsWith("friend#req#in")) {
+      const friendId = dataItem.sk.S.split("friend#req#in#")[1];
+      friendReqInIds.push(friendId);
+      keys.push({
         pk: `u#${friendId}`,
-        sk: `friend#req#out#${pk.split("u#")[1]}`,
+        sk: `friend#req#out#${userId}`,
       });
     }
-    if (key.sk.startsWith("friend#req#out#")) {
-      const friendId = key.sk.split("friend#req#out#")[1];
-      keysToDelete.push({
+    if (dataItem.sk.S.startsWith("friend#req#out")) {
+      const friendId = dataItem.sk.S.split("friend#req#out#")[1];
+      friendReqOutIds.push(friendId);
+      keys.push({
         pk: `u#${friendId}`,
-        sk: `friend#req#in#${pk.split("u#")[1]}`,
+        sk: `friend#req#in#${userId}`,
       });
     }
   }
-  return keysToDelete;
+  return {
+    userInfo: { selfSubs, name, friendIds, friendReqInIds, friendReqOutIds },
+    keys,
+  };
+}
+
+async function deleteNameFromIndex(userId, currentName) {
+  const invokeNameIndexUpdater = {
+    FunctionName: process.env.UPDATE_NAME_INDEX_FUNCTION_NAME,
+    InvocationType: "Event",
+    Payload: JSON.stringify({
+      userId,
+      currentName,
+    }),
+  };
+  try {
+    const response = await lambdaClient.send(
+      new InvokeCommand(invokeNameIndexUpdater),
+    );
+    if (response.$metadata.httpStatusCode !== 202) {
+      throw new Error(`Error updating name index for user ${userId}`);
+    }
+  } catch (error) {
+    console.error("Error updating name index for user:", error);
+  }
+}
+
+async function tryNotifyClients(userId, userInfo) {
+  const deletionNotifications = {
+    senderId: userId,
+    senderInfo: userInfo,
+    notifications: {
+      forFriends: {
+        notificationType: "FriendRemoved",
+        data: {
+          userId,
+        },
+      },
+      forSelf: {
+        notificationType: "SelfProfileDeleted",
+      },
+      forFriendRequests: {
+        notificationType: "FriendRequestRemoved",
+        data: {
+          userId,
+        },
+      },
+    },
+  };
+  const params = {
+    FunctionName: process.env.NOTIFY_CLIENT_FUNCTION_NAME,
+    InvocationType: "Event",
+    Payload: JSON.stringify(deletionNotifications),
+  };
+  try {
+    const result = await lambdaClient.send(new InvokeCommand(params));
+    if (result.$metadata.httpStatusCode !== 202) {
+      throw new Error(
+        `received non-202 status code from client notifier: ${result}`,
+      );
+    }
+  } catch (error) {
+    console.error("Error invoking client notifier:", error);
+  }
 }

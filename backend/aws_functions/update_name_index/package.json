@@ -1,15 +1,12 @@
 {
-  "name": "notify_client",
+  "name": "update_name_index",
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Stevie Dean",
+  "author": "",
   "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "web-push": "^3.6.7"
-  }
+  "description": ""
 }

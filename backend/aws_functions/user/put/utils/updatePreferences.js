@@ -1,6 +1,5 @@
 import { UpdateItemCommand } from "@aws-sdk/client-dynamodb";
-import { client } from "./dynamoClient.js";
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
+import { dynamoClient, tableName } from "../index.js";
 
 function getTimeRange(startHour, startMinute, endHour, endMinute) {
   return (startHour << 17) + (startMinute << 11) + (endHour << 6) + endMinute;
@@ -87,7 +86,7 @@ export async function updatePreferences(userId, updateData) {
     ExpressionAttributeValues: expressionAttributeValues,
   };
 
-  const result = await client.send(new UpdateItemCommand(params));
+  const result = await dynamoClient.send(new UpdateItemCommand(params));
   if (result.$metadata.httpStatusCode !== 200) {
     console.error(`Error updating preferences for user ${userId}`);
     throw new Error(`Error updating preferences for user ${userId}`, {

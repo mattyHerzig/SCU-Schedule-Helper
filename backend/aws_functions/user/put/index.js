@@ -7,52 +7,83 @@ import { updateFriendRequests } from "./utils/updateFriendRequests.js";
 import { handleWithAuthorization } from "./utils/authorization.js";
 import { internalServerError, validResponse } from "./model.js";
 import { badRequestResponse } from "./model.js";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { LambdaClient } from "@aws-sdk/client-lambda";
+import { S3Client } from "@aws-sdk/client-s3";
+import {
+  sendFriendAndFriendRequestNotifications,
+  sendProfileUpdateNotifications,
+  sendSelfUpdateNotifications,
+} from "./utils/notifications.js";
+
+export const dynamoClient = new DynamoDBClient({
+  region: process.env.AWS_DDB_REGION,
+});
+
+export const lambdaClient = new LambdaClient({
+  region: process.env.AWS_LAMBDA_REGION,
+});
+
+export const s3Client = new S3Client({
+  region: process.env.AWS_S3_REGION,
+});
+
+export const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
   return await handleWithAuthorization(event, context, putUser);
 }
 
-export async function putUser(event, context, userId) {
+async function putUser(event, context, userId) {
   try {
     const body = JSON.parse(event.body);
-    const updates = [];
+    const profileUpdates = [];
+    const friendUpdates = [];
     if (body.coursesTaken) {
-      updates.push(updateCourses(userId, body.coursesTaken));
+      profileUpdates.push(updateCourses(userId, body.coursesTaken));
     }
 
     if (body.interestedSections) {
-      updates.push(updateInterestedSections(userId, body.interestedSections));
+      profileUpdates.push(
+        updateInterestedSections(userId, body.interestedSections),
+      );
     }
 
     if (body.personal) {
-      updates.push(updatePersonal(userId, body.personal));
+      profileUpdates.push(updatePersonal(userId, body.personal));
     }
 
     if (body.preferences) {
-      updates.push(updatePreferences(userId, body.preferences));
+      profileUpdates.push(updatePreferences(userId, body.preferences));
     }
+    await Promise.all(profileUpdates);
+    await sendProfileUpdateNotifications(userId, body);
 
     if (body.friends) {
-      updates.push(updateFriends(userId, body.friends));
+      friendUpdates.push(updateFriends(userId, body.friends));
     }
 
     if (body.friendRequests) {
-      updates.push(updateFriendRequests(userId, body.friendRequests));
+      friendUpdates.push(updateFriendRequests(userId, body.friendRequests));
     }
 
-    await Promise.all(updates);
+    await Promise.all(friendUpdates);
+    await Promise.all([
+      sendFriendAndFriendRequestNotifications(userId, body),
+      sendSelfUpdateNotifications(userId, body),
+    ]);
 
     return validResponse("All actions processed successfully");
   } catch (error) {
     console.error(error);
-    if(error.cause === 400) {
+    if (error.cause === 400) {
       return badRequestResponse(error.message);
     }
-    if(error.cause === 500) {
+    if (error.cause === 500) {
       return internalServerError(error.message);
     }
     return internalServerError(
-      "An error occurred while processing the request. Please contact support at swdean@scu.edu.",
+      "an unknown error occurred while processing the request. Please contact support at swdean@scu.edu.",
     );
   }
 }

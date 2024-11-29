@@ -5,6 +5,20 @@ export class CreatedUserResponse {
     this.photoUrl = photoUrl;
     this.email = email;
     this.subscriptions = [subscription];
+    this.preferences = {
+      preferredSectionTimeRange: {
+        startHour: 6,
+        startMinute: 0,
+        endHour: 20,
+        endMinute: 0,
+      },
+      scoreWeighting: {
+        scuEvals: 50,
+        rmp: 50,
+      },
+    };
+    this.coursesTaken = [];
+    this.interestedSections = [];
   }
 }
 

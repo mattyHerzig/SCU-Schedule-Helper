@@ -7,13 +7,15 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CloseIcon from "@mui/icons-material/Close";
 import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import Avatar from "@mui/material/Avatar";
+import Stack from "@mui/material/Stack";
 
-const RequestsAccordion = ({
-  requests = [],
-  setRequests = () => {},
-  setFriends = () => {},
+const RequestsAccordion = ({ 
+  requests = [], 
+  setRequests = () => {}, 
+  setFriends = () => {} 
 }) => {
   const handleAccordionChange = (id) => {
     setRequests(
@@ -24,28 +26,29 @@ const RequestsAccordion = ({
     );
   };
 
-  const acceptRequest = (event, request) => {
+  const handleAcceptRequest = (event, request) => {
     event.stopPropagation();
+    // Remove from requests
+    const updatedRequests = requests.filter((r) => r.id !== request.id);
+    setRequests(updatedRequests);
+
+    // Add to friends
     setFriends((prevFriends) => [
       ...prevFriends,
       {
-        id: Date.now(), // Generate new ID
-        name: request.name,
-        details:
-          "Courses registered next quarter: CSCI60-3 with Nicholas Tran, MATH12-2 with Glenn Appleby",
+        ...request,
         expanded: false,
-      },
+      }
     ]);
-    setRequests(requests.filter((req) => req.id !== request.id));
   };
 
-  const declineRequest = (event, id) => {
+  const handleRejectRequest = (event, id) => {
     event.stopPropagation();
     setRequests(requests.filter((request) => request.id !== id));
   };
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 600 }}>
+    <Box sx={{ width: "100%" }}>
       <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
         Friend Requests:
       </Typography>
@@ -59,12 +62,13 @@ const RequestsAccordion = ({
             "&:before": {
               display: "none",
             },
+            overflow: "hidden", // Prevent scrolling
           }}
         >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
-            aria-controls={`request${request.id}-content`}
-            id={`request${request.id}-header`}
+            aria-controls={`panel${request.id}-content`}
+            id={`panel${request.id}-header`}
             sx={{
               "& .MuiAccordionSummary-content": {
                 display: "flex",
@@ -74,38 +78,61 @@ const RequestsAccordion = ({
               },
             }}
           >
-            <Typography>{request.name}</Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <IconButton
-                size="small"
-                onClick={(e) => acceptRequest(e, request)}
-                sx={{
-                  color: "success.main",
-                  "&:hover": {
-                    backgroundColor: "success.light",
-                    color: "white",
-                  },
-                }}
-              >
-                <CheckIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={(e) => declineRequest(e, request.id)}
-                sx={{
-                  color: "error.main",
-                  "&:hover": {
-                    backgroundColor: "error.light",
-                    color: "white",
-                  },
-                }}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            <Stack 
+              direction="row" 
+              spacing={2} 
+              alignItems="center"
+              sx={{ width: '100%' }}
+            >
+              <Avatar 
+                src={request.profilePicture} 
+                alt={request.name}
+                sx={{ width: 40, height: 40 }}
+              />
+              <Typography sx={{ flexGrow: 1 }}>{request.name}</Typography>
+              <Stack direction="row" spacing={1}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleAcceptRequest(e, request)}
+                  sx={{
+                    color: "success.main",
+                    "&:hover": {
+                      backgroundColor: "success.light",
+                      color: "white",
+                    },
+                  }}
+                >
+                  <CheckIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleRejectRequest(e, request.id)}
+                  sx={{
+                    color: "error.main",
+                    "&:hover": {
+                      backgroundColor: "error.light",
+                      color: "white",
+                    },
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Stack>
           </AccordionSummary>
-          <AccordionDetails>
-            <Typography>{request.details}</Typography>
+          <AccordionDetails
+            sx={{
+              p: 2,
+              overflow: "hidden",
+              maxHeight: "fit-content",
+              boxSizing: "border-box",
+            }}
+          >
+            <Box>
+              <Typography variant="body2">
+                Email: {request.email}
+              </Typography>
+            </Box>
           </AccordionDetails>
         </Accordion>
       ))}
@@ -114,7 +141,32 @@ const RequestsAccordion = ({
 };
 
 RequestsAccordion.propTypes = {
-  requests: PropTypes.array,
+  requests: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      email: PropTypes.string.isRequired,
+      profilePicture: PropTypes.string,
+      courses: PropTypes.shape({
+        interested: PropTypes.arrayOf(
+          PropTypes.shape({
+            courseCode: PropTypes.string.isRequired,
+            courseName: PropTypes.string.isRequired,
+            professor: PropTypes.string.isRequired,
+            quarter: PropTypes.string.isRequired
+          })
+        ),
+        taken: PropTypes.arrayOf(
+          PropTypes.shape({
+            courseCode: PropTypes.string.isRequired,
+            courseName: PropTypes.string.isRequired,
+            professor: PropTypes.string.isRequired,
+            quarter: PropTypes.string.isRequired
+          })
+        )
+      }).isRequired
+    })
+  ),
   setRequests: PropTypes.func,
   setFriends: PropTypes.func,
 };

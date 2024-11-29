@@ -1,9 +1,9 @@
-import { client } from "./dynamoClient.js";
+import { dynamoClient, tableName } from "../index.js";
+import { receivedIncomingFriendRequest } from "./updateFriends.js";
 import {
   BatchWriteItemCommand,
   GetItemCommand,
 } from "@aws-sdk/client-dynamodb";
-const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function updateFriendRequests(userId, friendRequestsData) {
   const updates = [];
@@ -77,7 +77,7 @@ async function sendFriendRequest(userId, friendId) {
     },
   };
 
-  const batchWriteResponse = await client.send(
+  const batchWriteResponse = await dynamoClient.send(
     new BatchWriteItemCommand(batchPutItem),
   );
   if (
@@ -116,7 +116,7 @@ export async function removeFriendRequest(userIdReceiving, userIdSending) {
     },
   };
 
-  const batchWriteResponse = await client.send(
+  const batchWriteResponse = await dynamoClient.send(
     new BatchWriteItemCommand(batchDeleteItem),
   );
   if (
@@ -145,23 +145,6 @@ async function userExists(userId) {
     TableName: tableName,
   };
   const command = new GetItemCommand(input);
-  const response = await client.send(command);
-  return response.Item;
-}
-
-async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
-  const input = {
-    Key: {
-      pk: {
-        S: `u#${userIdReceiving}`,
-      },
-      sk: {
-        S: `friend#req#in#${userIdSending}`,
-      },
-    },
-    TableName: tableName,
-  };
-  const command = new GetItemCommand(input);
-  const response = await client.send(command);
+  const response = await dynamoClient.send(command);
   return response.Item;
 }
