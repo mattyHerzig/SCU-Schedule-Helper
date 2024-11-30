@@ -81,6 +81,8 @@ export async function signIn() {
     friends: {},
     friendRequestsIn: {},
     friendRequestsOut: {},
+    friendCoursesTaken: {},
+    friendInterestedSections: {},
   });
   return null;
 }
@@ -102,7 +104,7 @@ async function updateSubscriptionAndRefreshUserData(subscription) {
 
 /**
  * Signs out the user by clearing all local and sync storage.
- * Leaves the user's preferences, course history, and interested sections intact.
+ * Leaves the user's preferences in tact.
  */
 export async function signOut() {
   const currentUserInfo = (await chrome.storage.local.get("userInfo"))
@@ -127,6 +129,8 @@ export async function signOut() {
   delete currentUserInfo.name;
   delete currentUserInfo.photoUrl;
   delete currentUserInfo.subscriptions;
+  delete currentUserInfo.interestedSections;
+  delete currentUserInfo.coursesTaken;
   await chrome.storage.local.clear();
   await chrome.storage.sync.clear();
   await chrome.storage.local.set({
