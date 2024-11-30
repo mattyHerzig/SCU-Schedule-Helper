@@ -3,6 +3,7 @@ import {
   interestedSectionPattern,
   prodUserEndpoint,
 } from "./constants.js";
+
 import { fetchWithAuth, signOut } from "./authorization.js";
 
 export async function refreshUserData(items = []) {
@@ -380,4 +381,37 @@ export async function queryUserByName(name) {
 
 function getS3PhotoUrl(userId) {
   return `https://scu-schedule-helper.s3.amazonaws.com/u%23${userId}/photo`;
+}
+
+export async function createUser(userData) {
+  try {
+    const response = await fetchWithAuth(prodUserEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response || !response.ok) {
+      // If the response indicates the user already exists, we'll handle it gracefully
+      if (response.status === 409) {
+        console.log("User already exists. Refreshing user data.");
+        return await refreshUserData();
+      }
+
+      // For other errors, return an error message
+      const errorData = await response.json();
+      return errorData.message || "Error creating user. Please try again later.";
+    }
+
+    // If user is successfully created, refresh the user data
+    const createdUser = await response.json();
+    await refreshUserData();
+    
+    return null; // Indicates successful user creation
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return "Error creating user. Please try again later.";
+  }
 }
