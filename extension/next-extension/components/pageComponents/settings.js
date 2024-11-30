@@ -5,11 +5,13 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import { supportEmail } from "../Menu";
 
 export default function Settings() {
   const [userName, setUserName] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === "local" && changes.userInfo) {
@@ -42,11 +44,12 @@ export default function Settings() {
     try {
       const errorMsg = await chrome.runtime.sendMessage("signIn");
       setIsLoggedIn(!errorMsg);
-      if (errorMsg) {
-        console.error("Login failed:", errorMsg);
-      }
+      if (errorMsg) setError(errorMsg);
+      else setError(null);
     } catch (error) {
-      console.error("Auth error:", error);
+      setError(
+        `Unknown error occurred while signing in. Please try again or contact ${supportEmail} for support.`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +60,7 @@ export default function Settings() {
       await chrome.runtime.sendMessage("signOut");
       setIsLoggedIn(false);
       setUserName(null);
+      setError(null);
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -67,16 +71,18 @@ export default function Settings() {
       const errorMessage = await chrome.runtime.sendMessage("deleteAccount");
       setIsLoggedIn(false);
       setUserName(null);
-      if (errorMessage) {
-        console.error("Error deleting account:", errorMessage);
-      }
+      if (errorMessage) setError(errorMessage);
+      else setError(null);
     } catch (error) {
       console.error("Error deleting account:", error);
+      setError(
+        `Unknown error occurred while deleting account. Please try again or contact ${supportEmail} for support.`,
+      );
     }
   };
 
   return (
-    <Box sx={{overflow: "auto" }}>
+    <Box sx={{ overflow: "auto" }}>
       <Typography variant="h6">Settings</Typography>
       <Typography sx={{ mb: 2 }}>
         Logged in as: {userName || "Guest"}
@@ -108,10 +114,7 @@ export default function Settings() {
             </Button>
           </>
         )}
-        <FormControlLabel
-          control={<Switch />}
-          label="Enable data sharing"
-        />
+        <Typography sx={{ color: "error.main" }}>{error}</Typography>
       </Stack>
     </Box>
   );

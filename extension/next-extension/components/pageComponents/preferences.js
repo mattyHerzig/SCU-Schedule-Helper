@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import RangeSliderTime from "../RangeSliderTime";
-import PercentSlider from "../PercentSlider";
+import RangeSliderTime from "../prefComponents/RangeSliderTime";
+import PercentSlider from "../prefComponents/PercentSlider";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
@@ -84,7 +83,6 @@ export default function Preferences() {
           How would you like RateMyProfessor and SCU Course Evaluation ratings
           to be weighed:
         </Typography>
-
         <PercentSlider></PercentSlider>
         <FormControlLabel
           control={<Switch />}
@@ -107,7 +105,9 @@ export default function Preferences() {
           >
             Submit Preferences
           </Button>
-        </Box> */} // I commented this out because I think we can just auto submit the preferences whenever an update is stable for 300ms.
+        </Box> */}{" "}
+        // I commented this out because I think we can just auto submit the
+        preferences whenever an update is stable for 300ms.
         {errorMessage && (
           <Typography sx={{ color: "error.main", ml: 2 }}>
             {errorMessage}

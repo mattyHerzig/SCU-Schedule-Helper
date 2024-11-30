@@ -8,10 +8,14 @@ import { fetchWithAuth, signOut } from "./authorization.js";
 export async function refreshUserData(items = []) {
   const itemsQuery = items.length > 0 ? `?items=${items.join(",")}` : "";
   const response = await fetchWithAuth(`${prodUserEndpoint}/me${itemsQuery}`);
-  if (!response || !response.ok) {
-    return "Error fetching user data. Please try again later.";
+  if (!response) {
+    return "Unknown error fetching user data. Please try again later.";
   }
   const data = await response.json();
+  if (!response.ok) {
+    return `Error fetching user data: ${data.message}`;
+  }
+
   if (items.includes("friends") || items.length === 0) {
     const friends = {};
     for (const friendObj of data.friends) {
@@ -71,11 +75,9 @@ export async function updateUser(updateItems) {
   }
   const data = await response.json();
   if (!response.ok) {
-    if (data.message) return data.message;
-    return "Error updating user data. Please try again later.";
+    return `Error updating user data: ${data.message}`;
   }
-  await updateLocalCache(updateItems);
-  return null;
+  return await updateLocalCache(updateItems);
 }
 
 async function updateLocalCache(updateItems) {
@@ -114,19 +116,21 @@ async function updateLocalCache(updateItems) {
     userInfo.coursesTaken = Array.from(coursesTaken);
   }
   if (updateItems.interestedSections) {
-    userInfo.interestedSections = userInfo.interestedSections.concat(
-      updateItems.interestedSections.add,
-    );
-    const interestedSections = new Set(userInfo.interestedSections);
+    for (const section in updateItems.interestedSections.add) {
+      userInfo.interestedSections[section] =
+        updateItems.interestedSections.add[section];
+    }
     if (updateItems.interestedSections.remove)
       for (const section of updateItems.interestedSections.remove)
-        interestedSections.delete(section);
-    userInfo.interestedSections = Array.from(interestedSections);
+        delete userInfo.interestedSections[section];
   }
   if (updateItems.friends) {
     if (updateItems.friends.add) {
       for (const friendId of updateItems.friends.add) {
-        await addFriendLocally(friendId);
+        const errorAddingFriend = await addFriendLocally(friendId);
+        if (errorAddingFriend) {
+          return errorAddingFriend;
+        }
       }
     }
     if (updateItems.friends.remove) {
@@ -138,7 +142,13 @@ async function updateLocalCache(updateItems) {
   if (updateItems.friendRequests) {
     if (updateItems.friendRequests.send) {
       for (const friendId of updateItems.friendRequests.send) {
-        await addFriendRequestLocally(friendId, "outgoing");
+        const errorCreatingFriendRequest = await addFriendRequestLocally(
+          friendId,
+          "outgoing",
+        );
+        if (errorCreatingFriendRequest) {
+          return errorCreatingFriendRequest;
+        }
       }
     }
     if (updateItems.friendRequests.removeIncoming) {
@@ -163,8 +173,12 @@ export async function deleteAccount() {
   const deleteResponse = await fetchWithAuth(prodUserEndpoint, {
     method: "DELETE",
   });
-  if (!deleteResponse || !deleteResponse.ok) {
-    return "Error deleting account. Please try again later.";
+  if (!deleteResponse) {
+    return "Unknown error deleting account. Please try again later.";
+  }
+  if (!deleteResponse.ok) {
+    const data = await deleteResponse.json();
+    return `Error deleting account: ${data.message}`;
   }
   await signOut();
   return null;
@@ -174,12 +188,12 @@ export async function addFriendLocally(friendId) {
   const getFriendProfileResponse = await fetchWithAuth(
     `${prodUserEndpoint}/${friendId}`,
   );
-  if (!getFriendProfileResponse || !getFriendProfileResponse.ok) {
-    return "Error adding friend. Please try again later.";
+  if (!getFriendProfileResponse) {
+    return "Unknown error getting friend profile. Please try again later.";
   }
   const userData = await getFriendProfileResponse.json();
-  if (!userData.coursesTaken || !userData.interestedSections) {
-    return "Error adding friend.";
+  if (!getFriendProfileResponse.ok) {
+    return `Error getting friend profile: ${userData.message}`;
   }
   await updateFriendCourseAndSectionIndexes(
     friendId,
@@ -293,10 +307,13 @@ export async function addFriendRequestLocally(friendId, type) {
   const getUserPublicProfileResponse = await fetchWithAuth(
     `${prodUserEndpoint}/${friendId}`,
   );
-  if (!getUserPublicProfileResponse || !getUserPublicProfileResponse.ok) {
-    return "Error adding friend. Please try again later.";
+  if (!getUserPublicProfileResponse) {
+    return "Unknown error getting user profile. Please try again later.";
   }
   const userData = await getUserPublicProfileResponse.json();
+  if (!getUserPublicProfileResponse.ok) {
+    return `Error getting user profile: ${userData.message}`;
+  }
   const friendRequestsKey =
     type === "incoming" ? "friendRequestsIn" : "friendRequestsOut";
   const existingFriendRequests =
@@ -333,27 +350,31 @@ export async function removeFriendRequestLocally(friendId, type) {
 export async function refreshInterestedSections() {
   // Check the expiration date of the interestedSections, delete if expired, and also delete from the remote server.
   const userInfo = (await chrome.storage.local.get("userInfo")).userInfo || {};
-  const interestedSections = userInfo.interestedSections || [];
-  for (const section of interestedSections) {
-    const sectionMatch = interestedSectionPattern.exec(section);
-    if (!sectionMatch) {
-      continue;
-    }
-    const expirationDate = sectionMatch[4];
+  const interestedSections = userInfo.interestedSections || {};
+  const sectionsToRemove = [];
+  for (const section in interestedSections) {
+    const expirationDate = interestedSections[section];
     if (new Date() > new Date(expirationDate)) {
-      await updateUser({ interestedSections: { remove: [section] } });
+      sectionsToRemove.push(section);
     }
   }
+  if (sectionsToRemove.length === 0) {
+    return;
+  }
+  await updateUser({ interestedSections: { remove: sectionsToRemove } });
 }
 
 export async function queryUserByName(name) {
   const response = await fetchWithAuth(
     `${prodUserEndpoint}/query?name=${encodeURIComponent(name)}`,
   );
-  if (!response || !response.ok) {
-    return "Error fetching user data. Please try again later.";
+  if (!response) {
+    return "Unknown error querying users. Please try again later.";
   }
   const data = await response.json();
+  if (!response.ok) {
+    return `Error querying users: ${data.message}`;
+  }
   return data;
 }
 

@@ -135,10 +135,14 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
       if (
         scope === "limited" ||
         !itemsToGet.has("interestedSections") ||
-        !item.sections.SS
+        !item.sections.M
       )
         break;
-      userProfile.interestedSections = item.sections.SS;
+      for (const section in item.sections.M) {
+        userProfile.interestedSections[section] = parseInt(
+          item.sections.M[section].N,
+        );
+      }
       break;
     case `info#personal`:
       if (!itemsToGet.has("personal")) break;

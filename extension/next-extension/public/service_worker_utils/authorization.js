@@ -16,7 +16,7 @@ export async function signIn() {
     });
     oAuthToken = token;
   } catch (error) {
-    return "Authorization failed. User cancelled.";
+    return "Authorization cancelled.";
   }
 
   let subscription =
@@ -34,6 +34,18 @@ export async function signIn() {
   const data = await response.json();
 
   if (response.status !== 200) {
+    await chrome.identity.removeCachedAuthToken({
+      token: oAuthToken,
+    });
+    await fetch(
+      `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(oAuthToken)}`,
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method: "POST",
+      },
+    );
     return `Authorization failed. ${data.message}`;
   }
 
@@ -65,7 +77,7 @@ export async function signIn() {
     return await updateSubscriptionAndRefreshUserData(
       JSON.stringify(subscription),
     );
-  } else if (createdUser.status !== 201) {
+  } else if (!createdUser.ok) {
     return `Error creating account. ${createdUser.message}`;
   }
 
@@ -96,8 +108,12 @@ async function updateSubscriptionAndRefreshUserData(subscription) {
       },
     }),
   });
-  if (!response || !response.ok) {
-    return "Error adding subscription. Please try again later.";
+  if (!response) {
+    return "Unknown error updating account. Please try again later.";
+  }
+  if (!response.ok) {
+    const data = await response.json();
+    return `Error updating account: ${data.message}`;
   }
   return await refreshUserData();
 }
