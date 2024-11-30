@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Typography, Box, CircularProgress } from "@mui/material";
+import { Card, CardContent, Typography, Box, CircularProgress, Divider } from "@mui/material";
 
 const ProfCourseCard = ({ selected, data }) => {
   if (!selected) return null;
@@ -10,8 +10,7 @@ const ProfCourseCard = ({ selected, data }) => {
     const getRMPrating = async () => {
       try {
         console.log("Attempting to fetch RMP ratings for:", selected.id);
-        
-        // Send message to background script and get a Promise-based response
+
         const rmpRating = await new Promise((resolve, reject) => {
           chrome.runtime.sendMessage(
             { type: "getRmpRatings", profName: selected.id },
@@ -25,27 +24,10 @@ const ProfCourseCard = ({ selected, data }) => {
           );
         });
 
-        console.log("Received RMP rating:", rmpRating);
-
-        if (rmpRating === null || rmpRating === undefined) {
-          console.warn("RMP rating is null or undefined");
-        } else {
-          console.log("RMP rating details:", JSON.stringify(rmpRating, null, 2));
-
-          // Check if professor's name is Natalie Linnell and log the RMP data
-          if (selected.id === "Natalie Linnell") {
-            console.log("RMP Data for Natalie Linnell:", JSON.stringify(rmpRating, null, 2));
-          }
-        }
-
         setRmpData(rmpRating);
         setIsLoadingRmp(false);
       } catch (error) {
-        console.error("Detailed error fetching RMP ratings:", {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
+        console.error("Detailed error fetching RMP ratings:", error);
         setRmpData(null);
         setIsLoadingRmp(false);
       }
@@ -59,33 +41,15 @@ const ProfCourseCard = ({ selected, data }) => {
   }, [selected]);
 
   const getColor = (rating, type) => {
-    let normalizedRating;
+    let normalizedRating = type === "workload" ? (rating - 1) / 9 : rating / 5;
 
-    if (type === "workload") {
-      normalizedRating = (rating - 1) / 9;
-    } else {
-      normalizedRating = rating / 5;
-    }
-
-    if (type === "quality") {
-      const r = Math.round(255 * (1 - normalizedRating));
-      const g = Math.round(255 * normalizedRating);
-      return `rgb(${r}, ${g}, 0)`;
-    } else {
-      const r = Math.round(255 * normalizedRating);
-      const g = Math.round(255 * (1 - normalizedRating));
-      return `rgb(${r}, ${g}, 0)`;
-    }
+    const r = Math.round(255 * (type === "quality" ? 1 - normalizedRating : normalizedRating));
+    const g = Math.round(255 * (type === "quality" ? normalizedRating : 1 - normalizedRating));
+    return `rgb(${r}, ${g}, 0)`;
   };
 
   const renderEvalStats = (stats) => {
-    // Check if stats is null, undefined, or missing required properties
-    if (
-      !stats ||
-      stats.qualityAvg === undefined ||
-      stats.difficultyAvg === undefined ||
-      stats.workloadAvg === undefined
-    ) {
+    if (!stats || stats.qualityAvg === undefined || stats.difficultyAvg === undefined || stats.workloadAvg === undefined) {
       return (
         <Typography variant="body2" color="text.secondary">
           No statistics available
@@ -132,99 +96,86 @@ const ProfCourseCard = ({ selected, data }) => {
         }}
       >
         <StatBox label="Quality" value={stats.qualityAvg} type="quality" />
-        <StatBox
-          label="Difficulty"
-          value={stats.difficultyAvg}
-          type="difficulty"
-        />
+        <StatBox label="Difficulty" value={stats.difficultyAvg} type="difficulty" />
         <StatBox label="Workload" value={stats.workloadAvg} type="workload" />
       </Box>
     );
   };
 
   const renderRMPStats = () => {
-  if (isLoadingRmp) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-        <CircularProgress size={24} />
-      </Box>
-    );
-  }
+    if (isLoadingRmp) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+          <CircularProgress size={24} />
+        </Box>
+      );
+    }
 
-  if (!rmpData) {
-    return (
-      <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
-        No RMP data available
-      </Typography>
-    );
-  }
-
-  const StatBox = ({ label, value, type }) => (
-    <Box>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Box sx={{ display: "flex", alignItems: "baseline" }}>
-        <Typography
-          variant="h6"
-          sx={{
-            color: getColor(value, type),
-            fontWeight: "bold",
-          }}
-        >
-          {value.toFixed(1)}
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{
-            color: "text.primary",
-            fontWeight: "bold",
-            ml: 0.5,
-          }}
-        >
-          /5
-        </Typography>
-      </Box>
-    </Box>
-  );
-
-  return (
-    <>
-      <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, px: 2 }}>
-        RateMyProfessor Statistics:
-      </Typography>
-      <Box
-        sx={{
-          display: "flex",
-          gap: 4,
-          justifyContent: "space-between",
-          px: 2,
-        }}
-      >
-        <StatBox label="Quality" value={rmpData.avgRating} type="quality" />
-        <StatBox 
-          label="Difficulty" 
-          value={rmpData.avgDifficulty} 
-          type="difficulty" 
-        />
-      </Box>
-      {rmpData.wouldTakeAgain && (
-        <Typography variant="body2" color="text.secondary" sx={{ px: 2, mt: 1 }}>
-          Would Take Again: {rmpData.wouldTakeAgain}%
-        </Typography>
-      )}
-      {rmpData.totalRatings && (
+    if (!rmpData) {
+      return (
         <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
-          Total Ratings: {rmpData.totalRatings}
+          No RMP data available
         </Typography>
-      )}
-    </>
-  );
-};
+      );
+    }
+
+    const StatBox = ({ label, value, type }) => (
+      <Box>
+        <Typography variant="body2" color="text.secondary">
+          {label}
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "baseline" }}>
+          <Typography
+            variant="h6"
+            sx={{
+              color: getColor(value, type),
+              fontWeight: "bold",
+            }}
+          >
+            {value.toFixed(1)}
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: "text.primary",
+              fontWeight: "bold",
+              ml: 0.5,
+            }}
+          >
+            /5
+          </Typography>
+        </Box>
+      </Box>
+    );
+
+    return (
+      <>
+        <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, px: 2 }}>
+          RateMyProfessor Statistics:
+        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 4,
+            justifyContent: "space-between",
+            px: 2,
+          }}
+        >
+          <StatBox label="Quality" value={rmpData.avgRating} type="quality" />
+          <StatBox label="Difficulty" value={rmpData.avgDifficulty} type="difficulty" />
+        </Box>
+        {rmpData.wouldTakeAgain && (
+          <Typography variant="body2" color="text.secondary" sx={{ px: 2, mt: 1 }}>
+            Would Take Again: {rmpData.wouldTakeAgain}%
+          </Typography>
+        )}
+      </>
+    );
+  };
 
   if (selected.type === "prof") {
     return (
-      <Card>
+      <Card sx={{ backgroundColor: "#f0f0f0" }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {selected.id}
@@ -247,17 +198,23 @@ const ProfCourseCard = ({ selected, data }) => {
           {Object.entries(selected)
             .filter(
               ([key, value]) =>
-                typeof value === "object" &&
-                value.difficultyAvg !== undefined &&
-                key !== "overall",
+                typeof value === "object" && value.difficultyAvg !== undefined && key !== "overall"
             )
-            .map(([courseCode, courseStats]) => (
+            .map(([courseCode, courseStats], index) => (
               <Box key={courseCode} sx={{ mt: 2 }}>
                 <Typography variant="body1" gutterBottom>
-                  {courseCode}{" "}
-                  {courseStats.courseName ? `- ${courseStats.courseName}` : ""}
+                  {courseCode} {courseStats.courseName ? `- ${courseStats.courseName}` : ""}
                 </Typography>
+
+                {courseStats.recentTerms && (
+                  <Typography variant="body2" color="text.secondary" sx={{ px: 2, mt: 1, mb: 2 }}>
+                    Quarters Taught: {courseStats.recentTerms.join(", ")}
+                  </Typography>
+                )}
+
                 {renderEvalStats(courseStats)}
+
+                {index < Object.entries(selected).length - 1 && <Divider sx={{ my: 3 }} />}
               </Box>
             ))}
         </CardContent>
@@ -267,7 +224,7 @@ const ProfCourseCard = ({ selected, data }) => {
 
   if (selected.type === "course") {
     return (
-      <Card>
+      <Card sx={{ backgroundColor: "#f0f0f0" }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             {selected.courseName} ({selected.id})
@@ -288,7 +245,7 @@ const ProfCourseCard = ({ selected, data }) => {
 
           {selected.professors.map((profName) => {
             const profEntry = Object.entries(data).find(
-              ([key, value]) => value.type === "prof" && key === profName,
+              ([key, value]) => value.type === "prof" && key === profName
             );
 
             if (!profEntry) return null;
@@ -306,7 +263,7 @@ const ProfCourseCard = ({ selected, data }) => {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ px: 2, mt: 1 }}
+                    sx={{ px: 2, mt: 1, mb: 2 }}
                   >
                     Quarters Taught: {profCourseStats.recentTerms.join(", ")}
                   </Typography>
@@ -318,6 +275,8 @@ const ProfCourseCard = ({ selected, data }) => {
                     No specific course statistics available for this professor
                   </Typography>
                 )}
+
+                <Divider sx={{ my: 3 }} />
               </Box>
             );
           })}
