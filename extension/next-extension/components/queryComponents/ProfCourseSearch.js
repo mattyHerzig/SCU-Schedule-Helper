@@ -1,11 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import {
-  Autocomplete,
-  TextField,
-  Box,
-  Typography,
-  Button,
-} from "@mui/material";
+import { Autocomplete, TextField, Box, Typography, Button } from "@mui/material";
 import ProfCourseCard from "./ProfCourseCard";
 
 export default function ProfCourseSearch() {
@@ -15,7 +9,6 @@ export default function ProfCourseSearch() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check for evals on load.
     checkEvals();
 
     chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -29,31 +22,24 @@ export default function ProfCourseSearch() {
     setIsLoading(true);
     setError(null);
 
-    const evalsDataFromStorage = (await chrome.storage.local.get("evals"))
-      .evals;
+    const evalsDataFromStorage = (await chrome.storage.local.get("evals")).evals;
     if (evalsDataFromStorage) {
       if (typeof evalsDataFromStorage === "object") {
         setEvalsData(evalsDataFromStorage);
       } else {
-        console.error(
-          `Invalid data type ${typeof evalsDataFromStorage} for evals`,
-        );
+        console.error(`Invalid data type ${typeof evalsDataFromStorage} for evals`);
         setError(`You must be signed in to view course evaluations data.`);
       }
     } else {
       console.error("No evals data found");
       setError(`You must be signed in to view course evaluations data.`);
-      // Try to download the data if none found.
       chrome.runtime.sendMessage("downloadEvals");
     }
     setIsLoading(false);
   };
 
   const searchOptions = useMemo(() => {
-    if (!evalsData) {
-      // console.log("No storage data to process");
-      return [];
-    }
+    if (!evalsData) return [];
 
     const options = [];
 
@@ -64,9 +50,8 @@ export default function ProfCourseSearch() {
         return [];
       }
 
-      //Add courses
       Object.entries(dataToProcess).forEach(([key, value]) => {
-        if (value && value.type === "course") {
+        if (value?.type === "course") {
           options.push({
             id: key,
             label: `${key} - ${value.courseName || "Unnamed Course"}`,
@@ -74,12 +59,7 @@ export default function ProfCourseSearch() {
             type: "course",
             ...value,
           });
-        }
-      });
-
-      //Add professors
-      Object.entries(dataToProcess).forEach(([key, value]) => {
-        if (value && value.type === "prof") {
+        } else if (value?.type === "prof") {
           options.push({
             id: key,
             label: key,
@@ -90,16 +70,14 @@ export default function ProfCourseSearch() {
         }
       });
 
-      // console.log("Final search options:", options);
+      console.log("Final search options:", options);
     } catch (err) {
       console.error("Error processing search options:", err);
-      return [];
     }
 
     return options;
   }, [evalsData]);
 
-  //Loading state
   if (isLoading) {
     return (
       <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
@@ -117,10 +95,7 @@ export default function ProfCourseSearch() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => {
-            // Trigger download
-            chrome.runtime.sendMessage("downloadEvals");
-          }}
+          onClick={() => chrome.runtime.sendMessage("downloadEvals")}
           sx={{ mt: 2 }}
         >
           Download Evaluations
@@ -133,25 +108,50 @@ export default function ProfCourseSearch() {
     <Box sx={{ width: "100%" }}>
       <Box sx={{ mb: 2 }}>
         <Autocomplete
-          options={searchOptions}
-          groupBy={(option) => option.groupLabel}
-          getOptionLabel={(option) => option.label}
-          value={selected}
-          onChange={(event, newValue) => {
-            setSelected(newValue);
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Search Courses and Professors"
-              variant="outlined"
-              size="small"
-            />
-          )}
-        />
+        options={searchOptions}
+        groupBy={(option) => option.groupLabel}
+        getOptionLabel={(option) => option.label}
+        value={selected}
+        onChange={(event, newValue) => {
+          setSelected(newValue);
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Search Courses and Professors"
+            variant="outlined"
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: "#ccc", 
+                },
+                "&:hover fieldset": {
+                  borderColor: "#ccc", 
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#703331", 
+                },
+              },
+              "& .MuiInputLabel-root": {
+                color: "#ccc", 
+              },
+              "& .MuiInputLabel-outlined-root": {
+                "&.Mui-focused": {
+                  color: "#703331",
+                }
+              },
+              "& .Mui-focused.MuiInputLabel-root": {
+                color: "#703331",
+              }
+            }}
+          />
+        )}
+      />
       </Box>
 
       <ProfCourseCard selected={selected} data={evalsData} />
     </Box>
   );
 }
+

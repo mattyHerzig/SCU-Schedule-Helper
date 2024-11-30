@@ -49,6 +49,7 @@ export class UserPreferences {
       endHour: 0,
       endMinute: 0,
     };
+    this.courseTracking = true;
   }
 }
 

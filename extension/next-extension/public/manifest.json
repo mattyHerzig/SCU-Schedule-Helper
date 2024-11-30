@@ -19,6 +19,13 @@
     {
       "matches": ["https://*/*", "http://*/*"],
       "js": ["inject.js"]
+    },
+    {
+      "matches": ["https://www.myworkday.com/scu/*"],
+      "exclude_matches": [
+        "https://www.myworkday.com/scu/d/task/2998$30300.htmld"
+      ],
+      "js": ["content_scripts/course_tracking.js"]
     }
   ],
   "background": {

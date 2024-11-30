@@ -158,6 +158,7 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
         (pstrBits >> 11) & 0b111111;
       preferences.preferredSectionTimeRange.endHour = (pstrBits >> 6) & 0b11111;
       preferences.preferredSectionTimeRange.endMinute = pstrBits & 0b111111;
+      preferences.courseTracking = item.courseTracking.BOOL;
       userProfile.preferences = preferences;
       break;
     default:

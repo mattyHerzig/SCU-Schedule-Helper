@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import FriendsAccordion from "../FriendsAccordion";
-import RequestsAccordion from "../RequestsAccordion";
+import FriendsAccordion from "../friendComponents/FriendsAccordion";
+import RequestsAccordion from "../friendComponents/RequestsAccordion";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import AuthWrapper from "./authWrapper";
 
 export default function Friends() {
   // Updated friends data structure with profile pictures
@@ -141,46 +142,48 @@ export default function Friends() {
   }, []);
 
   return (
-    <Box
-      sx={{
-        overflow: "auto",
-        padding: 2,
-        boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Move invite section to the top */}
+    <AuthWrapper>
       <Box
         sx={{
-          mb: 2,
-          flexDirection: "column",
+          overflow: "auto",
+          padding: 2,
+          boxSizing: "border-box",
           display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          flexDirection: "column",
         }}
       >
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Invite friend
-        </Typography>
-        <TextField
-          fullWidth
-          id="outlined-basic"
-          label="Enter user's email"
-          variant="outlined"
-          sx={{ mb: 2 }}
-        />
-        <Button variant="contained" color="primary" fullWidth>
-          Send Invite
-        </Button>
-      </Box>
+        {/* Move invite section to the top */}
+        <Box
+          sx={{
+            mb: 2,
+            flexDirection: "column",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Invite friend
+          </Typography>
+          <TextField
+            fullWidth
+            id="outlined-basic"
+            label="Enter user's email"
+            variant="outlined"
+            sx={{ mb: 2 }}
+          />
+          <Button variant="contained" color="primary" fullWidth>
+            Send Invite
+          </Button>
+        </Box>
 
-      <RequestsAccordion
-        requests={requests}
-        setRequests={setRequests}
-        setFriends={setFriends}
-      />
-      <FriendsAccordion friends={friends} setFriends={setFriends} />
-    </Box>
+        <RequestsAccordion
+          requests={requests}
+          setRequests={setRequests}
+          setFriends={setFriends}
+        />
+        <FriendsAccordion friends={friends} setFriends={setFriends} />
+      </Box>
+    </AuthWrapper>
   );
 }

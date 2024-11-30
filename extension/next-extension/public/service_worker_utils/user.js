@@ -3,6 +3,7 @@ import {
   interestedSectionPattern,
   prodUserEndpoint,
 } from "./constants.js";
+
 import { fetchWithAuth, signOut } from "./authorization.js";
 
 export async function refreshUserData(items = []) {
@@ -67,11 +68,12 @@ export async function updateUser(updateItems) {
     body: JSON.stringify(updateItems),
   });
   if (!response) {
-    return "Error updating user data. Please try again later.";
+    return "Error updating user data (are you signed in?)";
   }
   const data = await response.json();
-  if (response.status !== 200) {
-    return data.message;
+  if (!response.ok) {
+    if (data.message) return data.message;
+    return "Error updating user data. Please try again later.";
   }
   await updateLocalCache(updateItems);
   return null;
@@ -97,15 +99,19 @@ async function updateLocalCache(updateItems) {
       userInfo.preferences.preferredSectionTimeRange =
         updateItems.preferences.preferredSectionTimeRange;
     }
+    if (updateItems.preferences.courseTracking) {
+      userInfo.preferences.courseTracking =
+        updateItems.preferences.courseTracking;
+    }
   }
   if (updateItems.coursesTaken) {
     userInfo.coursesTaken = userInfo.coursesTaken.concat(
       updateItems.coursesTaken.add,
     );
     const coursesTaken = new Set(userInfo.coursesTaken);
-    updateItems.coursesTaken.remove.forEach((course) => {
-      coursesTaken.delete(course);
-    });
+    if (updateItems.coursesTaken.remove)
+      for (const course of updateItems.coursesTaken.remove)
+        coursesTaken.delete(course);
     userInfo.coursesTaken = Array.from(coursesTaken);
   }
   if (updateItems.interestedSections) {
@@ -113,9 +119,9 @@ async function updateLocalCache(updateItems) {
       updateItems.interestedSections.add,
     );
     const interestedSections = new Set(userInfo.interestedSections);
-    updateItems.interestedSections.remove.forEach((section) => {
-      interestedSections.delete(section);
-    });
+    if (updateItems.interestedSections.remove)
+      for (const section of updateItems.interestedSections.remove)
+        interestedSections.delete(section);
     userInfo.interestedSections = Array.from(interestedSections);
   }
   if (updateItems.friends) {
@@ -219,8 +225,7 @@ export async function updateFriendCourseAndSectionIndexes(
     const courseCode = courseMatch[2].replace(/\s/g, "");
     const curCourseIndex = friendCoursesTaken[courseCode] || {};
     const curProfIndex = friendCoursesTaken[profName] || {};
-    curCourseIndex[friendId] = curCourseIndex[friendId] || [];
-    curCourseIndex[friendId].push(course);
+    curCourseIndex[friendId] = course; // A friend should only have one course entry per course code.
     curProfIndex[friendId] = curProfIndex[friendId] || [];
     curProfIndex[friendId].push(course);
     friendCoursesTaken[courseCode] = curCourseIndex;
@@ -240,8 +245,7 @@ export async function updateFriendCourseAndSectionIndexes(
       .replace(/\s/g, "");
     curCourseIndex = friendInterestedSections[courseCode] || {};
     curProfIndex = friendInterestedSections[profName] || {};
-    curCourseIndex[friendId] = curCourseIndex[friendId] || [];
-    curCourseIndex[friendId].push(section);
+    curCourseIndex[friendId] = section; // A friend should only have one section entry per course code.
     curProfIndex[friendId] = curProfIndex[friendId] || [];
     curProfIndex[friendId].push(section);
     friendInterestedSections[courseCode] = curCourseIndex;
@@ -356,4 +360,37 @@ export async function queryUserByName(name) {
 
 function getS3PhotoUrl(userId) {
   return `https://scu-schedule-helper.s3.amazonaws.com/u%23${userId}/photo`;
+}
+
+export async function createUser(userData) {
+  try {
+    const response = await fetchWithAuth(prodUserEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response || !response.ok) {
+      // If the response indicates the user already exists, we'll handle it gracefully
+      if (response.status === 409) {
+        console.log("User already exists. Refreshing user data.");
+        return await refreshUserData();
+      }
+
+      // For other errors, return an error message
+      const errorData = await response.json();
+      return errorData.message || "Error creating user. Please try again later.";
+    }
+
+    // If user is successfully created, refresh the user data
+    const createdUser = await response.json();
+    await refreshUserData();
+    
+    return null; // Indicates successful user creation
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return "Error creating user. Please try again later.";
+  }
 }

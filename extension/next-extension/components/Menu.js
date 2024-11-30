@@ -8,8 +8,9 @@ import SearchIcon from "@mui/icons-material/Search";
 import TuneIcon from "@mui/icons-material/Tune";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SettingsIcon from "@mui/icons-material/Settings";
+import CloseIcon from "@mui/icons-material/Close";
 
-export default function Menu({ navigateToPage, openLandingPage }) {
+export default function Menu({ navigateToPage, openLandingPage, onClose }) {
   const [activeMenu, setActiveMenu] = useState("main");
 
   const menuItems = [
@@ -18,6 +19,14 @@ export default function Menu({ navigateToPage, openLandingPage }) {
     { icon: <PersonAddIcon />, id: "friends", action: () => navigateToPage("friends") },
     { icon: <SettingsIcon />, id: "settings", action: () => navigateToPage("settings") },
   ];
+
+  useEffect(() => {
+    setActiveMenu("main");
+  }, []);
+
+  const handleClose = () => {
+      window.close();
+  };
 
   useEffect(() => {
     setActiveMenu("main");
@@ -36,18 +45,24 @@ export default function Menu({ navigateToPage, openLandingPage }) {
         <Toolbar
           sx={{
             display: "flex",
-            justifyContent: "center",
+            justifyContent: "space-between",
             alignItems: "center",
             backgroundColor: "white",
           }}
         >
-          <Box sx={{}}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            flexGrow: 1,
+            minWidth: 0, 
+          }}>
             <Button
               sx={{
                 position: "relative",
                 color: "black",
                 display: "flex",
                 alignItems: "center",
+                padding: '4px 8px',
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
                 },
@@ -65,6 +80,8 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                   transition: "background-color 0.3s",
                 },
                 whiteSpace: "nowrap",
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
               onClick={() => {
                 setActiveMenu("home");
@@ -74,16 +91,17 @@ export default function Menu({ navigateToPage, openLandingPage }) {
             >
               <HomeIcon
                 sx={{
-                  fontSize: 30,
+                  fontSize: 24, 
                   color: activeMenu === "home" ? "#703331" : "#d1d1d1",
                   marginRight: 1,
                   transition: "color 0.3s",
                 }}
               />
               <span
-                style={{
+                sx={{
                   color: activeMenu === "home" ? "#703331" : "black",
                   fontWeight: "bold",
+                  fontSize: { xs: '0.8rem', sm: '1rem' }, 
                 }}
               >
                 SCU Schedule Helper
@@ -93,13 +111,19 @@ export default function Menu({ navigateToPage, openLandingPage }) {
 
           <Box
             sx={{
-              display: "flex",
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexGrow: 1,
+              minWidth: 0, 
             }}
           >
             {menuItems.map((item) => (
               <Button
                 key={item.id}
                 sx={{
+                  minWidth: 'auto', 
+                  padding: '4px 8px', 
                   position: "relative",
                   color: "black",
                   "&:hover": {
@@ -131,7 +155,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                 {React.cloneElement(item.icon, {
                   className: "menu-icon",
                   sx: { 
-                    fontSize: 30, 
+                    fontSize: 24, 
                     color: activeMenu === item.id ? "#703331" : "#d1d1d1",
                     transition: "color 0.3s",
                   },
@@ -139,10 +163,33 @@ export default function Menu({ navigateToPage, openLandingPage }) {
               </Button>
             ))}
           </Box>
+
+          <Box>
+            <Button
+              onClick={handleClose}
+              sx={{
+                minWidth: 'auto',
+                color: '#703331',
+                padding: '4px 8px',
+                "&:hover": {
+                  backgroundColor: "#f0f0f0",
+                  "& .MuiSvgIcon-root": { 
+                    color: "#703331",
+                  }
+                },
+              }}
+            >
+              <CloseIcon 
+                sx={{ 
+                  fontSize: 24,
+                  color: '#d1d1d1',
+                }}
+              />
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
     </Box>
   );
 }
-
 
