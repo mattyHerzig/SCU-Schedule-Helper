@@ -39,10 +39,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.type === "getRmpRatings") {
-    getRmpRatings(request.profName, false).then((response) => {
+  console.log("RMP Rating Request Received:", {
+    profName: request.profName,
+    timestamp: new Date().toISOString()
+  });
+
+  getRmpRatings(request.profName, false)
+    .then((response) => {
+      console.log("RMP Rating Query Result:", {
+        profName: request.profName,
+        response: response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : null
+      });
       sendResponse(response);
+    })
+    .catch((error) => {
+      console.error("RMP Rating Query Error:", {
+        profName: request.profName,
+        error: error.message,
+        fullError: error
+      });
+      sendResponse(null);
     });
-  }
+
+  // Important: Return true to indicate you'll send a response asynchronously
+  return true;
+}
 
   if (request.type === "queryUserByName") {
     queryUserByName(request.name).then((response) => {
@@ -86,7 +109,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse();
       });
       break;
-    case "popupOpened":
+    case "runStartupChecks":
       runStartupChecks().then(() => {
         sendResponse();
       });
@@ -121,7 +144,9 @@ self.addEventListener("push", function (event) {
 self.addEventListener("activate", async (event) => {
   // Set refresh date to 4 days from now.
   await chrome.storage.local.set({
-    refreshSelfDataDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    refreshSelfDataDate: new Date(
+      Date.now() + 4 * 24 * 60 * 60 * 1000,
+    ).getTime(),
   });
   await subscribe();
 });
@@ -137,9 +162,29 @@ async function runStartupChecks() {
   ) {
     console.log("Refreshing self data...");
     await refreshUserData();
+    await chrome.storage.local.set({
+      refreshSelfDataDate: new Date(
+        Date.now() + 4 * 24 * 60 * 60 * 1000,
+      ).getTime(),
+    });
   }
   // Check if the evals need to be redownloaded.
   await downloadEvals();
   // Check if we need to expire any interestedSections.
   await refreshInterestedSections();
 }
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'closePopup') {
+    if (sender.tab) {
+      chrome.windows.remove(sender.tab.windowId);
+    }
+  }
+});
+
+chrome.runtime.sendMessage({
+  type: "getRmpRatings",
+  profName: "Natalie Linnell"
+}, (response) => {
+  console.log("Received RMP data for Natalie Linnell:", response);
+});

@@ -1,20 +1,54 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Typography, Box } from "@mui/material";
+import { Card, CardContent, Typography, Box, CircularProgress } from "@mui/material";
 
 const ProfCourseCard = ({ selected, data }) => {
   if (!selected) return null;
-  const [rmpData, SetRmpData] = useState(null);
+  const [rmpData, setRmpData] = useState(null);
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
 
   useEffect(() => {
     const getRMPrating = async () => {
-      const rmpRating = await chrome.runtime.sendMessage({
-        type: "getRmpRatings",
-        profName: selected.id,
-      });
-      SetRmpData(rmpRating); // Might be null, in which case should display N/A.
-      // console.log("RMP Rating:", rmpRating);
-      setIsLoadingRmp(false);
+      try {
+        console.log("Attempting to fetch RMP ratings for:", selected.id);
+        
+        // Send message to background script and get a Promise-based response
+        const rmpRating = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage(
+            { type: "getRmpRatings", profName: selected.id },
+            (response) => {
+              if (chrome.runtime.lastError || !response) {
+                reject(new Error("Failed to fetch RMP data"));
+              } else {
+                resolve(response);
+              }
+            }
+          );
+        });
+
+        console.log("Received RMP rating:", rmpRating);
+
+        if (rmpRating === null || rmpRating === undefined) {
+          console.warn("RMP rating is null or undefined");
+        } else {
+          console.log("RMP rating details:", JSON.stringify(rmpRating, null, 2));
+
+          // Check if professor's name is Natalie Linnell and log the RMP data
+          if (selected.id === "Natalie Linnell") {
+            console.log("RMP Data for Natalie Linnell:", JSON.stringify(rmpRating, null, 2));
+          }
+        }
+
+        setRmpData(rmpRating);
+        setIsLoadingRmp(false);
+      } catch (error) {
+        console.error("Detailed error fetching RMP ratings:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        setRmpData(null);
+        setIsLoadingRmp(false);
+      }
     };
 
     if (selected.type === "prof") {
@@ -45,7 +79,7 @@ const ProfCourseCard = ({ selected, data }) => {
   };
 
   const renderEvalStats = (stats) => {
-    //Check if stats is null, undefined, or missing required properties
+    // Check if stats is null, undefined, or missing required properties
     if (
       !stats ||
       stats.qualityAvg === undefined ||
@@ -108,6 +142,86 @@ const ProfCourseCard = ({ selected, data }) => {
     );
   };
 
+  const renderRMPStats = () => {
+  if (isLoadingRmp) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+        <CircularProgress size={24} />
+      </Box>
+    );
+  }
+
+  if (!rmpData) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
+        No RMP data available
+      </Typography>
+    );
+  }
+
+  const StatBox = ({ label, value, type }) => (
+    <Box>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Box sx={{ display: "flex", alignItems: "baseline" }}>
+        <Typography
+          variant="h6"
+          sx={{
+            color: getColor(value, type),
+            fontWeight: "bold",
+          }}
+        >
+          {value.toFixed(1)}
+        </Typography>
+        <Typography
+          variant="h6"
+          sx={{
+            color: "text.primary",
+            fontWeight: "bold",
+            ml: 0.5,
+          }}
+        >
+          /5
+        </Typography>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <>
+      <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, px: 2 }}>
+        RateMyProfessor Statistics:
+      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 4,
+          justifyContent: "space-between",
+          px: 2,
+        }}
+      >
+        <StatBox label="Quality" value={rmpData.avgRating} type="quality" />
+        <StatBox 
+          label="Difficulty" 
+          value={rmpData.avgDifficulty} 
+          type="difficulty" 
+        />
+      </Box>
+      {rmpData.wouldTakeAgain && (
+        <Typography variant="body2" color="text.secondary" sx={{ px: 2, mt: 1 }}>
+          Would Take Again: {rmpData.wouldTakeAgain}%
+        </Typography>
+      )}
+      {rmpData.totalRatings && (
+        <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
+          Total Ratings: {rmpData.totalRatings}
+        </Typography>
+      )}
+    </>
+  );
+};
+
   if (selected.type === "prof") {
     return (
       <Card>
@@ -119,11 +233,13 @@ const ProfCourseCard = ({ selected, data }) => {
           {selected.overall && (
             <>
               <Typography variant="subtitle1" gutterBottom>
-                Overall Statistics:
+                Overall Course Evaluation Statistics:
               </Typography>
               {renderEvalStats(selected.overall)}
             </>
           )}
+
+          {renderRMPStats()}
 
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
             Course Statistics:
@@ -156,6 +272,7 @@ const ProfCourseCard = ({ selected, data }) => {
           <Typography variant="h6" gutterBottom>
             {selected.courseName} ({selected.id})
           </Typography>
+
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Recent Terms: {selected.recentTerms.join(", ")}
           </Typography>
@@ -168,6 +285,7 @@ const ProfCourseCard = ({ selected, data }) => {
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
             Professor-Specific Course Statistics:
           </Typography>
+
           {selected.professors.map((profName) => {
             const profEntry = Object.entries(data).find(
               ([key, value]) => value.type === "prof" && key === profName,
@@ -183,6 +301,16 @@ const ProfCourseCard = ({ selected, data }) => {
                 <Typography variant="body1" gutterBottom>
                   {profName}
                 </Typography>
+
+                {profCourseStats?.recentTerms && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ px: 2, mt: 1 }}
+                  >
+                    Quarters Taught: {profCourseStats.recentTerms.join(", ")}
+                  </Typography>
+                )}
                 {profCourseStats ? (
                   renderEvalStats(profCourseStats)
                 ) : (

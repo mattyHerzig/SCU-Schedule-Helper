@@ -2,10 +2,8 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
 import Button from "@mui/material/Button";
-import RangeSliderTime from "../RangeSliderTime";
-import PercentSlider from "../PercentSlider";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
+import RangeSliderTime from "../prefComponents/RangeSliderTime";
+import PercentSlider from "../prefComponents/PercentSlider";
 
 export default function Preferences() {
   return (

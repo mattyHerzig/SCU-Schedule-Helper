@@ -1,11 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import {
-  Autocomplete,
-  TextField,
-  Box,
-  Typography,
-  Button,
-} from "@mui/material";
+import { Autocomplete, TextField, Box, Typography, Button } from "@mui/material";
 import ProfCourseCard from "./ProfCourseCard";
 
 export default function ProfCourseSearch() {
@@ -29,21 +23,17 @@ export default function ProfCourseSearch() {
     setIsLoading(true);
     setError(null);
 
-    const evalsDataFromStorage = (await chrome.storage.local.get("evals"))
-      .evals;
+    const evalsDataFromStorage = (await chrome.storage.local.get("evals")).evals;
     if (evalsDataFromStorage) {
       if (typeof evalsDataFromStorage === "object") {
         setEvalsData(evalsDataFromStorage);
       } else {
-        console.error(
-          `Invalid data type ${typeof evalsDataFromStorage} for evals`,
-        );
+        console.error(`Invalid data type ${typeof evalsDataFromStorage} for evals`);
         setError(`You must be signed in to view course evaluations data.`);
       }
     } else {
       console.error("No evals data found");
       setError(`You must be signed in to view course evaluations data.`);
-      // Try to download the data if none found.
       chrome.runtime.sendMessage("downloadEvals");
     }
     setIsLoading(false);
@@ -51,7 +41,6 @@ export default function ProfCourseSearch() {
 
   const searchOptions = useMemo(() => {
     if (!evalsData) {
-      // console.log("No storage data to process");
       return [];
     }
 
@@ -64,7 +53,7 @@ export default function ProfCourseSearch() {
         return [];
       }
 
-      //Add courses
+      // Add courses
       Object.entries(dataToProcess).forEach(([key, value]) => {
         if (value && value.type === "course") {
           options.push({
@@ -77,7 +66,7 @@ export default function ProfCourseSearch() {
         }
       });
 
-      //Add professors
+      // Add professors
       Object.entries(dataToProcess).forEach(([key, value]) => {
         if (value && value.type === "prof") {
           options.push({
@@ -90,7 +79,7 @@ export default function ProfCourseSearch() {
         }
       });
 
-      // console.log("Final search options:", options);
+      console.log("Final search options:", options);
     } catch (err) {
       console.error("Error processing search options:", err);
       return [];
@@ -99,7 +88,7 @@ export default function ProfCourseSearch() {
     return options;
   }, [evalsData]);
 
-  //Loading state
+  // Loading state
   if (isLoading) {
     return (
       <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
@@ -131,6 +120,8 @@ export default function ProfCourseSearch() {
 
   return (
     <Box sx={{ width: "100%" }}>
+      {/* Removed Tabs and Tab components */}
+
       <Box sx={{ mb: 2 }}>
         <Autocomplete
           options={searchOptions}
@@ -139,19 +130,17 @@ export default function ProfCourseSearch() {
           value={selected}
           onChange={(event, newValue) => {
             setSelected(newValue);
+            // Trigger any action on selection (e.g., show related course/professor data)
           }}
           renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Search Courses and Professors"
-              variant="outlined"
-              size="small"
-            />
+            <TextField {...params} label="Search Courses and Professors" variant="outlined" size="small" />
           )}
         />
       </Box>
 
+      {/* Only show ProfCourseCard component */}
       <ProfCourseCard selected={selected} data={evalsData} />
     </Box>
   );
 }
+

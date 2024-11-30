@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import FriendsAccordion from "../FriendsAccordion";
-import RequestsAccordion from "../RequestsAccordion";
+import FriendsAccordion from "../friendComponents/FriendsAccordion";
+import RequestsAccordion from "../friendComponents/RequestsAccordion";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";

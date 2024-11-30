@@ -1,7 +1,7 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
 import { Typography } from "@mui/material";
-import ProfCourseSearch from '../ProfCourseSearch'; 
+import ProfCourseSearch from '../queryComponents/ProfCourseSearch'; 
 
 export default function Main({ navigateToPage }) {
   return (

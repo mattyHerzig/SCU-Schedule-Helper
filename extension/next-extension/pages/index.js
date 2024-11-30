@@ -24,7 +24,7 @@ export default function Home() {
   return (
     <Box 
       sx={{
-        width: '500px',
+        width: '450px',
         height: '500px',
         display: 'flex',
         flexDirection: 'column',
