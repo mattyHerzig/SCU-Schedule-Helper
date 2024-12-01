@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -9,21 +9,32 @@ import PercentSlider from "../prefComponents/PercentSlider";
 
 export default function Preferences() {
   const [courseTracking, setCourseTracking] = useState(true);
-  const [timePreference, setTimePreference] = useState([20, 20]);
-  const [percentagePreference, setPercentagePreference] = useState([50]); // Initial value
+  const [isLoading, setIsLoading] = useState(true);
+  const [timePreference, setTimePreference] = useState({
+    startHour: 8,
+    startMinute: 0,
+    endHour: 20,
+    endMinute: 0,
+  });
+  const [scuEvalsPercentage, setScuEvalsPercentage] = useState(50); // Initial value
   const [errorMessage, setErrorMessage] = useState(null);
   const debounceTimerRef = useRef(null);
   const shouldSendUpdate = useRef(false);
 
   useEffect(() => {
     checkUserPreferences();
-    
+
     // Listen for changes in storage
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === "local" && changes.userInfo?.preferences) {
+    const storageListener = (changes, namespace) => {
+      if (namespace === "local" && changes.userInfo) {
         checkUserPreferences();
       }
-    });
+    };
+    chrome.storage.onChanged.addListener(storageListener);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(storageListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -31,22 +42,25 @@ export default function Preferences() {
       return;
     }
     submitPreferences();
-  }, [courseTracking, timePreference, percentagePreference]);
+  }, [courseTracking, timePreference, scuEvalsPercentage]);
 
   const checkUserPreferences = async () => {
+    setIsLoading(true);
     try {
       const userInfo = await chrome.storage.local.get("userInfo");
       if (userInfo.userInfo?.preferences) {
         const prefs = userInfo.userInfo.preferences;
-        
+        shouldSendUpdate.current = false;
+
         // Update state with stored preferences
         setCourseTracking(prefs.courseTracking ?? true);
-        setTimePreference(prefs.timePreference ?? [20, 20]);
-        setPercentagePreference(prefs.percentagePreference ?? [50]); // Ensure default is set here
+        setTimePreference(prefs.preferredSectionTimeRange ?? timePreference);
+        setScuEvalsPercentage([prefs.scoreWeighting?.scuEvals ?? 50]); // Ensure default is set here
       }
     } catch (error) {
       console.error("Error checking user preferences:", error);
     }
+    setIsLoading(false);
   };
 
   const handleSwitchChange = (event) => {
@@ -60,7 +74,7 @@ export default function Preferences() {
   };
 
   const handlePercentagePreferenceChange = (newValue) => {
-    setPercentagePreference(newValue);
+    setScuEvalsPercentage(newValue);
     shouldSendUpdate.current = true;
   };
 
@@ -68,19 +82,24 @@ export default function Preferences() {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
     debounceTimerRef.current = setTimeout(() => {
       const message = {
         type: "updateUser",
         updateItems: {
           preferences: {
             courseTracking,
-            timePreference,
-            percentagePreference,
+            preferredSectionTimeRange: {
+              ...timePreference,
+            },
+            scoreWeighting: {
+              scuEvals: scuEvalsPercentage[0],
+              rmp: 100 - scuEvalsPercentage[0],
+            },
           },
         },
+        allowLocalOnly: true,
       };
-      
       chrome.runtime.sendMessage(message).then((errorMessage) => {
         if (errorMessage) setErrorMessage(errorMessage);
         else setErrorMessage(null);
@@ -91,38 +110,40 @@ export default function Preferences() {
   return (
     <AuthWrapper>
       <Box sx={{ overflow: "auto" }}>
-        <Box sx={{ display: "flex", my: 1, flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            my: 1,
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           <Typography variant="h6" sx={{ my: 1 }}>
             Fill in your course preferences below:
           </Typography>
-
           <Typography sx={{ pt: 5 }}>Preferred Course Times:</Typography>
           <Typography sx={{ pt: 2 }}>Time Window</Typography>
-
-          <RangeSliderTime initialValue={timePreference} onChangeCommitted={handleTimePreferenceChange} />
-
+          <RangeSliderTime
+            initValue={timePreference}
+            onChangeCommitted={handleTimePreferenceChange}
+          />
           <Box sx={{ justifyContent: "center" }}>
             <Typography sx={{ pt: 5 }}>
-              How would you like RateMyProfessor and SCU Course Evaluation ratings to be weighed:
+              How would you like RateMyProfessor and SCU Course Evaluation
+              ratings to be weighed:
             </Typography>
           </Box>
-
-          {/* Pass percentagePreference as the value prop to PercentSlider */}
           <PercentSlider
-            value={percentagePreference} // Pass percentagePreference state here
-            onChangeCommitted={handlePercentagePreferenceChange} 
+            initValue={scuEvalsPercentage} // Pass percentagePreference state here
+            onChangeCommitted={handlePercentagePreferenceChange}
           />
-
           <FormControlLabel
             control={
-              <Switch
-                checked={courseTracking}
-                onChange={handleSwitchChange}
-              />
+              <Switch checked={courseTracking} onChange={handleSwitchChange} />
             }
             label="Automatically keep track of my courses"
           />
-
           {errorMessage && (
             <Typography sx={{ color: "error.main", ml: 2 }}>
               {errorMessage}
@@ -133,4 +154,3 @@ export default function Preferences() {
     </AuthWrapper>
   );
 }
-

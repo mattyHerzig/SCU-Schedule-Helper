@@ -10,14 +10,28 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
 
+export const supportEmail = "swdean@scu.edu";
+
 export default function Menu({ navigateToPage, openLandingPage, onClose }) {
   const [activeMenu, setActiveMenu] = useState("main");
 
   const menuItems = [
     { icon: <SearchIcon />, id: "main", action: () => navigateToPage("main") },
-    { icon: <TuneIcon />, id: "preferences", action: () => navigateToPage("preferences") },
-    { icon: <PersonAddIcon />, id: "friends", action: () => navigateToPage("friends") },
-    { icon: <SettingsIcon />, id: "settings", action: () => navigateToPage("settings") },
+    {
+      icon: <TuneIcon />,
+      id: "preferences",
+      action: () => navigateToPage("preferences"),
+    },
+    {
+      icon: <PersonAddIcon />,
+      id: "friends",
+      action: () => navigateToPage("friends"),
+    },
+    {
+      icon: <SettingsIcon />,
+      id: "settings",
+      action: () => navigateToPage("settings"),
+    },
   ];
 
   useEffect(() => {
@@ -25,7 +39,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
   }, []);
 
   const handleClose = () => {
-      window.close();
+    window.close();
   };
 
   useEffect(() => {
@@ -50,19 +64,21 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
             backgroundColor: "white",
           }}
         >
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            flexGrow: 1,
-            minWidth: 0, 
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexGrow: 1,
+              minWidth: 0,
+            }}
+          >
             <Button
               sx={{
                 position: "relative",
                 color: "black",
                 display: "flex",
                 alignItems: "center",
-                padding: '4px 8px',
+                padding: "4px 8px",
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
                 },
@@ -80,8 +96,8 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                   transition: "background-color 0.3s",
                 },
                 whiteSpace: "nowrap",
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
               onClick={() => {
                 setActiveMenu("home");
@@ -91,7 +107,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
             >
               <HomeIcon
                 sx={{
-                  fontSize: 24, 
+                  fontSize: 24,
                   color: activeMenu === "home" ? "#703331" : "#d1d1d1",
                   marginRight: 1,
                   transition: "color 0.3s",
@@ -101,7 +117,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 sx={{
                   color: activeMenu === "home" ? "#703331" : "black",
                   fontWeight: "bold",
-                  fontSize: { xs: '0.8rem', sm: '1rem' }, 
+                  fontSize: { xs: "0.8rem", sm: "1rem" },
                 }}
               >
                 SCU Schedule Helper
@@ -111,26 +127,26 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
 
           <Box
             sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
               flexGrow: 1,
-              minWidth: 0, 
+              minWidth: 0,
             }}
           >
             {menuItems.map((item) => (
               <Button
                 key={item.id}
                 sx={{
-                  minWidth: 'auto', 
-                  padding: '4px 8px', 
+                  minWidth: "auto",
+                  padding: "4px 8px",
                   position: "relative",
                   color: "black",
                   "&:hover": {
                     backgroundColor: "#f0f0f0",
                     "& .menu-icon": {
                       color: "#703331",
-                    }
+                    },
                   },
                   "&:hover::after, &.active::after": {
                     backgroundColor: "#703331",
@@ -154,8 +170,8 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
               >
                 {React.cloneElement(item.icon, {
                   className: "menu-icon",
-                  sx: { 
-                    fontSize: 24, 
+                  sx: {
+                    fontSize: 24,
                     color: activeMenu === item.id ? "#703331" : "#d1d1d1",
                     transition: "color 0.3s",
                   },
@@ -168,21 +184,21 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
             <Button
               onClick={handleClose}
               sx={{
-                minWidth: 'auto',
-                color: '#703331',
-                padding: '4px 8px',
+                minWidth: "auto",
+                color: "#703331",
+                padding: "4px 8px",
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
-                  "& .MuiSvgIcon-root": { 
+                  "& .MuiSvgIcon-root": {
                     color: "#703331",
-                  }
+                  },
                 },
               }}
             >
-              <CloseIcon 
-                sx={{ 
+              <CloseIcon
+                sx={{
                   fontSize: 24,
-                  color: '#d1d1d1',
+                  color: "#d1d1d1",
                 }}
               />
             </Button>
@@ -192,4 +208,3 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
     </Box>
   );
 }
-

@@ -3,7 +3,6 @@ let debounceTimer;
 const debounceDelay = 100;
 const expDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 45);
 const sentInterestedSections = new Set();
-
 const checkForInterestedSections = function (mutationsList) {
   // Clear the previous debounce timer
   clearTimeout(debounceTimer);
@@ -23,35 +22,52 @@ const checkForInterestedSections = function (mutationsList) {
           if (tables.length !== 1) return;
           const table = tables[0];
           const data = table.querySelectorAll("td");
-          const section = data[3].innerText;
-          let profName = data[6].innerText;
-          const profIndexOfPipe = profName.indexOf("|");
-          if (profIndexOfPipe !== -1) {
-            // Removes the preferred name.
-            profName = profName.slice(0, profIndexOfPipe).trim();
+          const add = {};
+          let curSection = null;
+          let curProf = null;
+          let curMeetingPatterns = null;
+          for (let i = 0; i < data.length; i++) {
+            if (i % 10 === 3) {
+              curSection = data[i].innerText;
+            }
+            if (i % 10 === 6) {
+              curProf = data[i].innerText;
+              const profIndexOfPipe = curProf.indexOf("|");
+              if (profIndexOfPipe !== -1) {
+                // Removes the preferred name.
+                curProf = curProf.slice(0, profIndexOfPipe).trim();
+              }
+            }
+            if (i % 10 === 9) {
+              curMeetingPatterns = data[i].innerText;
+              if (curSection && curProf && curMeetingPatterns) {
+                const interestedSectionString = `P{${curProf}}S{${curSection}}M{${curMeetingPatterns}}`;
+                if (!sentInterestedSections.has(interestedSectionString)) {
+                  sentInterestedSections.add(interestedSectionString);
+                  add[interestedSectionString] = expDate.getTime();
+                }
+              }
+              curSection = null;
+              curProf = null;
+              curMeetingPatterns = null;
+            }
           }
-          const meetingPatterns = data[9].innerText;
-          if (!profName || !section || !meetingPatterns) return;
-
+          if (Object.keys(add).length === 0) return;
           // Expires in 1.5 months from now
-          const interestedSectionString = `P{${profName}}S{${section}}M{${meetingPatterns}}E{${expDate.getTime()}}`;
-
           const message = {
             type: "updateUser",
             updateItems: {
               interestedSections: {
-                add: [interestedSectionString],
+                add,
               },
             },
           };
-
-          if (!sentInterestedSections.has(interestedSectionString)) {
-            sentInterestedSections.add(interestedSectionString);
-            console.log("Sending message:", message);
-            chrome.runtime.sendMessage(message).then((response) => {
-              console.log("Response:", response);
-            });
-          }
+          chrome.runtime.sendMessage(message).then((errorMessage) => {
+            if (errorMessage)
+              console.error(
+                `Error updating interested sections: ${errorMessage}`,
+              );
+          });
         }
       }
     }

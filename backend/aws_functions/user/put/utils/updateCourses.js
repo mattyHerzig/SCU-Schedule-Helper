@@ -1,5 +1,5 @@
 import { PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { getSetItems } from "./getSetItems.js";
+import { getSetItems } from "./getSetOrMapItems.js";
 import { dynamoClient, tableName } from "../index.js";
 
 export async function updateCourses(userId, updateData) {

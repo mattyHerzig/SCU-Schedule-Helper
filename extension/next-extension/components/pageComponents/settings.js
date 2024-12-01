@@ -4,11 +4,13 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import AuthWrapper from "./authWrapper";
+import { supportEmail } from "../Menu";
 
 export default function Settings() {
   const [userName, setUserName] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const storageListener = (changes, namespace) => {
@@ -39,18 +41,16 @@ export default function Settings() {
 
   const handleSignIn = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     try {
-      const response = await chrome.runtime.sendMessage("signIn");
-      
-      if (response) {
-        await checkUserInfo();
-      } else {
-        console.error("Login failed");
-      }
+      const errorMsg = await chrome.runtime.sendMessage("signIn");
+      if (!errorMsg) setError(null);
+      else setError(errorMsg);
     } catch (error) {
-      console.error("Auth error:", error);
+      setError(
+        `Unknown error occurred while signing in. Please try again or contact ${supportEmail} for support.`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -58,14 +58,8 @@ export default function Settings() {
 
   const signOut = async () => {
     try {
-      const response = await chrome.runtime.sendMessage("signOut");
-      
-      if (response) {
-        setIsLoggedIn(false);
-        setUserName(null);
-      } else {
-        console.error("Sign out failed");
-      }
+      await chrome.runtime.sendMessage("signOut");
+      setError(null);
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -73,22 +67,20 @@ export default function Settings() {
 
   const deleteAccount = async () => {
     try {
-      const response = await chrome.runtime.sendMessage("deleteAccount");
-      
-      if (response) {
-        setIsLoggedIn(false);
-        setUserName(null);
-      } else {
-        console.error("Account deletion failed");
-      }
+      const errorMessage = await chrome.runtime.sendMessage("deleteAccount");
+      if (errorMessage) setError(errorMessage);
+      else setError(null);
     } catch (error) {
       console.error("Error deleting account:", error);
+      setError(
+        `Unknown error occurred while deleting account. Please try again or contact ${supportEmail} for support.`,
+      );
     }
   };
 
   return (
     <AuthWrapper>
-      <Box sx={{overflow: "auto" }}>
+      <Box sx={{ overflow: "auto" }}>
         <Typography variant="h6">Settings</Typography>
         <Typography sx={{ mb: 2 }}>
           Logged in as: {userName || "Guest"}
@@ -111,11 +103,7 @@ export default function Settings() {
               <Button variant="contained" color="primary" onClick={signOut}>
                 Sign Out
               </Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={deleteAccount}
-              >
+              <Button variant="contained" color="error" onClick={deleteAccount}>
                 Delete My Account
               </Button>
             </>

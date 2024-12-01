@@ -1,24 +1,26 @@
 import { PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { getSetItems } from "./getSetItems.js";
+import { getMap } from "./getSetOrMapItems.js";
 import { dynamoClient, tableName } from "../index.js";
 
 export async function updateInterestedSections(userId, updateData) {
-  const updatedInterestedSections = await getSetItems(
+  const updatedInterestedSections = await getMap(
     userId,
     "info#interestedSections",
     "sections",
   );
 
   if (updateData.add)
-    updateData.add.forEach((course) => updatedInterestedSections.add(course));
+    for (const section in updateData.add)
+      updatedInterestedSections.set(section, {
+        N: updateData.add[section].toString(),
+      });
   if (updateData.remove)
-    updateData.remove.forEach((course) =>
-      updatedInterestedSections.delete(course),
-    );
+    for (const section of updateData.remove)
+      updatedInterestedSections.delete(section);
 
   const interestedSectionsUpdateObj =
     updatedInterestedSections.size > 0
-      ? { SS: Array.from(updatedInterestedSections) }
+      ? { M: Object.fromEntries(updatedInterestedSections) }
       : { NULL: true };
 
   const updatedCoursesItem = {
@@ -34,8 +36,8 @@ export async function updateInterestedSections(userId, updateData) {
     new PutItemCommand(updatedCoursesItem),
   );
   if (result.$metadata.httpStatusCode !== 200) {
-    console.error(`Error updating courses for user ${userId}`);
-    throw new Error(`Error updating courses for user ${userId}`, {
+    console.error(`Error updating interested sections for user ${userId}`);
+    throw new Error(`Error updating interested sections for user ${userId}`, {
       cause: 500,
     });
   }

@@ -21,10 +21,10 @@ export async function updatePreferences(userId, updateData) {
     const { startHour, startMinute, endHour, endMinute } =
       preferredSectionTimeRange;
     if (
-      !startHour ||
-      !startMinute ||
-      !endHour ||
-      !endMinute ||
+      nullOrUndefined(startHour) ||
+      nullOrUndefined(startMinute) ||
+      nullOrUndefined(endHour) ||
+      nullOrUndefined(endMinute) ||
       startHour < 0 ||
       startHour > 23 ||
       endHour < 0 ||
@@ -107,4 +107,8 @@ export async function updatePreferences(userId, updateData) {
       cause: 500,
     });
   }
+}
+
+function nullOrUndefined(value) {
+  return value === null || value === undefined;
 }

@@ -1,37 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
+import React, { useState, useEffect } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 
 const AuthWrapper = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Check authentication status when component mounts
-    const checkAuthStatus = async () => {
-      try {
-        // Retrieve user info from chrome storage
-        const { userInfo } = await chrome.storage.local.get('userInfo');
-        
-        // Set logged-in state based on whether user info exists
-        setIsLoggedIn(!!userInfo?.name);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-        setIsLoading(false);
-      }
-    };
-
-    // Check initial auth status
     checkAuthStatus();
 
     // Listen for auth status changes
     const authListener = (changes, namespace) => {
-      if (namespace === 'local' && changes.userInfo) {
-        const isLoggedIn = !!changes.userInfo.newValue?.name;
-        setIsLoggedIn(isLoggedIn);
+      if (namespace === "local" && changes.userInfo) {
+        checkAuthStatus();
       }
     };
 
@@ -43,64 +28,65 @@ const AuthWrapper = ({ children }) => {
     };
   }, []);
 
+  const checkAuthStatus = async () => {
+    setIsCheckingAuth(true);
+    try {
+      // Retrieve user info from chrome storage
+      const { userInfo } = await chrome.storage.local.get("userInfo");
+      // Set logged-in state based on whether user info exists
+      setIsLoggedIn(!!userInfo?.name);
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+    }
+    setIsCheckingAuth(false);
+  };
+
   const handleSignIn = async () => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
     try {
       // Use service worker's sign-in function
-      const response = await chrome.runtime.sendMessage('signIn');
-      
-      if (response) {
-        // Sign-in successful, state will be updated by listener
-        setIsLoading(false);
-      } else {
-        console.error('Login failed');
-        setIsLoading(false);
-      }
+      const errorMessage = await chrome.runtime.sendMessage("signIn");
+      if (errorMessage) setError(errorMessage);
+      else setError(null);
     } catch (error) {
-      console.error('Auth error:', error);
-      setIsLoading(false);
+      console.error("Unknown auth error:", error);
+      setError("Unknown error occurred while signing in. Please try again.");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography variant="body1">Loading...</Typography>
-      </Box>
-    );
+  if (isCheckingAuth) {
+    return <></>;
   }
-
   // If not logged in, show sign-in prompt
   if (!isLoggedIn) {
     return (
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh', 
-          p: 2, 
-          textAlign: 'center' 
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 2,
+          textAlign: "center",
         }}
       >
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Welcome to the App
-        </Typography>
         <Typography variant="body1" sx={{ mb: 3 }}>
-          Please sign in to access your features
+          You must be signed in to access this feature.
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Button
+          variant="contained"
+          color="primary"
           onClick={handleSignIn}
-          disabled={isLoading}
+          disabled={isLoggingIn}
         >
-          {isLoading ? 'Logging in...' : 'Sign In with Google'}
+          {isLoggingIn ? "Logging in..." : "Sign In with Google"}
         </Button>
+        {error && (
+          <Typography sx={{ color: "error.main", mt: 2 }}>{error}</Typography>
+        )}
       </Box>
     );
   }

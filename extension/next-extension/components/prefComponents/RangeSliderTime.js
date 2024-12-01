@@ -1,27 +1,49 @@
-import * as React from "react";
 import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import Typography from "@mui/material/Typography";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { useState } from "react";
 
-const marks = [
-  { value: 8, label: "8:00" },
-  { value: 9, label: "9:00" },
-  { value: 10, label: "10:00" },
-  { value: 11, label: "11:00" },
-  { value: 12, label: "12:00" },
-  { value: 13, label: "13:00" },
-  { value: 14, label: "14:00" },
-  { value: 15, label: "15:00" },
-  { value: 16, label: "16:00" },
-  { value: 17, label: "17:00" },
-  { value: 18, label: "18:00" },
-  { value: 19, label: "19:00" },
-  { value: 20, label: "20:00" },
-];
+const generateMarks = (startHour, endHour) => {
+  const marks = [];
+  // Generate marks for every 15 minutes
+  for (let i = 0; i <= (endHour - startHour) * 4; i++) {
+    if (i % 8 !== 0) {
+      marks.push({ value: i, label: "" }); // Don't overcrowd the slider.
+      continue;
+    }
+    const hour = Math.floor(i / 4) + startHour;
+    const minute = (i % 4) * 15;
+    const amPmLabel = hour >= 12 ? "pm" : "am";
+    const hourLabel = hour > 12 ? hour - 12 : hour;
+    marks.push({
+      value: i,
+      label: `${hourLabel}:${minute.toString().padStart(2, "0")}${amPmLabel}`,
+    });
+  }
+  return marks;
+};
 
-function valuetext(value) {
-  return `${value}:00`;
+function getValueText(value) {
+  const hour = Math.floor(value / 4) + 6;
+  const minute = (value % 4) * 15;
+  const amPmLabel = hour >= 12 ? "pm" : "am";
+  const hourLabel = hour > 12 ? hour - 12 : hour;
+  return `${hourLabel}:${minute.toString().padStart(2, "0")}${amPmLabel}`;
+}
+
+function getSectionTimeRange(value) {
+  const startHour = Math.floor(value[0] / 4) + 6;
+  const startMinute = (value[0] % 4) * 15;
+  const endHour = Math.floor(value[1] / 4) + 6;
+  const endMinute = (value[1] % 4) * 15;
+  return { startHour, startMinute, endHour, endMinute };
+}
+
+function getValuesFromTimeRange(timeRange) {
+  const startValue = (timeRange.startHour - 6) * 4 + timeRange.startMinute / 15;
+  const endValue = (timeRange.endHour - 6) * 4 + timeRange.endMinute / 15;
+  return [startValue, endValue];
 }
 
 const theme = createTheme({
@@ -29,19 +51,19 @@ const theme = createTheme({
     MuiSlider: {
       styleOverrides: {
         root: {
-          color: "#703331", 
+          color: "#703331",
         },
         thumb: {
-          backgroundColor: "#703331", 
+          backgroundColor: "#703331",
           "&:hover, &.Mui-active": {
-            boxShadow: "0 0 0 8px rgba(112, 51, 49, 0.16)", 
+            boxShadow: "0 0 0 8px rgba(112, 51, 49, 0.16)",
           },
         },
         track: {
-          backgroundColor: "#703331", 
+          backgroundColor: "#703331",
         },
         rail: {
-          backgroundColor: "#703331", 
+          backgroundColor: "#703331",
           opacity: 0.3,
         },
       },
@@ -49,58 +71,18 @@ const theme = createTheme({
   },
 });
 
-export default function RangeSliderTime({ onChangeCommitted }) {
+export default function RangeSliderTime({ initValue, onChangeCommitted }) {
+  const minHour = 6;
+  const maxHour = 22;
+  const [value, setValue] = useState(getValuesFromTimeRange(initValue));
 
-  const [value, setValue] = React.useState([8, 18]);
-
-
-  React.useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const { userPreferences } = await chrome.storage.sync.get("userPreferences");
-        if (userPreferences && userPreferences.preferredSectionTimeRange) {
-          const { startHour, endHour } = userPreferences.preferredSectionTimeRange;
-          setValue([startHour, endHour]);
-        }
-      } catch (error) {
-        console.error("Error loading preferences:", error);
-      }
-    };
-
-    loadPreferences();
-  }, []);
-
-
-  React.useEffect(() => {
-    const savePreferences = async () => {
-      try {
-        await chrome.storage.sync.set({
-          userPreferences: {
-            preferredSectionTimeRange: {
-              startHour: value[0],
-              startMinute: 0,
-              endHour: value[1],
-              endMinute: 0,
-            },
-          },
-        });
-      } catch (error) {
-        console.error("Error saving preferences:", error);
-      }
-    };
-
-    savePreferences();
-  }, [value]);
-
- 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
 
-
   const handleChangeCommitted = (event, newValue) => {
     if (onChangeCommitted) {
-      onChangeCommitted(newValue);
+      onChangeCommitted(getSectionTimeRange(newValue));
     }
   };
 
@@ -108,22 +90,23 @@ export default function RangeSliderTime({ onChangeCommitted }) {
     <ThemeProvider theme={theme}>
       <Box sx={{ width: 350 }}>
         <Slider
-          value={value} 
+          value={value}
           onChange={handleChange}
           onChangeCommitted={handleChangeCommitted}
-          valueLabelDisplay="auto" 
-          getAriaValueText={valuetext} 
+          valueLabelDisplay="auto"
+          valueLabelFormat={getValueText}
+          getAriaValueText={getValueText}
           step={1}
-          min={8}
-          max={20}
-          marks={marks.map((mark) => ({
+          min={0}
+          max={(maxHour - minHour) * 4}
+          marks={generateMarks(minHour, maxHour).map((mark) => ({
             ...mark,
             label: <span style={{ fontSize: "0.55rem" }}>{mark.label}</span>,
           }))}
         />
         <Box sx={{ mt: 2 }}>
           <Typography>
-            {value[0]}:00 - {value[1]}:00
+            {getValueText(value[0])} - {getValueText(value[1])}
           </Typography>
         </Box>
       </Box>

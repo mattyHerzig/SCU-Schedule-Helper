@@ -2,7 +2,7 @@ import { GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { InvokeCommand } from "@aws-sdk/client-lambda";
 import { dynamoClient, lambdaClient, s3Client, tableName } from "../index.js";
-import { getSetItems } from "./getSetItems.js";
+import { getSetItems } from "./getSetOrMapItems.js";
 
 export async function updatePersonal(userId, updateData) {
   const updatedSubscriptions = await getSetItems(

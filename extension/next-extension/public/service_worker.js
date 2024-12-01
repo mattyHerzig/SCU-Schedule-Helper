@@ -24,34 +24,6 @@ const defaults = {
   useEvals: false,
 };
 
-async function saveUserPreferences(preferences) {
-  try {
-    console.log('Saving user preferences:', preferences);
-    await chrome.storage.local.set({ 
-      userInfo: {
-        preferences: {
-          ...defaults,
-          ...preferences
-        } 
-      }
-    });
-    console.log('User preferences saved successfully');
-  } catch (error) {
-    console.error('Error saving user preferences:', error);
-  }
-}
-
-async function loadUserPreferences() {
-  try {
-    const { userInfo } = await chrome.storage.local.get('userInfo');
-    console.log('Loaded user preferences:', userInfo?.preferences);
-    return userInfo?.preferences || defaults;
-  } catch (error) {
-    console.error('Error loading user preferences:', error);
-    return defaults;
-  }
-}
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
     fetch(request.url)
@@ -67,44 +39,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.type === "getRmpRatings") {
-  console.log("RMP Rating Request Received:", {
-    profName: request.profName,
-    timestamp: new Date().toISOString()
-  });
-
-  if (request.type === "savePreferences") {
-    saveUserPreferences(request.preferences)
-      .then(() => sendResponse({ success: true }));
-    return true; // Indicates we'll send response asynchronously
-  }
-
-  if (request.type === "loadPreferences") {
-    loadUserPreferences()
-      .then((preferences) => sendResponse(preferences));
-    return true; // Indicates we'll send response asynchronously
-  }
-
-  getRmpRatings(request.profName, false)
-    .then((response) => {
-      console.log("RMP Rating Query Result:", {
-        profName: request.profName,
-        response: response,
-        responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : null
+    getRmpRatings(request.profName, false)
+      .then((response) => {
+        sendResponse(response);
+      })
+      .catch((error) => {
+        console.error("RMP Rating Query Error:", error);
+        sendResponse(null);
       });
-      sendResponse(response);
-    })
-    .catch((error) => {
-      console.error("RMP Rating Query Error:", {
-        profName: request.profName,
-        error: error.message,
-        fullError: error
-      });
-      sendResponse(null);
-    });
-
-  return true;
-}
+  }
 
   if (request.type === "queryUserByName") {
     queryUserByName(request.name).then((response) => {
@@ -214,7 +157,7 @@ async function runStartupChecks() {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'closePopup') {
+  if (message.action === "closePopup") {
     if (sender.tab) {
       chrome.windows.remove(sender.tab.windowId);
     }

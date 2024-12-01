@@ -6,7 +6,7 @@ export class UserFullProfile {
     this.photoUrl = "";
     this.preferences = new UserPreferences();
     this.coursesTaken = [];
-    this.interestedSections = [];
+    this.interestedSections = {};
     this.friends = [];
     this.friendRequests = [];
   }

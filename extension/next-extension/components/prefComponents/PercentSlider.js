@@ -13,16 +13,16 @@ const theme = createTheme({
     MuiSlider: {
       styleOverrides: {
         root: {
-          color: "#703331", 
+          color: "#703331",
         },
         thumb: {
-          backgroundColor: "#703331", 
+          backgroundColor: "#703331",
           "&:hover, &.Mui-active": {
-            boxShadow: "0 0 0 8px rgba(112, 51, 49, 0.16)", 
+            boxShadow: "0 0 0 8px rgba(112, 51, 49, 0.16)",
           },
         },
         track: {
-          backgroundColor: "#703331", 
+          backgroundColor: "#703331",
         },
         rail: {
           backgroundColor: "#703331",
@@ -33,47 +33,8 @@ const theme = createTheme({
   },
 });
 
-export default function PercentSlider({ value, onChangeCommitted }) {
-  const [sliderValue, setSliderValue] = React.useState(value);
-
-  React.useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const { userInfo } = await chrome.storage.local.get("userInfo");
-        if (userInfo?.preferences?.percentagePreference) {
-          const savedValue = userInfo.preferences.percentagePreference;
-          setSliderValue(savedValue);
-        }
-      } catch (error) {
-        console.error("Error loading percentage preferences:", error);
-      }
-    };
-
-    loadPreferences();
-  }, []);
-
-  React.useEffect(() => {
-    const savePreferences = async () => {
-      try {
-        await chrome.storage.local.set({
-          userInfo: {
-            preferences: {
-              ...userInfo?.preferences,
-              percentagePreference: sliderValue,
-            },
-          },
-        });
-      } catch (error) {
-        console.error("Error saving percentage preferences:", error);
-      }
-    };
-
-    savePreferences();
-  }, [sliderValue]);
-
-  React.useEffect(() => {
-    setSliderValue(value);
-  }, [value]);
+export default function PercentSlider({ initValue, onChangeCommitted }) {
+  const [sliderValue, setSliderValue] = React.useState(initValue);
 
   const handleChange = (event, newValue) => {
     setSliderValue(newValue);
@@ -105,7 +66,8 @@ export default function PercentSlider({ value, onChangeCommitted }) {
             gutterBottom
             sx={{ fontSize: ".75rem", whiteSpace: "nowrap" }}
           >
-            SCU Course Evaluations: {sliderValue}% | RateMyProfessor: {100 - sliderValue}%
+            SCU Course Evaluations: {sliderValue}% | RateMyProfessor:{" "}
+            {100 - sliderValue}%
           </Typography>
         </Box>
       </Box>
