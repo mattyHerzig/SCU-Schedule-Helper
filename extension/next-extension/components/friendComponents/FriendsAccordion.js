@@ -37,11 +37,24 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
     setOpenConfirmDialog(true);
   };
 
-  const handleConfirmRemoveFriend = () => {
+  const handleConfirmRemoveFriend = async () => {
     if (friendToRemove) {
-      setFriends(friends.filter((friend) => friend.id !== friendToRemove));
-      setOpenConfirmDialog(false);
-      setFriendToRemove(null);
+      try {
+        await chrome.runtime.sendMessage({
+          type: "updateUser",
+          updateItems: {
+            friends: {
+              remove: [friendToRemove]
+            }
+          }
+        });
+
+        setFriends(friends.filter((friend) => friend.id !== friendToRemove));
+        setOpenConfirmDialog(false);
+        setFriendToRemove(null);
+      } catch (error) {
+        console.error('Error removing friend:', error);
+      }
     }
   };
 
@@ -49,6 +62,8 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
     setOpenConfirmDialog(false);
     setFriendToRemove(null);
   };
+
+
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -127,8 +142,7 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
         <DialogTitle id="remove-friend-dialog-title">Remove Friend</DialogTitle>
         <DialogContent>
           <DialogContentText id="remove-friend-dialog-description">
-            Are you sure you want to remove this friend? You will no longer be able to see their 
-            courses or share schedules.
+            Are you sure you want to remove this friend?
           </DialogContentText>
         </DialogContent>
         <DialogActions>

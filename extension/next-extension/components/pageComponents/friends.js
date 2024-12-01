@@ -1,145 +1,111 @@
 import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import FriendsAccordion from "../friendComponents/FriendsAccordion";
-import RequestsAccordion from "../friendComponents/RequestsAccordion";
 import Typography from "@mui/material/Typography";
+import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import AuthWrapper from "./authWrapper";
+import FriendsAccordion from "../friendComponents/FriendsAccordion";
+import RequestsAccordion from "../friendComponents/RequestsAccordion";
 
 export default function Friends() {
-  // Updated friends data structure with profile pictures
-  const [friends, setFriends] = useState([
-    {
-      id: "user123",
-      name: "Bob Smith",
-      email: "bob.smith@scu.edu",
-      profilePicture: "/path/to/bob-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH14",
-            courseName: "Calculus",
-            professor: "Shruthi Shapiro",
-            quarter: "Fall 2024",
-          },
-          {
-            courseCode: "CSCI60-2",
-            courseName: "Intro to Programming",
-            professor: "Nicholas Tran",
-            quarter: "Fall 2024",
-          },
-        ],
-        taken: [
-          {
-            courseCode: "CSCI56",
-            courseName: "Data Structures",
-            professor: "John Doe",
-            quarter: "Spring 2024",
-          },
-        ],
-      },
-    },
-    {
-      id: "user456",
-      name: "Jess Williams",
-      email: "jess.williams@scu.edu",
-      profilePicture: "/path/to/jess-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH12-1",
-            courseName: "Linear Algebra",
-            professor: "Mehdi Ahmadi",
-            quarter: "Fall 2024",
-          },
-          {
-            courseCode: "CSCI60-1",
-            courseName: "Programming Fundamentals",
-            professor: "Tiantian Chen",
-            quarter: "Fall 2024",
-          },
-        ],
-        taken: [
-          {
-            courseCode: "CSCI61",
-            courseName: "Algorithms",
-            professor: "Jane Smith",
-            quarter: "Spring 2024",
-          },
-        ],
-      },
-    },
-  ]);
-
-  // Updated requests data structure with profile pictures
-  const [requests, setRequests] = useState([
-    {
-      id: "request123",
-      name: "Alice Glass",
-      email: "aglass@scu.edu",
-      profilePicture: "/path/to/alice-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "CSCI65",
-            courseName: "Web Development",
-            professor: "Mark Johnson",
-            quarter: "Fall 2024",
-          },
-        ],
-        taken: [
-          {
-            courseCode: "CSCI60",
-            courseName: "Intro to Computer Science",
-            professor: "Sarah Lee",
-            quarter: "Winter 2024",
-          },
-        ],
-      },
-    },
-    {
-      id: "request456",
-      name: "Tom Ford",
-      email: "tford@scu.edu",
-      profilePicture: "/path/to/tom-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH20",
-            courseName: "Discrete Mathematics",
-            professor: "Emily Wong",
-            quarter: "Fall 2024",
-          },
-        ],
-        taken: [
-          {
-            courseCode: "CSCI62",
-            courseName: "Object-Oriented Programming",
-            professor: "Michael Brown",
-            quarter: "Spring 2024",
-          },
-        ],
-      },
-    },
-  ]);
-
-  const getUsersByName = async (name) => {
-    const users = await chrome.runtime.sendMessage({
-      type: "queryUserByName",
-      name: name,
-    });
-    console.log(users);
-    // Do something with the users here, maybe setState.
-  };
+  const [users, setUsers] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [friends, setFriends] = useState([]);
+  const [requests, setRequests] = useState([]);
 
   useEffect(() => {
-    getUsersByName("Stevie");
+    const fetchFriendData = async () => {
+      try {
+        const { friendRequestsIn, friendRequestsOut, friends: friendsList } = 
+          await chrome.storage.local.get([
+            'friendRequestsIn', 
+            'friendRequestsOut', 
+            'friends'
+          ]);
+
+        const incomingRequests = Object.entries(friendRequestsIn || {}).map(([id, profile]) => ({
+          id,
+          ...profile
+        }));
+        setRequests(incomingRequests);
+
+        const transformedFriends = Object.entries(friendsList || {}).map(([id, profile]) => ({
+          id,
+          ...profile,
+          expanded: false,
+          courses: {
+            interested: profile.interestedSections?.map(encodedCourse => {
+              const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
+              return courseMatch ? {
+                courseCode: courseMatch[2] || courseMatch[3],
+                courseName: courseMatch[2] || courseMatch[3],
+                professor: courseMatch[1],
+                quarter: 'Unknown'
+              } : null;
+            }).filter(Boolean) || [],
+            taken: profile.coursesTaken?.map(encodedCourse => {
+              const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
+              return courseMatch ? {
+                courseCode: courseMatch[2] || courseMatch[3],
+                courseName: courseMatch[2] || courseMatch[3],
+                professor: courseMatch[1],
+                quarter: 'Unknown'
+              } : null;
+            }).filter(Boolean) || []
+          }
+        }));
+        setFriends(transformedFriends);
+      } catch (error) {
+        console.error('Error fetching friend data:', error);
+      }
+    };
+
+    fetchFriendData();
   }, []);
+
+  const searchUsersByName = async (name) => {
+    if (!name || name.length < 1) {
+      setUsers([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const foundUsers = await chrome.runtime.sendMessage({
+        type: "queryUserByName",
+        name: name,
+      });
+      
+      setUsers(foundUsers || []);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setUsers([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const sendFriendRequest = async () => {
+    if (!selectedUser) return;
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: "updateUser",
+        updateItems: {
+          friendRequests: {
+            send: [selectedUser.id]
+          }
+        }
+      });
+      
+      setSelectedUser(null);
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+    }
+  };
 
   return (
     <AuthWrapper>
@@ -152,27 +118,75 @@ export default function Friends() {
           flexDirection: "column",
         }}
       >
-        {/* Move invite section to the top */}
         <Box
           sx={{
-            mb: 2,
             flexDirection: "column",
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
           }}
         >
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Invite friend
+            Search user
           </Typography>
-          <TextField
+          <Autocomplete
             fullWidth
-            id="outlined-basic"
-            label="Enter user's email"
-            variant="outlined"
+            options={users}
+            loading={searchLoading}
+            getOptionLabel={(option) => `${option.name} (${option.email})`}
+            onInputChange={(_, newInputValue) => {
+              searchUsersByName(newInputValue);
+            }}
+            onChange={(_, newValue) => {
+              setSelectedUser(newValue);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Enter name"
+                variant="outlined"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "#ccc", 
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "#ccc", 
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#703331",
+                    },
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#ccc",
+                  },
+                  "& .MuiInputLabel-outlined-root": {
+                    "&.Mui-focused": {
+                      color: "#703331",
+                    },
+                  },
+                  "& .Mui-focused.MuiInputLabel-root": {
+                    color: "#703331",
+                  },
+                }}
+              />
+            )}
             sx={{ mb: 2 }}
           />
-          <Button variant="contained" color="primary" fullWidth>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            fullWidth 
+            disabled={!selectedUser}
+            onClick={sendFriendRequest}
+          >
             Send Invite
           </Button>
         </Box>
@@ -182,7 +196,10 @@ export default function Friends() {
           setRequests={setRequests}
           setFriends={setFriends}
         />
-        <FriendsAccordion friends={friends} setFriends={setFriends} />
+        <FriendsAccordion 
+          friends={friends} 
+          setFriends={setFriends} 
+        />
       </Box>
     </AuthWrapper>
   );

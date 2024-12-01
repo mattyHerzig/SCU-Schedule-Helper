@@ -12,14 +12,47 @@ import CloseIcon from "@mui/icons-material/Close";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 
+const transformUserToCourses = (user) => {
+  // Transform coursesTaken and interestedSections to component's course format
+  const transformCourses = (courseList, type) => {
+    return courseList.map(encodedCourseCode => {
+      const courseMatch = encodedCourseCode.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
+      if (!courseMatch) return null;
+
+      const professor = courseMatch[1];
+      const extractedCourseCode = courseMatch[2] || courseMatch[3];
+      
+      return {
+        courseCode: extractedCourseCode,
+        courseName: extractedCourseCode, 
+        professor,
+      };
+    }).filter(course => course !== null);
+  };
+
+  return {
+    taken: transformCourses(user.coursesTaken || [], 'taken'),
+    interested: transformCourses(user.interestedSections || [], 'interested')
+  };
+};
+
 const RequestsAccordion = ({ 
   requests = [], 
   setRequests = () => {}, 
   setFriends = () => {} 
 }) => {
+  const transformedRequests = requests.map(request => ({
+    id: request.id,
+    name: request.name,
+    email: request.email,
+    profilePicture: request.photoUrl,
+    expanded: false,
+    courses: transformUserToCourses(request)
+  }));
+
   const handleAccordionChange = (id) => {
     setRequests(
-      requests.map((request) => ({
+      transformedRequests.map((request) => ({
         ...request,
         expanded: request.id === id ? !request.expanded : request.expanded,
       })),
@@ -28,11 +61,8 @@ const RequestsAccordion = ({
 
   const handleAcceptRequest = (event, request) => {
     event.stopPropagation();
-    // Remove from requests
-    const updatedRequests = requests.filter((r) => r.id !== request.id);
+    const updatedRequests = transformedRequests.filter((r) => r.id !== request.id);
     setRequests(updatedRequests);
-
-    // Add to friends
     setFriends((prevFriends) => [
       ...prevFriends,
       {
@@ -44,7 +74,7 @@ const RequestsAccordion = ({
 
   const handleRejectRequest = (event, id) => {
     event.stopPropagation();
-    setRequests(requests.filter((request) => request.id !== id));
+    setRequests(transformedRequests.filter((request) => request.id !== id));
   };
 
   return (
@@ -52,7 +82,7 @@ const RequestsAccordion = ({
       <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
         Friend Requests:
       </Typography>
-      {requests.map((request) => (
+      {transformedRequests.map((request) => (
         <Accordion
           key={request.id}
           expanded={request.expanded}
@@ -62,7 +92,7 @@ const RequestsAccordion = ({
             "&:before": {
               display: "none",
             },
-            overflow: "hidden", // Prevent scrolling
+            overflow: "hidden",
           }}
         >
           <AccordionSummary
@@ -146,25 +176,9 @@ RequestsAccordion.propTypes = {
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
       email: PropTypes.string.isRequired,
-      profilePicture: PropTypes.string,
-      courses: PropTypes.shape({
-        interested: PropTypes.arrayOf(
-          PropTypes.shape({
-            courseCode: PropTypes.string.isRequired,
-            courseName: PropTypes.string.isRequired,
-            professor: PropTypes.string.isRequired,
-            quarter: PropTypes.string.isRequired
-          })
-        ),
-        taken: PropTypes.arrayOf(
-          PropTypes.shape({
-            courseCode: PropTypes.string.isRequired,
-            courseName: PropTypes.string.isRequired,
-            professor: PropTypes.string.isRequired,
-            quarter: PropTypes.string.isRequired
-          })
-        )
-      }).isRequired
+      photoUrl: PropTypes.string,
+      coursesTaken: PropTypes.arrayOf(PropTypes.string),
+      interestedSections: PropTypes.arrayOf(PropTypes.string)
     })
   ),
   setRequests: PropTypes.func,

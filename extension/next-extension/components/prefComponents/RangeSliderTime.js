@@ -104,12 +104,8 @@ export default function RangeSliderTime({ initValue, onChangeCommitted }) {
             label: <span style={{ fontSize: "0.55rem" }}>{mark.label}</span>,
           }))}
         />
-        <Box sx={{ mt: 2 }}>
-          <Typography>
-            {getValueText(value[0])} - {getValueText(value[1])}
-          </Typography>
-        </Box>
       </Box>
     </ThemeProvider>
   );
 }
+

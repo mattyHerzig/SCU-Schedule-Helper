@@ -73,7 +73,7 @@ export default function Settings() {
     } catch (error) {
       console.error("Error deleting account:", error);
       setError(
-        `Unknown error occurred while deleting account. Please try again or contact ${supportEmail} for support.`,
+        `Unknown error occurred while deleting account. Please try again.`,
       );
     }
   };

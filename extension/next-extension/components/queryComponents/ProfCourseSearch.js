@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Autocomplete, TextField, Box, Typography, Button } from "@mui/material";
 import ProfCourseCard from "./ProfCourseCard";
 
@@ -7,6 +7,7 @@ export default function ProfCourseSearch() {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(""); // To store the search query
 
   useEffect(() => {
     checkEvals();
@@ -39,7 +40,7 @@ export default function ProfCourseSearch() {
   };
 
   const searchOptions = useMemo(() => {
-    if (!evalsData) return [];
+    if (!evalsData || searchQuery.length < 1) return []; 
 
     const options = [];
 
@@ -75,8 +76,10 @@ export default function ProfCourseSearch() {
       console.error("Error processing search options:", err);
     }
 
-    return options;
-  }, [evalsData]);
+    return options.filter(option =>
+      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [evalsData, searchQuery]);
 
   if (isLoading) {
     return (
@@ -104,54 +107,60 @@ export default function ProfCourseSearch() {
     );
   }
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ mb: 2 }}>
         <Autocomplete
-        options={searchOptions}
-        groupBy={(option) => option.groupLabel}
-        getOptionLabel={(option) => option.label}
-        value={selected}
-        onChange={(event, newValue) => {
-          setSelected(newValue);
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Search Courses and Professors"
-            variant="outlined"
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "#ccc", 
+          options={searchOptions}
+          groupBy={(option) => option.groupLabel} 
+          getOptionLabel={(option) => option.label}
+          value={selected}
+          onChange={(event, newValue) => {
+            setSelected(newValue);
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Search Courses and Professors"
+              variant="outlined"
+              size="small"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": {
+                    borderColor: "#ccc",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#ccc",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#703331",
+                  },
                 },
-                "&:hover fieldset": {
-                  borderColor: "#ccc", 
+                "& .MuiInputLabel-root": {
+                  color: "#ccc",
                 },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#703331", 
+                "& .MuiInputLabel-outlined-root": {
+                  "&.Mui-focused": {
+                    color: "#703331",
+                  },
                 },
-              },
-              "& .MuiInputLabel-root": {
-                color: "#ccc", 
-              },
-              "& .MuiInputLabel-outlined-root": {
-                "&.Mui-focused": {
+                "& .Mui-focused.MuiInputLabel-root": {
                   color: "#703331",
-                }
-              },
-              "& .Mui-focused.MuiInputLabel-root": {
-                color: "#703331",
-              }
-            }}
-          />
-        )}
-      />
+                },
+              }}
+              onChange={handleSearchChange}
+            />
+          )}
+        />
       </Box>
 
       <ProfCourseCard selected={selected} data={evalsData} />
     </Box>
   );
 }
+
 
