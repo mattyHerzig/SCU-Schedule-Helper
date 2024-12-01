@@ -24,34 +24,6 @@ const defaults = {
   useEvals: false,
 };
 
-async function saveUserPreferences(preferences) {
-  try {
-    console.log('Saving user preferences:', preferences);
-    await chrome.storage.local.set({ 
-      userInfo: {
-        preferences: {
-          ...defaults,
-          ...preferences
-        } 
-      }
-    });
-    console.log('User preferences saved successfully');
-  } catch (error) {
-    console.error('Error saving user preferences:', error);
-  }
-}
-
-async function loadUserPreferences() {
-  try {
-    const { userInfo } = await chrome.storage.local.get('userInfo');
-    console.log('Loaded user preferences:', userInfo?.preferences);
-    return userInfo?.preferences || defaults;
-  } catch (error) {
-    console.error('Error loading user preferences:', error);
-    return defaults;
-  }
-}
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
     fetch(request.url)

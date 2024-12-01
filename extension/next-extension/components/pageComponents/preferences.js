@@ -9,8 +9,14 @@ import PercentSlider from "../prefComponents/PercentSlider";
 
 export default function Preferences() {
   const [courseTracking, setCourseTracking] = useState(true);
-  const [timePreference, setTimePreference] = useState([6, 20]);
-  const [percentagePreference, setPercentagePreference] = useState([50]); // Initial value
+  const [isLoading, setIsLoading] = useState(true);
+  const [timePreference, setTimePreference] = useState({
+    startHour: 8,
+    startMinute: 0,
+    endHour: 20,
+    endMinute: 0,
+  });
+  const [scuEvalsPercentage, setScuEvalsPercentage] = useState(50); // Initial value
   const [errorMessage, setErrorMessage] = useState(null);
   const debounceTimerRef = useRef(null);
   const shouldSendUpdate = useRef(false);
@@ -19,11 +25,16 @@ export default function Preferences() {
     checkUserPreferences();
 
     // Listen for changes in storage
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === "local" && changes.userInfo?.preferences) {
+    const storageListener = (changes, namespace) => {
+      if (namespace === "local" && changes.userInfo) {
         checkUserPreferences();
       }
-    });
+    };
+    chrome.storage.onChanged.addListener(storageListener);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(storageListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -31,9 +42,10 @@ export default function Preferences() {
       return;
     }
     submitPreferences();
-  }, [courseTracking, timePreference, percentagePreference]);
+  }, [courseTracking, timePreference, scuEvalsPercentage]);
 
   const checkUserPreferences = async () => {
+    setIsLoading(true);
     try {
       const userInfo = await chrome.storage.local.get("userInfo");
       if (userInfo.userInfo?.preferences) {
@@ -41,20 +53,14 @@ export default function Preferences() {
         shouldSendUpdate.current = false;
 
         // Update state with stored preferences
-        const savedTimePreference = prefs.preferredSectionTimeRange
-          ? [
-              prefs.preferredSectionTimeRange.startHour,
-              prefs.preferredSectionTimeRange.endHour,
-            ]
-          : [6, 20];
-
         setCourseTracking(prefs.courseTracking ?? true);
-        setTimePreference(savedTimePreference);
-        setPercentagePreference([prefs.scoreWeighting?.scuEvals ?? 50]); // Ensure default is set here
+        setTimePreference(prefs.preferredSectionTimeRange ?? timePreference);
+        setScuEvalsPercentage([prefs.scoreWeighting?.scuEvals ?? 50]); // Ensure default is set here
       }
     } catch (error) {
       console.error("Error checking user preferences:", error);
     }
+    setIsLoading(false);
   };
 
   const handleSwitchChange = (event) => {
@@ -68,7 +74,7 @@ export default function Preferences() {
   };
 
   const handlePercentagePreferenceChange = (newValue) => {
-    setPercentagePreference(newValue);
+    setScuEvalsPercentage(newValue);
     shouldSendUpdate.current = true;
   };
 
@@ -84,20 +90,16 @@ export default function Preferences() {
           preferences: {
             courseTracking,
             preferredSectionTimeRange: {
-              startHour: timePreference[0],
-              startMinute: 0,
-              endHour: timePreference[1],
-              endMinute: 0,
+              ...timePreference,
             },
             scoreWeighting: {
-              scuEvals: percentagePreference[0],
-              rmp: 100 - percentagePreference[0],
+              scuEvals: scuEvalsPercentage[0],
+              rmp: 100 - scuEvalsPercentage[0],
             },
           },
         },
+        allowLocalOnly: true,
       };
-      console.log("Sending message:", message);
-
       chrome.runtime.sendMessage(message).then((errorMessage) => {
         if (errorMessage) setErrorMessage(errorMessage);
         else setErrorMessage(null);
@@ -120,35 +122,28 @@ export default function Preferences() {
           <Typography variant="h6" sx={{ my: 1 }}>
             Fill in your course preferences below:
           </Typography>
-
           <Typography sx={{ pt: 5 }}>Preferred Course Times:</Typography>
           <Typography sx={{ pt: 2 }}>Time Window</Typography>
-
           <RangeSliderTime
-            initialValue={timePreference}
+            initValue={timePreference}
             onChangeCommitted={handleTimePreferenceChange}
           />
-
           <Box sx={{ justifyContent: "center" }}>
             <Typography sx={{ pt: 5 }}>
               How would you like RateMyProfessor and SCU Course Evaluation
               ratings to be weighed:
             </Typography>
           </Box>
-
-          {/* Pass percentagePreference as the value prop to PercentSlider */}
           <PercentSlider
-            value={percentagePreference} // Pass percentagePreference state here
+            initValue={scuEvalsPercentage} // Pass percentagePreference state here
             onChangeCommitted={handlePercentagePreferenceChange}
           />
-
           <FormControlLabel
             control={
               <Switch checked={courseTracking} onChange={handleSwitchChange} />
             }
             label="Automatically keep track of my courses"
           />
-
           {errorMessage && (
             <Typography sx={{ color: "error.main", ml: 2 }}>
               {errorMessage}
