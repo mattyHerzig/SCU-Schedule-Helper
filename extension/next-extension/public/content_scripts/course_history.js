@@ -3,10 +3,9 @@
 const results = [];
 const academicPeriodPattern = /(Winter|Spring|Summer|Fall) (\d{4})/;
 const processAllButtons = async () => {
-  console.time("processAllButtons");
   const relevantTables = Array.from(
-    document.querySelectorAll("table > caption")
-)
+    document.querySelectorAll("table > caption"),
+  )
     .filter((caption) => caption.innerText === "Enrollments")
     .map((caption) => caption.parentElement);
 
@@ -18,10 +17,7 @@ const processAllButtons = async () => {
   for (let i = 0; i < buttons.length; i++) {
     await processButton(buttons[i], i);
   }
-  console.log(`Expecting ${buttons.length} courses to be processed`);
-  console.log(results);
   await sendToPut(results);
-  console.log(results);
 };
 // Helper function to process a single button
 const processButton = (button, index) => {
@@ -40,7 +36,11 @@ const processButton = (button, index) => {
       const rows = table.querySelectorAll("td");
       // course name : 0, prof: 5
       const courseName = rows[0].innerText.trim();
-      const professor = rows[5].innerText.trim();
+      let professor = rows[5].innerText.trim();
+      const profIndexOfPipe = professor.indexOf("|");
+      if (profIndexOfPipe !== -1) {
+        professor = professor.substring(0, profIndexOfPipe).trim();
+      }
       const academicPeriodEl = selectByTextContent(
         popup,
         "label",
@@ -50,23 +50,15 @@ const processButton = (button, index) => {
         academicPeriodEl.parentElement.nextElementSibling.textContent.trim();
       const match = academicPeriod.match(academicPeriodPattern);
       if (!match) {
-        console.log(
+        console.error(
           `Error: Could not parse academic period: ${academicPeriod}`,
-        );
-        console.log(
-          `User took ${courseName} with ${professor} during ${academicPeriod}`,
-        );
-      } else {
-        const [, quarter, year] = match;
-        console.log(
-          `User took ${courseName} with ${professor} during ${quarter} ${year}`,
         );
       }
 
       results.push({
         courseName,
         professor,
-        academicPeriod,
+        academicPeriod: match ? `${match[1]} ${match[2]}` : academicPeriod,
       });
     }
     const clickEvent = new MouseEvent("click", {
@@ -116,15 +108,62 @@ function selectByTextContent(element, tag, text) {
   );
 }
 
+async function sendToPut(results) {
+  const payload = {
+    coursesTaken: {
+      add: formatResults(results),
+    },
+  };
+
+  try {
+    const message = {
+      type: "updateUser",
+      updateItems: payload,
+    };
+
+    const putError = await chrome.runtime.sendMessage(message);
+    return putError;
+  } catch (error) {
+    console.error(
+      "Error occurred while sending data to service worker:",
+      error,
+    );
+  }
+}
+
+function formatResults(results) {
+  return results.map((entry) => {
+    const professor = `P{${entry.professor || ""}}`;
+    const courseName = `C{${entry.courseName || ""}}`;
+    const academicPeriod = `T{${entry.academicPeriod || ""}}`;
+    return `${professor}${courseName}${academicPeriod}`;
+  });
+}
 
 let lastTableCount = 0;
 let tableCountStable = false;
+
 const tableCountInterval = setInterval(() => {
   const tableCount = document.querySelectorAll("table").length;
   if (tableCount === lastTableCount && tableCount > 0) {
     if (tableCountStable) {
       clearInterval(tableCountInterval);
-      processAllButtons();
+      chrome.storage.local.get("importCourseHistoryRequestTime", (data) => {
+        const currentTime = new Date().getTime();
+        const lastRequestTime = parseInt(
+          data.importCourseHistoryRequestTime || 0,
+        );
+        if (currentTime - lastRequestTime > 60000) {
+          return;
+        } else {
+          chrome.runtime.sendMessage("clearCourseHistory");
+          chrome.storage.local
+            .set({ importCourseHistoryRequestTime: 0 })
+            .then(() => {
+              processAllButtons();
+            });
+        }
+      });
     } else {
       tableCountStable = true;
     }
@@ -133,49 +172,9 @@ const tableCountInterval = setInterval(() => {
   }
   lastTableCount = tableCount;
 }, 100);
-async function sendToPut(results) {
-  const formattedResults = formatResults(results); // Format the results array
 
-  const payload = {
-    coursesTaken: {
-      add: formattedResults,
-    },
-  };
-
-  try {
-    const message = {
-      type: "updateUser", 
-      updateItems: payload, 
-    };
-
-   
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error("Error sending message to service worker:", chrome.runtime.lastError);
-      } else {
-        if (response) {
-          console.log("Data successfully updated:", response);
-        } else {
-          console.error("Failed to update data.");
-        }
-      }
-    });
-  } catch (error) {
-    console.error("Error occurred while sending data to service worker:", error);
-  }
-}
-
-function formatResults(results) {
-  return results.map((entry) => {
-    const professor = entry.professor ? `P{${entry.professor}}` : "";
-    const courseName = entry.courseName ? `C{${entry.courseName}}` : "";
-    const academicPeriod = entry.academicPeriod ? `T{${entry.academicPeriod}}` : "";
-
-    return `${professor}${courseName}${academicPeriod}`;
-  });
-}
-
-
-
-
-
+// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+//   console.log("Received message", request);
+//   if (request !== "importCourseHistory") {
+//     return;
+//   }

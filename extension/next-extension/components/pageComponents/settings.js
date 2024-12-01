@@ -78,6 +78,21 @@ export default function Settings() {
     }
   };
 
+  const importCourseHistory = async () => {
+    try {
+      const errorMessage = await chrome.runtime.sendMessage(
+        "importCourseHistory",
+      );
+      if (errorMessage) setError(errorMessage);
+      else setError(null);
+    } catch (error) {
+      console.error("Error importing course history:", error);
+      setError(
+        `Unknown error occurred while importing course history. Please try again.`,
+      );
+    }
+  };
+
   return (
     <AuthWrapper>
       <Box sx={{ overflow: "auto" }}>
@@ -100,6 +115,13 @@ export default function Settings() {
           </Button>
           {isLoggedIn && (
             <>
+              <Button
+                variant="contained"
+                color="primary.light"
+                onClick={importCourseHistory}
+              >
+                Import Course History
+              </Button>
               <Button variant="contained" color="primary" onClick={signOut}>
                 Sign Out
               </Button>
