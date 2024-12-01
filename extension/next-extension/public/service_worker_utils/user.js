@@ -2,6 +2,7 @@ import {
   courseTakenPattern,
   interestedSectionPattern,
   prodUserEndpoint,
+  workdayCourseHistoryUrl,
 } from "./constants.js";
 
 import { fetchWithAuth, signOut } from "./authorization.js";
@@ -377,6 +378,27 @@ export async function queryUserByName(name) {
     return `Error querying users: ${data.message}`;
   }
   return data;
+}
+
+export async function importCourseHistory() {
+  await chrome.storage.local.set({
+    importCourseHistoryRequestTime: new Date().getTime(),
+  });
+  const createdTab = await chrome.tabs.create({ url: workdayCourseHistoryUrl });
+  return null;
+}
+
+export async function clearCourseHistory() {
+  const currentCoursesTaken =
+    (await chrome.storage.local.get("userInfo")).userInfo?.coursesTaken || [];
+  const errorUpdatingUser = await updateUser({
+    coursesTaken: { remove: currentCoursesTaken },
+  });
+  if (errorUpdatingUser) {
+    return errorUpdatingUser;
+  }
+  await chrome.storage.local.set({ coursesTaken: [] });
+  return null;
 }
 
 function getS3PhotoUrl(userId) {

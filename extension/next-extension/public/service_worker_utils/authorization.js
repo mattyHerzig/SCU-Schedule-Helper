@@ -74,9 +74,21 @@ export async function signIn() {
     createdUser.status === 400 &&
     createdUserData.message.includes("user already exists")
   ) {
-    return await updateSubscriptionAndRefreshUserData(
+    const updateError = await updateSubscriptionAndRefreshUserData(
       JSON.stringify(subscription),
     );
+    if (!updateError) {
+      if (chrome.runtime.setUninstallURL) {
+        console.log("Setting uninstall URL");
+        const userId =
+          (await chrome.storage.local.get("userInfo")).userInfo?.id ||
+          "unknown";
+        await chrome.runtime.setUninstallURL(
+          `https://scu-schedule-helper.me/uninstall?u=${userId}&sub=${encodeURIComponent(subscription.endpoint)}`,
+        );
+      }
+    }
+    return updateError;
   } else if (!createdUser.ok) {
     return `Error creating account. ${createdUser.message}`;
   }
@@ -96,6 +108,10 @@ export async function signIn() {
     friendCoursesTaken: {},
     friendInterestedSections: {},
   });
+
+  await chrome.runtime.setUninstallURL(
+    `https://scu-schedule-helper.me/uninstall?u=${createdUserData.id}&sub=${subscription.endpoint}`,
+  );
   return null;
 }
 

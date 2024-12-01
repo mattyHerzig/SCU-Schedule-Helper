@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help Us Improve</title>
+    <style>
+      body {
+        font-family: Tahoma, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        background: #fff;
+        padding: 20px 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        text-align: center;
+      }
+      h1 {
+        color: #862633;
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+      .checkbox-group {
+        text-align: left;
+        margin-bottom: 15px;
+      }
+      .checkbox-group label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+        min-height: 100px;
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background-color: #862633;
+        color: #fff;
+        border: none;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #54010c;
+      }
+      #success-message {
+        margin-top: 15px;
+        color: #4caf50;
+        font-weight: bold;
+        display: none;
+      }
+      textarea {
+        font-family: Tahoma, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Help Us Improve</h1>
+      <p>
+        We're sorry to see you uninstall SCU Schedule Helper. Could you tell us
+        why you're leaving? All feedback is anonymous.
+      </p>
+      <form id="feedback-form">
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" name="reason" value="Not useful" /> Not
+            useful
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="reason"
+              value="Slowed down my browser"
+            />
+            Slowed down my browser
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="reason"
+              value="Did not work as expected/technical difficulties"
+            />
+            Did not work as expected/technical difficulties
+          </label>
+        </div>
+        <textarea
+          name="feedback"
+          placeholder="Additional feedback (optional)..."
+        ></textarea>
+        <button type="submit">Submit Feedback</button>
+      </form>
+      <div id="success-message">Feedback submitted successfully.</div>
+    </div>
+
+    <script>
+      document
+        .getElementById("feedback-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const successMessage = document.getElementById("success-message");
+          const reasonNodes = document.querySelectorAll('input[name="reason"]');
+          const reasons = Array.from(reasonNodes).map((node) => node.value);
+          fetch(`https://api.scu-schedule-helper.com/feedback`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              type: "uninstall",
+              reasons: document.querySelector('input[name="reason"]:checked')
+                .value,
+              feedback: document.querySelector('textarea[name="feedback"]')
+                .value,
+            }),
+          }).then((response) => {
+            if (!response.ok) {
+              alert(
+                "Failed to submit feedback. Please try again later or email stephenwdean@gmail.com with your feedback.",
+              );
+              return;
+            }
+            successMessage.style.display = "block";
+          });
+        });
+    </script>
+  </body>
+</html>

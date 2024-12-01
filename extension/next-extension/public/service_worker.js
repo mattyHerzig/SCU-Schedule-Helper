@@ -6,7 +6,9 @@ import {
 } from "./service_worker_utils/notifications.js";
 import { getRmpRatings } from "./service_worker_utils/rmp.js";
 import {
+  clearCourseHistory,
   deleteAccount,
+  importCourseHistory,
   queryUserByName,
   refreshInterestedSections,
   refreshUserData,
@@ -68,6 +70,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       });
       break;
+    case "clearCourseHistory":
+      clearCourseHistory().then((response) => {
+        sendResponse(response);
+      });
     case "getDefaults":
       sendResponse(defaults);
       break;
@@ -91,6 +97,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse();
       });
       break;
+    case "importCourseHistory":
+      importCourseHistory().then((response) => {
+        sendResponse(response);
+      });
     case "runStartupChecks":
       runStartupChecks().then(() => {
         sendResponse();

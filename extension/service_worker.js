@@ -117,7 +117,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse([authorized, failStatus]),
       );
       return true; // Keep the message channel open for asynchronous response
-
     case "downloadEvals":
       downloadEvals().then(() => sendResponse());
       return true;
