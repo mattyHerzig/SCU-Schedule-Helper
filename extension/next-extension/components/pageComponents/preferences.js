@@ -23,7 +23,7 @@ export default function Preferences() {
     endHour: 20,
     endMinute: 0,
   });
-  const [scuEvalsPercentage, setScuEvalsPercentage] = useState(50); // Initial value
+  const [scuEvalsPercentage, setScuEvalsPercentage] = useState(50);
   const [errorMessage, setErrorMessage] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogContent, setDialogContent] = useState("");
@@ -73,7 +73,7 @@ export default function Preferences() {
         // Update state with stored preferences
         setCourseTracking(prefs.courseTracking ?? true);
         setTimePreference(prefs.preferredSectionTimeRange ?? timePreference);
-        setScuEvalsPercentage([prefs.scoreWeighting?.scuEvals ?? 50]); // Ensure default is set here
+        setScuEvalsPercentage([prefs.scoreWeighting?.scuEvals ?? 50]);
       }
     } catch (error) {
       console.error("Error checking user preferences:", error);

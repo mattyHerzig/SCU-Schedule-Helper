@@ -17,11 +17,6 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://*/*", "http://*/*"],
-      "js": ["inject.js"],
-      "run_at": "document_idle"
-    },
-    {
       "matches": ["https://www.myworkday.com/scu/*"],
       "exclude_matches": [
         "https://www.myworkday.com/scu/d/task/2998$30300.htmld"
@@ -31,6 +26,10 @@
     {
       "matches": ["https://www.myworkday.com/scu/d/task/2998$30300.htmld"],
       "js": ["content_scripts/course_history.js"]
+    },
+    {
+      "matches": ["https://www.myworkday.com/scu/*"],
+      "js": ["inject.js"]
     }
   ],
   "background": {

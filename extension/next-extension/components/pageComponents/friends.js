@@ -16,55 +16,56 @@ export default function Friends() {
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
 
-  useEffect(() => {
-    const fetchFriendData = async () => {
-      try {
-        const { friendRequestsIn, friendRequestsOut, friends: friendsList } = 
-          await chrome.storage.local.get([
-            'friendRequestsIn', 
-            'friendRequestsOut', 
-            'friends'
-          ]);
+ useEffect(() => {
+  const fetchFriendData = async () => {
+    try {
+      const { friendRequestsIn, friendRequestsOut, friends: friendsList } = 
+        await chrome.storage.local.get([
+          'friendRequestsIn', 
+          'friendRequestsOut', 
+          'friends'
+        ]);
 
-        const incomingRequests = Object.entries(friendRequestsIn || {}).map(([id, profile]) => ({
-          id,
-          ...profile
-        }));
-        setRequests(incomingRequests);
+      console.log('Outgoing friend requests:', friendRequestsOut);
 
-        const transformedFriends = Object.entries(friendsList || {}).map(([id, profile]) => ({
-          id,
-          ...profile,
-          expanded: false,
-          courses: {
-            interested: profile.interestedSections?.map(encodedCourse => {
-              const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-              return courseMatch ? {
-                courseCode: courseMatch[2] || courseMatch[3],
-                courseName: courseMatch[2] || courseMatch[3],
-                professor: courseMatch[1],
-                quarter: 'Unknown'
-              } : null;
-            }).filter(Boolean) || [],
-            taken: profile.coursesTaken?.map(encodedCourse => {
-              const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-              return courseMatch ? {
-                courseCode: courseMatch[2] || courseMatch[3],
-                courseName: courseMatch[2] || courseMatch[3],
-                professor: courseMatch[1],
-                quarter: 'Unknown'
-              } : null;
-            }).filter(Boolean) || []
-          }
-        }));
-        setFriends(transformedFriends);
-      } catch (error) {
-        console.error('Error fetching friend data:', error);
-      }
-    };
+      const incomingRequests = Object.entries(friendRequestsIn || {}).map(([id, profile]) => ({
+        id, 
+        ...profile 
+      }));
+      setRequests(incomingRequests);
 
-    fetchFriendData();
-  }, []);
+      // Transform friends data
+      const transformedFriends = Object.entries(friendsList || {}).map(([id, profile]) => ({
+        id,  
+        ...profile, 
+        expanded: false,
+        courses: {
+          interested: profile.interestedSections?.map(encodedCourse => {
+            const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
+            return courseMatch ? {
+              courseCode: courseMatch[2] || courseMatch[3],
+              courseName: courseMatch[2] || courseMatch[3],
+              professor: courseMatch[1],
+            } : null;
+          }).filter(Boolean) || [],
+          taken: profile.coursesTaken?.map(encodedCourse => {
+            const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
+            return courseMatch ? {
+              courseCode: courseMatch[2] || courseMatch[3],
+              courseName: courseMatch[2] || courseMatch[3],
+              professor: courseMatch[1],
+            } : null;
+          }).filter(Boolean) || []
+        }
+      }));
+      setFriends(transformedFriends);
+    } catch (error) {
+      console.error('Error fetching friend data:', error);
+    }
+  };
+
+  fetchFriendData();
+}, []);
 
   const searchUsersByName = async (name) => {
     if (!name || name.length < 1) {
@@ -89,23 +90,26 @@ export default function Friends() {
   };
 
   const sendFriendRequest = async () => {
-    if (!selectedUser) return;
+  if (!selectedUser) return;
 
-    try {
-      await chrome.runtime.sendMessage({
-        type: "updateUser",
-        updateItems: {
-          friendRequests: {
-            send: [selectedUser.id]
-          }
-        }
-      });
-      
-      setSelectedUser(null);
-    } catch (error) {
-      console.error('Error sending friend request:', error);
-    }
+  const message = {
+    type: "updateUser",
+    updateItems: {
+      friendRequests: {
+        send: [selectedUser.id],
+      },
+    },
   };
+
+  console.log("Message sent to updateUser:", message);
+
+  try {
+    await chrome.runtime.sendMessage(message);
+    setSelectedUser(null);
+  } catch (error) {
+    console.error("Error sending friend request:", error);
+  }
+};
 
   return (
     <AuthWrapper>
