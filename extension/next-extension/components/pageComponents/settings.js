@@ -4,7 +4,6 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import AuthWrapper from "./authWrapper";
-import { supportEmail } from "../Menu";
 
 export default function Settings() {
   const [userName, setUserName] = useState(null);
@@ -49,7 +48,7 @@ export default function Settings() {
       else setError(errorMsg);
     } catch (error) {
       setError(
-        `Unknown error occurred while signing in. Please try again or contact ${supportEmail} for support.`,
+        `Unknown error occurred while signing in. Please try again`,
       );
     } finally {
       setIsLoading(false);
@@ -115,14 +114,22 @@ export default function Settings() {
           </Button>
           {isLoggedIn && (
             <>
-              <Button
+              <Button sx={{backgroundColor: '#703331',
+              '&:hover': {
+                backgroundColor: '#5a2828',
+               }
+               }}
                 variant="contained"
-                color="primary.light"
                 onClick={importCourseHistory}
               >
                 Import Course History
               </Button>
-              <Button variant="contained" color="primary" onClick={signOut}>
+              <Button sx={{backgroundColor: '#703331',
+              '&:hover': {
+                backgroundColor: '#5a2828',
+               }
+               }} 
+               variant="contained" onClick={signOut} >
                 Sign Out
               </Button>
               <Button variant="contained" color="error" onClick={deleteAccount}>

@@ -16,6 +16,115 @@ export default function Friends() {
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
 
+  /* for reference this was the fomrat of the test friends
+  const [friends, setFriends] = useState([
+    {
+      id: 1,
+      name: "Bob",
+      details:
+        "Courses registered next quarter: Math14 with Shruthi Shapiro, CSCI60-2 with Nicholas Tran",
+      id: "user123",
+      name: "Bob Smith",
+      email: "bob.smith@scu.edu",
+      profilePicture: "/path/to/bob-profile.jpg", // Add profile picture path
+      expanded: false,
+      courses: {
+        interested: [
+          {
+            courseCode: "MATH14",
+            courseName: "Calculus",
+            professor: "Shruthi Shapiro",
+            quarter: "Fall 2024"
+          },
+          {
+            courseCode: "CSCI60-2",
+            courseName: "Intro to Programming",
+            professor: "Nicholas Tran", 
+            quarter: "Fall 2024"
+          }
+        ],
+        taken: [
+          {
+            courseCode: "CSCI56",
+            courseName: "Data Structures",
+            professor: "John Doe",
+            quarter: "Spring 2024"
+          }
+        ]
+      }
+    },
+    {
+      id: 2,
+      name: "Jess",
+      details:
+        "Courses registered next quarter: MATH12-1 with Mehdi Ahmadi, CSCI60-1 with Tiantian Chen",
+      id: "user456",
+      name: "Jess Williams",
+      email: "jess.williams@scu.edu",
+      profilePicture: "/path/to/jess-profile.jpg", // Add profile picture path
+      expanded: false,
+    },
+      courses: {
+        interested: [
+          {
+            courseCode: "MATH12-1",
+            courseName: "Linear Algebra",
+            professor: "Mehdi Ahmadi",
+            quarter: "Fall 2024"
+          },
+          {
+            courseCode: "CSCI60-1",
+            courseName: "Programming Fundamentals",
+            professor: "Tiantian Chen",
+            quarter: "Fall 2024"
+          }
+        ],
+        taken: [
+          {
+            courseCode: "CSCI61",
+            courseName: "Algorithms",
+            professor: "Jane Smith", 
+            quarter: "Spring 2024"
+          }
+        ]
+      }
+    }
+  ]);
+  
+
+  //test requests
+  // Updated requests data structure with profile pictures
+  const [requests, setRequests] = useState([
+    { id: 1, name: "Alice", details: "email: aglass@scu.edu", expanded: false },
+    { id: 2, name: "Tom", details: "email: tford@scu.edu", expanded: false },
+    {
+      id: "request123",
+      name: "Alice Glass",
+      email: "aglass@scu.edu",
+      profilePicture: "/path/to/alice-profile.jpg", // Add profile picture path
+      expanded: false,
+      courses: {
+        interested: [
+          {
+            courseCode: "CSCI65",
+            courseName: "Web Development",
+            professor: "Mark Johnson",
+            quarter: "Fall 2024"
+          }
+        ],
+        taken: [
+          {
+            courseCode: "CSCI60",
+            courseName: "Intro to Computer Science",
+            professor: "Sarah Lee",
+            quarter: "Winter 2024"
+          }
+        ]
+      }
+    },
+
+   */
+
  useEffect(() => {
   const fetchFriendData = async () => {
     try {
@@ -135,7 +244,7 @@ export default function Friends() {
             fullWidth
             options={users}
             loading={searchLoading}
-            getOptionLabel={(option) => `${option.name} (${option.email})`}
+            getOptionLabel={(option) => `${option.name} (${option.email || option.id + '@scu.edu'})`}
             onInputChange={(_, newInputValue) => {
               searchUsersByName(newInputValue);
             }}

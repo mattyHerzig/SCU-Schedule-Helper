@@ -25,7 +25,7 @@ const transformUserToCourses = (user) => {
       return {
         courseCode: extractedCourseCode,
         courseName: extractedCourseCode, 
-        professor,
+        professor: professor,
       };
     }).filter(course => course !== null);
   };
@@ -42,7 +42,7 @@ const RequestsAccordion = ({
   setFriends = () => {} 
 }) => {
   const transformedRequests = requests.map(request => ({
-    id: request.id,
+    id: request.id.replace('@scu.edu', ''),
     name: request.name,
     email: request.email,
     profilePicture: request.photoUrl,
@@ -59,22 +59,58 @@ const RequestsAccordion = ({
     );
   };
 
-  const handleAcceptRequest = (event, request) => {
+  const handleAcceptRequest = async (event, request) => {
     event.stopPropagation();
-    const updatedRequests = transformedRequests.filter((r) => r.id !== request.id);
-    setRequests(updatedRequests);
-    setFriends((prevFriends) => [
-      ...prevFriends,
-      {
-        ...request,
-        expanded: false,
-      }
-    ]);
+    
+    try {
+      await chrome.runtime.sendMessage({
+        type: "updateUser",
+        updateItems: {
+          friends: {
+            add: [request.id]
+          },
+          friendRequests: {
+            remove: [request.id]
+          }
+        }
+      });
+
+      const updatedRequests = transformedRequests.filter((r) => r.id !== request.id);
+      setRequests(updatedRequests);
+
+      setFriends((prevFriends) => [
+        ...prevFriends,
+        {
+          id: request.id,
+          name: request.name,
+          email: request.email,
+          profilePicture: request.profilePicture,
+          expanded: false,
+          courses: request.courses
+        }
+      ]);
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+    }
   };
 
-  const handleRejectRequest = (event, id) => {
+  const handleRejectRequest = async (event, request) => {
     event.stopPropagation();
-    setRequests(transformedRequests.filter((request) => request.id !== id));
+    
+    try {
+      await chrome.runtime.sendMessage({
+        type: "updateUser",
+        updateItems: {
+          friendRequests: {
+            remove: [request.id]
+          }
+        }
+      });
+
+      setRequests(transformedRequests.filter((r) => r.id !== request.id));
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+    }
   };
 
   return (
@@ -136,7 +172,7 @@ const RequestsAccordion = ({
                 </IconButton>
                 <IconButton
                   size="small"
-                  onClick={(e) => handleRejectRequest(e, request.id)}
+                  onClick={(e) => handleRejectRequest(e, request)}
                   sx={{
                     color: "error.main",
                     "&:hover": {
@@ -160,7 +196,7 @@ const RequestsAccordion = ({
           >
             <Box>
               <Typography variant="body2">
-                Email: {request.email}
+                Email: {request.id}@scu.edu
               </Typography>
             </Box>
           </AccordionDetails>

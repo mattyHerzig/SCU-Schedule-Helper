@@ -16,7 +16,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
-import CourseDetailsCard from "./FriendCourseDetails";
+import FriendCourseDetails from "./FriendCourseDetails.js";
 
 const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
@@ -127,7 +127,7 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
               <Typography variant="body2" sx={{ mb: 2 }}>
                 Email: {friend.email}
               </Typography>
-              <CourseDetailsCard courses={friend.courses} />
+              <FriendCourseDetails courses={friend.courses} />
             </Box>
           </AccordionDetails>
         </Accordion>

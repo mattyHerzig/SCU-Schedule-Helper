@@ -1,19 +1,29 @@
 // inject.js
+(function() {
+  // This function will be injected into web pages
+  function injectExtensionScript() {
+    console.log('Chrome extension script successfully injected!');
+    
+    // Example of adding a visual indicator
+    const injectionMarker = document.createElement('div');
+    injectionMarker.style.position = 'fixed';
+    injectionMarker.style.top = '10px';
+    injectionMarker.style.right = '10px';
+    injectionMarker.style.backgroundColor = 'green';
+    injectionMarker.style.color = 'white';
+    injectionMarker.style.padding = '10px';
+    injectionMarker.style.zIndex = '9999';
+    injectionMarker.textContent = 'Extension Active';
+    document.body.appendChild(injectionMarker);
 
-// Create a new div element to display the message
-const messageDiv = document.createElement('div');
+    // Example of modifying page content
+    const pageTitle = document.title;
+    console.log(`Current page title: ${pageTitle}`);
 
-// Apply some styling to the div
-messageDiv.style.position = 'fixed';
-messageDiv.style.top = '20px';
-messageDiv.style.right = '20px';
-messageDiv.style.padding = '10px';
-messageDiv.style.backgroundColor = '#4CAF50';
-messageDiv.style.color = 'white';
-messageDiv.style.fontSize = '16px';
-messageDiv.style.borderRadius = '5px';
-messageDiv.style.zIndex = '9999';
-messageDiv.innerHTML = 'Hello World';
+    // You can add more complex logic here
+    // For example, listening for specific events, modifying DOM, etc.
+  }
 
-// Append the message div to the body of the page
-document.body.appendChild(messageDiv);
+  // Run the injection function
+  injectExtensionScript();
+})();
