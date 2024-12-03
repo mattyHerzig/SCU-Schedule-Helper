@@ -144,7 +144,6 @@ self.addEventListener("activate", async (event) => {
 });
 
 async function runStartupChecks() {
-  console.log("Running startup checks...");
   const refreshSelfDataDate = (
     await chrome.storage.local.get("refreshSelfDataDate")
   ).refreshSelfDataDate;
@@ -152,7 +151,6 @@ async function runStartupChecks() {
     refreshSelfDataDate === undefined ||
     new Date() > new Date(refreshSelfDataDate)
   ) {
-    console.log("Refreshing self data...");
     await refreshUserData();
     await chrome.storage.local.set({
       refreshSelfDataDate: new Date(

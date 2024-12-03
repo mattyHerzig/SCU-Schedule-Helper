@@ -129,7 +129,7 @@ async function updateLocalCache(updateItems) {
   if (updateItems.friends) {
     if (updateItems.friends.add) {
       for (const friendId of updateItems.friends.add) {
-        const errorAddingFriend = await addFriendLocally(friendId);
+        const errorAddingFriend = await addFriendLocally(friendId,  "incoming");
         if (errorAddingFriend) {
           return errorAddingFriend;
         }
@@ -186,7 +186,7 @@ export async function deleteAccount() {
   return null;
 }
 
-export async function addFriendLocally(friendId) {
+export async function addFriendLocally(friendId, friendReqType) {
   const getFriendProfileResponse = await fetchWithAuth(
     `${prodUserEndpoint}/${friendId}`,
   );
@@ -207,16 +207,17 @@ export async function addFriendLocally(friendId) {
   };
   const currentFriends =
     (await chrome.storage.local.get("friends")).friends || {};
-  const currentFriendRequestsOut =
-    (await chrome.storage.local.get("friendRequestsOut")).friendRequestsOut ||
+  const friendReqsKey = friendReqType === "incoming" ? "friendRequestsIn" : "friendRequestsOut";
+  const currentFriendRequests =
+    (await chrome.storage.local.get(friendReqsKey))[friendReqsKey] ||
     {};
-  delete currentFriendRequestsOut.friendRequestsOut[friendId];
+  delete currentFriendRequests[friendId];
   await chrome.storage.local.set({
     friends: {
       ...currentFriends,
       [friendId]: friendProfile,
     },
-    friendRequestsOut: currentFriendRequestsOut.friendRequestsOut,
+    [friendReqsKey]: currentFriendRequests,
   });
   return null;
 }

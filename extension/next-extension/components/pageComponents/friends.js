@@ -14,167 +14,106 @@ export default function Friends() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [friends, setFriends] = useState([]);
-  const [requests, setRequests] = useState([]);
+  const [requestsIn, setRequestsIn] = useState([]);
+  const [requestsOut, setRequestsOut] = useState([]);
 
-  /* for reference this was the fomrat of the test friends
-  const [friends, setFriends] = useState([
-    {
-      id: 1,
-      name: "Bob",
-      details:
-        "Courses registered next quarter: Math14 with Shruthi Shapiro, CSCI60-2 with Nicholas Tran",
-      id: "user123",
-      name: "Bob Smith",
-      email: "bob.smith@scu.edu",
-      profilePicture: "/path/to/bob-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH14",
-            courseName: "Calculus",
-            professor: "Shruthi Shapiro",
-            quarter: "Fall 2024"
-          },
-          {
-            courseCode: "CSCI60-2",
-            courseName: "Intro to Programming",
-            professor: "Nicholas Tran", 
-            quarter: "Fall 2024"
-          }
-        ],
-        taken: [
-          {
-            courseCode: "CSCI56",
-            courseName: "Data Structures",
-            professor: "John Doe",
-            quarter: "Spring 2024"
-          }
-        ]
+  useEffect(() => {
+    const fetchFriendData = async () => {
+      try {
+        let { friendRequestsIn, friendRequestsOut, friends } =
+          await chrome.storage.local.get([
+            "friendRequestsIn",
+            "friendRequestsOut",
+            "friends",
+          ]);
+
+        friendRequestsIn ||= {};
+        friendRequestsOut ||= {};
+        friends ||= {};
+
+        setRequestsOut(Object.values(friendRequestsOut));
+        setRequestsIn(Object.values(friendRequestsIn));
+        // Transform friends data
+        const transformedFriends = Object.entries(friends || {}).map(
+          ([id, profile]) => ({
+            id,
+            ...profile,
+            expanded: false,
+            courses: {
+              interested:
+                profile.interestedSections
+                  ?.map((encodedCourse) => {
+                    const courseMatch = encodedCourse.match(
+                      /P{(.*?)}S{(.*?)}M{(.*?)}E{(.*?)}/,
+                    );
+                    const indexOfDash = courseMatch[2].indexOf("-");
+                    let indexOfEnd = courseMatch[2].indexOf("(-)");
+                    if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
+                    const courseCode = courseMatch[2]
+                      .substring(0, indexOfDash)
+                      .replace(" ", "");
+                    const professor = courseMatch[1];
+                    const courseName = courseMatch[2]
+                      .substring(indexOfDash + 1, indexOfEnd)
+                      .trim();
+                    return courseMatch
+                      ? {
+                          courseCode,
+                          courseName,
+                          professor,
+                        }
+                      : null;
+                  })
+                  .filter(Boolean) || [],
+              taken: profile.coursesTaken
+                ?.map((encodedCourse) => {
+                  const courseMatch = encodedCourse.match(
+                    /P{(.*?)}C{(.*?)}T{(.*?)}/,
+                  );
+                  if (!courseMatch) return null;
+                  const firstDash = courseMatch[2].indexOf("-");
+                  let secondDash = courseMatch[2].indexOf("-", firstDash + 1);
+                  if (secondDash === -1 || secondDash - firstDash > 5) {
+                    secondDash = firstDash;
+                  }
+                  let indexOfEnd = courseMatch[2].indexOf("(-)");
+                  if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
+                  const courseCode = courseMatch[2]
+                    .substring(0, firstDash)
+                    .replace(" ", "");
+                  const professor = courseMatch[1] || "unknown";
+                  const courseName = courseMatch[2]
+                    .substring(secondDash + 1, indexOfEnd)
+                    .trim();
+                  return courseMatch
+                    ? {
+                        courseCode,
+                        courseName,
+                        professor,
+                        quarter: courseMatch[3],
+                      }
+                    : null;
+                })
+                .sort(mostRecentTermFirst),
+            },
+          }),
+        );
+        setFriends(transformedFriends);
+      } catch (error) {
+        console.error("Error fetching friend data:", error);
       }
-    },
-    {
-      id: 2,
-      name: "Jess",
-      details:
-        "Courses registered next quarter: MATH12-1 with Mehdi Ahmadi, CSCI60-1 with Tiantian Chen",
-      id: "user456",
-      name: "Jess Williams",
-      email: "jess.williams@scu.edu",
-      profilePicture: "/path/to/jess-profile.jpg", // Add profile picture path
-      expanded: false,
-    },
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH12-1",
-            courseName: "Linear Algebra",
-            professor: "Mehdi Ahmadi",
-            quarter: "Fall 2024"
-          },
-          {
-            courseCode: "CSCI60-1",
-            courseName: "Programming Fundamentals",
-            professor: "Tiantian Chen",
-            quarter: "Fall 2024"
-          }
-        ],
-        taken: [
-          {
-            courseCode: "CSCI61",
-            courseName: "Algorithms",
-            professor: "Jane Smith", 
-            quarter: "Spring 2024"
-          }
-        ]
-      }
-    }
-  ]);
-  
+    };
 
-  //test requests
-  // Updated requests data structure with profile pictures
-  const [requests, setRequests] = useState([
-    { id: 1, name: "Alice", details: "email: aglass@scu.edu", expanded: false },
-    { id: 2, name: "Tom", details: "email: tford@scu.edu", expanded: false },
-    {
-      id: "request123",
-      name: "Alice Glass",
-      email: "aglass@scu.edu",
-      profilePicture: "/path/to/alice-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "CSCI65",
-            courseName: "Web Development",
-            professor: "Mark Johnson",
-            quarter: "Fall 2024"
-          }
-        ],
-        taken: [
-          {
-            courseCode: "CSCI60",
-            courseName: "Intro to Computer Science",
-            professor: "Sarah Lee",
-            quarter: "Winter 2024"
-          }
-        ]
-      }
-    },
-
-   */
-
- useEffect(() => {
-  const fetchFriendData = async () => {
-    try {
-      const { friendRequestsIn, friendRequestsOut, friends: friendsList } = 
-        await chrome.storage.local.get([
-          'friendRequestsIn', 
-          'friendRequestsOut', 
-          'friends'
-        ]);
-
-      console.log('Outgoing friend requests:', friendRequestsOut);
-
-      const incomingRequests = Object.entries(friendRequestsIn || {}).map(([id, profile]) => ({
-        id, 
-        ...profile 
-      }));
-      setRequests(incomingRequests);
-
-      // Transform friends data
-      const transformedFriends = Object.entries(friendsList || {}).map(([id, profile]) => ({
-        id,  
-        ...profile, 
-        expanded: false,
-        courses: {
-          interested: profile.interestedSections?.map(encodedCourse => {
-            const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-            return courseMatch ? {
-              courseCode: courseMatch[2] || courseMatch[3],
-              courseName: courseMatch[2] || courseMatch[3],
-              professor: courseMatch[1],
-            } : null;
-          }).filter(Boolean) || [],
-          taken: profile.coursesTaken?.map(encodedCourse => {
-            const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-            return courseMatch ? {
-              courseCode: courseMatch[2] || courseMatch[3],
-              courseName: courseMatch[2] || courseMatch[3],
-              professor: courseMatch[1],
-            } : null;
-          }).filter(Boolean) || []
-        }
-      }));
-      setFriends(transformedFriends);
-    } catch (error) {
-      console.error('Error fetching friend data:', error);
-    }
-  };
-
-  fetchFriendData();
-}, []);
+    fetchFriendData();
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (
+        (namespace === "local" && changes.friendRequestsIn) ||
+        changes.friendRequestsOut ||
+        changes.friends
+      )
+        fetchFriendData();
+    });
+  }, []);
 
   const searchUsersByName = async (name) => {
     if (!name || name.length < 1) {
@@ -188,10 +127,10 @@ export default function Friends() {
         type: "queryUserByName",
         name: name,
       });
-      
+
       setUsers(foundUsers || []);
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error("Error searching users:", error);
       setUsers([]);
     } finally {
       setSearchLoading(false);
@@ -199,26 +138,24 @@ export default function Friends() {
   };
 
   const sendFriendRequest = async () => {
-  if (!selectedUser) return;
+    if (!selectedUser) return;
 
-  const message = {
-    type: "updateUser",
-    updateItems: {
-      friendRequests: {
-        send: [selectedUser.id],
+    const message = {
+      type: "updateUser",
+      updateItems: {
+        friendRequests: {
+          send: [selectedUser.id],
+        },
       },
-    },
+    };
+
+    try {
+      await chrome.runtime.sendMessage(message);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+    }
   };
-
-  console.log("Message sent to updateUser:", message);
-
-  try {
-    await chrome.runtime.sendMessage(message);
-    setSelectedUser(null);
-  } catch (error) {
-    console.error("Error sending friend request:", error);
-  }
-};
 
   return (
     <AuthWrapper>
@@ -244,7 +181,7 @@ export default function Friends() {
             fullWidth
             options={users}
             loading={searchLoading}
-            getOptionLabel={(option) => `${option.name} (${option.email || option.id + '@scu.edu'})`}
+            getOptionLabel={(option) => `${option.name} (${option.id}@scu.edu)`}
             onInputChange={(_, newInputValue) => {
               searchUsersByName(newInputValue);
             }}
@@ -260,7 +197,9 @@ export default function Friends() {
                   ...params.InputProps,
                   endAdornment: (
                     <>
-                      {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                      {searchLoading ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null}
                       {params.InputProps.endAdornment}
                     </>
                   ),
@@ -268,10 +207,10 @@ export default function Friends() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": {
-                      borderColor: "#ccc", 
+                      borderColor: "#ccc",
                     },
                     "&:hover fieldset": {
-                      borderColor: "#ccc", 
+                      borderColor: "#ccc",
                     },
                     "&.Mui-focused fieldset": {
                       borderColor: "#703331",
@@ -293,10 +232,10 @@ export default function Friends() {
             )}
             sx={{ mb: 2 }}
           />
-          <Button 
-            variant="contained" 
-            color="primary" 
-            fullWidth 
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
             disabled={!selectedUser}
             onClick={sendFriendRequest}
           >
@@ -304,16 +243,26 @@ export default function Friends() {
           </Button>
         </Box>
 
-        <RequestsAccordion
-          requests={requests}
-          setRequests={setRequests}
-          setFriends={setFriends}
-        />
-        <FriendsAccordion 
-          friends={friends} 
-          setFriends={setFriends} 
-        />
+        <RequestsAccordion requestsIn={requestsIn} requestsOut={requestsOut} />
+        <FriendsAccordion friends={friends} setFriends={setFriends} />
       </Box>
     </AuthWrapper>
   );
+}
+
+function mostRecentTermFirst(objA, objB) {
+  const termA = objA.quarter || "Fall 2000";
+  const termB = objB.quarter || "Fall 2000";
+  const [quarterA, yearA] = termA.split(" ");
+  const [quarterB, yearB] = termB.split(" ");
+  if (yearA === yearB) {
+    return quarterCompareDescending(quarterA, quarterB);
+  } else {
+    return parseInt(yearB) - parseInt(yearA);
+  }
+}
+
+function quarterCompareDescending(quarterA, quarterB) {
+  const quarters = ["Fall", "Summer", "Spring", "Winter"];
+  return quarters.indexOf(quarterA) - quarters.indexOf(quarterB);
 }

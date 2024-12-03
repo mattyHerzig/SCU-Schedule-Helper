@@ -71,7 +71,7 @@ export async function handleNotification(notification) {
 }
 
 async function handleFriendRequestAccepted(friendId) {
-  const addFriendError = await addFriendLocally(friendId);
+  const addFriendError = await addFriendLocally(friendId, "outgoing");
   if (addFriendError) {
     console.error("Error adding friend: ", addFriendError);
     return;

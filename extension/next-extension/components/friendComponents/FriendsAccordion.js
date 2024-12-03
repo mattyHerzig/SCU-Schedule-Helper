@@ -102,7 +102,7 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
               sx={{ width: '100%' }}
             >
               <Avatar 
-                src={friend.profilePicture} 
+                src={friend.photoUrl} 
                 alt={friend.name}
                 sx={{ width: 40, height: 40 }}
               />

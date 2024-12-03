@@ -79,7 +79,6 @@ export async function signIn() {
     );
     if (!updateError) {
       if (chrome.runtime.setUninstallURL) {
-        console.log("Setting uninstall URL");
         const userId =
           (await chrome.storage.local.get("userInfo")).userInfo?.id ||
           "unknown";
@@ -110,7 +109,7 @@ export async function signIn() {
   });
 
   await chrome.runtime.setUninstallURL(
-    `https://scu-schedule-helper.me/uninstall?u=${createdUserData.id}&sub=${subscription.endpoint}`,
+    `https://scu-schedule-helper.me/uninstall?u=${createdUserData.id}&sub=${encodeURIComponent(subscription.endpoint)}`,
   );
   return null;
 }

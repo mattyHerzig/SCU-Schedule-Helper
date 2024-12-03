@@ -1,5 +1,4 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Accordion from "@mui/material/Accordion";
@@ -15,114 +14,131 @@ import Stack from "@mui/material/Stack";
 const transformUserToCourses = (user) => {
   // Transform coursesTaken and interestedSections to component's course format
   const transformCourses = (courseList, type) => {
-    return courseList.map(encodedCourseCode => {
-      const courseMatch = encodedCourseCode.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-      if (!courseMatch) return null;
+    return courseList
+      .map((encodedCourseCode) => {
+        const courseMatch = encodedCourseCode.match(/P{(.*?)}C{(.*?)}T{(.*?)}/);
+        if (!courseMatch) return null;
+        const indexOfDash = courseMatch[2].indexOf("-");
+        let indexOfEnd = courseMatch[2].indexOf("(-)");
+        if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
+        const courseCode = courseMatch[2]
+          .substring(0, indexOfDash)
+          .replace(" ", "");
+        const professor = courseMatch[1];
+        const courseName = courseMatch[2]
+          .substring(indexOfDash + 1, indexOfEnd)
+          .trim();
 
-      const professor = courseMatch[1];
-      const extractedCourseCode = courseMatch[2] || courseMatch[3];
-      
-      return {
-        courseCode: extractedCourseCode,
-        courseName: extractedCourseCode, 
-        professor: professor,
-      };
-    }).filter(course => course !== null);
+        return {
+          courseCode,
+          courseName,
+          professor: professor,
+        };
+      })
+      .filter((course) => course !== null);
   };
 
   return {
-    taken: transformCourses(user.coursesTaken || [], 'taken'),
-    interested: transformCourses(user.interestedSections || [], 'interested')
+    taken: transformCourses(user.coursesTaken || [], "taken"),
+    interested: transformCourses(user.interestedSections || [], "interested"),
   };
 };
 
-const RequestsAccordion = ({ 
-  requests = [], 
-  setRequests = () => {}, 
-  setFriends = () => {} 
-}) => {
-  const transformedRequests = requests.map(request => ({
-    id: request.id.replace('@scu.edu', ''),
-    name: request.name,
-    email: request.email,
-    profilePicture: request.photoUrl,
-    expanded: false,
-    courses: transformUserToCourses(request)
-  }));
+export default function RequestsAccordion({
+  requestsIn = [],
+  requestsOut = [],
+}) {
+  const [transformedRequestsIn, setTransformedRequestsIn] =
+    useState(requestsIn);
+  const [transformedRequestsOut, setTransformedRequestsOut] =
+    useState(requestsOut);
 
-  const handleAccordionChange = (id) => {
-    setRequests(
-      transformedRequests.map((request) => ({
+  useEffect(() => {
+    setTransformedRequestsIn(
+      requestsIn.map((request) => ({
         ...request,
-        expanded: request.id === id ? !request.expanded : request.expanded,
+        type: "incoming",
+        expanded: false,
+        courses: transformUserToCourses(request),
       })),
+    );
+    setTransformedRequestsOut(
+      requestsOut.map((request) => ({
+        ...request,
+        expanded: false,
+        type: "outgoing",
+        courses: transformUserToCourses(request),
+      })),
+    );
+  }, [requestsIn, requestsOut]);
+
+  const handleAccordionChange = (curReq, expanded) => {
+    const transformedRequests =
+      curReq.type === "incoming"
+        ? transformedRequestsIn
+        : transformedRequestsOut;
+    const setter =
+      curReq.type === "incoming"
+        ? setTransformedRequestsIn
+        : setTransformedRequestsOut;
+    setter(
+      transformedRequests.map(
+        (request) =>
+          (request.id === curReq.id && {
+            ...request,
+            expanded,
+          }) ||
+          request,
+      ),
     );
   };
 
   const handleAcceptRequest = async (event, request) => {
     event.stopPropagation();
-    
     try {
       await chrome.runtime.sendMessage({
         type: "updateUser",
         updateItems: {
           friends: {
-            add: [request.id]
+            add: [request.id],
           },
-          friendRequests: {
-            remove: [request.id]
-          }
-        }
+        },
       });
-
-      const updatedRequests = transformedRequests.filter((r) => r.id !== request.id);
-      setRequests(updatedRequests);
-
-      setFriends((prevFriends) => [
-        ...prevFriends,
-        {
-          id: request.id,
-          name: request.name,
-          email: request.email,
-          profilePicture: request.profilePicture,
-          expanded: false,
-          courses: request.courses
-        }
-      ]);
     } catch (error) {
-      console.error('Error accepting friend request:', error);
+      console.error("Error accepting friend request:", error);
     }
   };
 
   const handleRejectRequest = async (event, request) => {
     event.stopPropagation();
-    
+    const key =
+      request.type == "incoming" ? "removeIncoming" : "removeOutgoing";
     try {
       await chrome.runtime.sendMessage({
         type: "updateUser",
         updateItems: {
           friendRequests: {
-            remove: [request.id]
-          }
-        }
+            [key]: [request.id],
+          },
+        },
       });
-
-      setRequests(transformedRequests.filter((r) => r.id !== request.id));
     } catch (error) {
-      console.error('Error rejecting friend request:', error);
+      console.error("Error rejecting friend request:", error);
     }
   };
 
   return (
     <Box sx={{ width: "100%" }}>
       <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
-        Friend Requests:
+        Friend Requests Received:
       </Typography>
-      {transformedRequests.map((request) => (
+      {transformedRequestsIn.map((request) => (
         <Accordion
           key={request.id}
           expanded={request.expanded}
-          onChange={() => handleAccordionChange(request.id)}
+          onChange={(event, expanded) =>
+            handleAccordionChange(request, expanded)
+          }
           sx={{
             mb: 1,
             "&:before": {
@@ -144,14 +160,14 @@ const RequestsAccordion = ({
               },
             }}
           >
-            <Stack 
-              direction="row" 
-              spacing={2} 
+            <Stack
+              direction="row"
+              spacing={2}
               alignItems="center"
-              sx={{ width: '100%' }}
+              sx={{ width: "100%" }}
             >
-              <Avatar 
-                src={request.profilePicture} 
+              <Avatar
+                src={request.photoUrl}
                 alt={request.name}
                 sx={{ width: 40, height: 40 }}
               />
@@ -195,30 +211,85 @@ const RequestsAccordion = ({
             }}
           >
             <Box>
-              <Typography variant="body2">
-                Email: {request.id}@scu.edu
-              </Typography>
+              <Typography variant="body2">Email: {request.email}</Typography>
+            </Box>
+          </AccordionDetails>
+        </Accordion>
+      ))}
+      <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
+        Friend Requests Sent:
+      </Typography>
+      {transformedRequestsOut.map((request) => (
+        <Accordion
+          key={request.id}
+          expanded={request.expanded}
+          onChange={(event, expanded) =>
+            handleAccordionChange(request, expanded)
+          }
+          sx={{
+            mb: 1,
+            "&:before": {
+              display: "none",
+            },
+            overflow: "hidden",
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls={`panel${request.id}-content`}
+            id={`panel${request.id}-header`}
+            sx={{
+              "& .MuiAccordionSummary-content": {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mr: 1,
+              },
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ width: "100%" }}
+            >
+              <Avatar
+                src={request.photoUrl}
+                alt={request.name}
+                sx={{ width: 40, height: 40 }}
+              />
+              <Typography sx={{ flexGrow: 1 }}>{request.name}</Typography>
+              <Stack direction="row" spacing={1}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleRejectRequest(e, request)}
+                  sx={{
+                    color: "error.main",
+                    "&:hover": {
+                      backgroundColor: "error.light",
+                      color: "white",
+                    },
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Stack>
+          </AccordionSummary>
+          <AccordionDetails
+            sx={{
+              p: 2,
+              overflow: "hidden",
+              maxHeight: "fit-content",
+              boxSizing: "border-box",
+            }}
+          >
+            <Box>
+              <Typography variant="body2">Email: {request.email}</Typography>
             </Box>
           </AccordionDetails>
         </Accordion>
       ))}
     </Box>
   );
-};
-
-RequestsAccordion.propTypes = {
-  requests: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      email: PropTypes.string.isRequired,
-      photoUrl: PropTypes.string,
-      coursesTaken: PropTypes.arrayOf(PropTypes.string),
-      interestedSections: PropTypes.arrayOf(PropTypes.string)
-    })
-  ),
-  setRequests: PropTypes.func,
-  setFriends: PropTypes.func,
-};
-
-export default RequestsAccordion;
+}

@@ -45,9 +45,9 @@ async function handleGetUserByNameRequest(event, context, userId) {
     if (!userItem.users || !userItem.users.SS) continue;
     for (const user of userItem.users.SS) {
       const userInfo = USER_INFO_PATTERN.exec(user);
-      if (!userInfo) continue;
+      if (!userInfo || userInfo[1] == userId) continue;
       responseItems.push({
-        email: `${userInfo[1]}@scu.edu`,
+        id: userInfo[1],
         name: userInfo[2],
         photoUrl: userInfo[3],
       });

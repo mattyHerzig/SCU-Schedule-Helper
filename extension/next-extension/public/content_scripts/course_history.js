@@ -1,5 +1,3 @@
-// Select all "Related Actions" buttons
-
 const results = [];
 const academicPeriodPattern = /(Winter|Spring|Summer|Fall) (\d{4})/;
 const processAllButtons = async () => {
@@ -172,9 +170,3 @@ const tableCountInterval = setInterval(() => {
   }
   lastTableCount = tableCount;
 }, 100);
-
-// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-//   console.log("Received message", request);
-//   if (request !== "importCourseHistory") {
-//     return;
-//   }
