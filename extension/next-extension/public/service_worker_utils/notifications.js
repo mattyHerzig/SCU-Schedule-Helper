@@ -1,4 +1,5 @@
 import { fetchWithAuth, signOut } from "./authorization.js";
+import { prodUserEndpoint } from "./constants.js";
 import {
   addFriendLocally,
   refreshUserData,
