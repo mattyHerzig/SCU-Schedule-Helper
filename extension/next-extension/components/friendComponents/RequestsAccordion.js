@@ -6,6 +6,7 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import IconButton from "@mui/material/IconButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import Avatar from "@mui/material/Avatar";
@@ -129,167 +130,228 @@ export default function RequestsAccordion({
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
-        Friend Requests Received:
+      <Typography variant="h6" gutterBottom sx={{ fontSize: "1.25rem", mt: 2 }}>
+        Friend Requests
       </Typography>
-      {transformedRequestsIn.map((request) => (
-        <Accordion
-          key={request.id}
-          expanded={request.expanded}
-          onChange={(event, expanded) =>
-            handleAccordionChange(request, expanded)
-          }
+
+      <Accordion
+        defaultExpanded
+        disableGutters
+        square
+        sx={{
+          "&:before": {
+            display: "none",
+          },
+          "&:not(:last-child)": {
+            borderBottom: 0,
+          },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="received-requests-content"
+          id="received-requests-header"
           sx={{
-            mb: 1,
-            "&:before": {
-              display: "none",
+            flexDirection: "row-reverse",
+            "& .MuiAccordionSummary-content": {
+              marginLeft: 2,
             },
-            overflow: "hidden",
           }}
         >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls={`panel${request.id}-content`}
-            id={`panel${request.id}-header`}
-            sx={{
-              "& .MuiAccordionSummary-content": {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mr: 1,
-              },
-            }}
-          >
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{ width: "100%" }}
+          <Typography variant="h6" sx={{ fontSize: "1rem" }}>
+            Received
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {transformedRequestsIn.map((request) => (
+            <Accordion
+              key={request.id}
+              expanded={request.expanded}
+              onChange={(event, expanded) =>
+                handleAccordionChange(request, expanded)
+              }
+              sx={{
+                mb: 1,
+                "&:before": {
+                  display: "none",
+                },
+                overflow: "hidden",
+              }}
             >
-              <Avatar
-                src={request.photoUrl}
-                alt={request.name}
-                sx={{ width: 40, height: 40 }}
-              />
-              <Typography sx={{ flexGrow: 1 }}>{request.name}</Typography>
-              <Stack direction="row" spacing={1}>
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleAcceptRequest(e, request)}
-                  sx={{
-                    color: "success.main",
-                    "&:hover": {
-                      backgroundColor: "success.light",
-                      color: "white",
-                    },
-                  }}
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls={`panel${request.id}-content`}
+                id={`panel${request.id}-header`}
+                sx={{
+                  "& .MuiAccordionSummary-content": {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mr: 1,
+                  },
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ width: "100%" }}
                 >
-                  <CheckIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleRejectRequest(e, request)}
-                  sx={{
-                    color: "error.main",
-                    "&:hover": {
-                      backgroundColor: "error.light",
-                      color: "white",
-                    },
-                  }}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            </Stack>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              p: 2,
-              overflow: "hidden",
-              maxHeight: "fit-content",
-              boxSizing: "border-box",
-            }}
-          >
-            <Box>
-              <Typography variant="body2">Email: {request.email}</Typography>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      ))}
-      <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
-        Friend Requests Sent:
-      </Typography>
-      {transformedRequestsOut.map((request) => (
-        <Accordion
-          key={request.id}
-          expanded={request.expanded}
-          onChange={(event, expanded) =>
-            handleAccordionChange(request, expanded)
-          }
+                  <Avatar
+                    src={request.photoUrl}
+                    alt={request.name}
+                    sx={{ width: 40, height: 40 }}
+                  />
+                  <Typography sx={{ flexGrow: 1 }}>{request.name}</Typography>
+                  <Stack direction="row" spacing={1}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleAcceptRequest(e, request)}
+                      sx={{
+                        color: "success.main",
+                        "&:hover": {
+                          backgroundColor: "success.light",
+                          color: "white",
+                        },
+                      }}
+                    >
+                      <CheckIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleRejectRequest(e, request)}
+                      sx={{
+                        color: "error.main",
+                        "&:hover": {
+                          backgroundColor: "error.light",
+                          color: "white",
+                        },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails
+                sx={{
+                  p: 2,
+                  overflow: "hidden",
+                  maxHeight: "fit-content",
+                  boxSizing: "border-box",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2">
+                    Email: {request.email}
+                  </Typography>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion
+        disableGutters
+        sx={{
+          mb: 2,
+          "&:before": {
+            display: "none",
+          },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="sent-requests-content"
+          id="sent-requests-header"
           sx={{
-            mb: 1,
-            "&:before": {
-              display: "none",
+            flexDirection: "row-reverse",
+            "& .MuiAccordionSummary-content": {
+              marginLeft: 2,
             },
-            overflow: "hidden",
           }}
         >
-          <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls={`panel${request.id}-content`}
-            id={`panel${request.id}-header`}
-            sx={{
-              "& .MuiAccordionSummary-content": {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mr: 1,
-              },
-            }}
-          >
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{ width: "100%" }}
+          <Typography variant="h6" sx={{ fontSize: "1rem" }}>
+            Sent
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {transformedRequestsOut.map((request) => (
+            <Accordion
+              key={request.id}
+              expanded={request.expanded}
+              onChange={(event, expanded) =>
+                handleAccordionChange(request, expanded)
+              }
+              sx={{
+                mb: 1,
+                "&:before": {
+                  display: "none",
+                },
+                overflow: "hidden",
+              }}
             >
-              <Avatar
-                src={request.photoUrl}
-                alt={request.name}
-                sx={{ width: 40, height: 40 }}
-              />
-              <Typography sx={{ flexGrow: 1 }}>{request.name}</Typography>
-              <Stack direction="row" spacing={1}>
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleRejectRequest(e, request)}
-                  sx={{
-                    color: "error.main",
-                    "&:hover": {
-                      backgroundColor: "error.light",
-                      color: "white",
-                    },
-                  }}
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls={`panel${request.id}-content`}
+                id={`panel${request.id}-header`}
+                sx={{
+                  "& .MuiAccordionSummary-content": {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mr: 1,
+                  },
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ width: "100%" }}
                 >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            </Stack>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              p: 2,
-              overflow: "hidden",
-              maxHeight: "fit-content",
-              boxSizing: "border-box",
-            }}
-          >
-            <Box>
-              <Typography variant="body2">Email: {request.email}</Typography>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      ))}
+                  <Avatar
+                    src={request.photoUrl}
+                    alt={request.name}
+                    sx={{ width: 40, height: 40 }}
+                  />
+                  <Typography sx={{ flexGrow: 1 }}>{request.name}</Typography>
+                  <Stack direction="row" spacing={1}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleRejectRequest(e, request)}
+                      sx={{
+                        color: "error.main",
+                        "&:hover": {
+                          backgroundColor: "error.light",
+                          color: "white",
+                        },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails
+                sx={{
+                  p: 2,
+                  overflow: "hidden",
+                  maxHeight: "fit-content",
+                  boxSizing: "border-box",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2">
+                    Email: {request.email}
+                  </Typography>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </AccordionDetails>
+      </Accordion>
     </Box>
   );
 }

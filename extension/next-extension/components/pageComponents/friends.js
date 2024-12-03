@@ -168,6 +168,8 @@ export default function Friends() {
           flexDirection: "column",
         }}
       >
+        <FriendsAccordion friends={friends} setFriends={setFriends} />
+        <RequestsAccordion requestsIn={requestsIn} requestsOut={requestsOut} />
         <Box
           sx={{
             flexDirection: "column",
@@ -175,7 +177,7 @@ export default function Friends() {
           }}
         >
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Search user
+            Search Users
           </Typography>
           <Autocomplete
             fullWidth
@@ -193,16 +195,18 @@ export default function Friends() {
                 {...params}
                 label="Enter name"
                 variant="outlined"
-                InputProps={{
-                  ...params.InputProps,
-                  endAdornment: (
-                    <>
-                      {searchLoading ? (
-                        <CircularProgress color="inherit" size={20} />
-                      ) : null}
-                      {params.InputProps.endAdornment}
-                    </>
-                  ),
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {searchLoading ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
@@ -242,9 +246,8 @@ export default function Friends() {
             Send Invite
           </Button>
         </Box>
-
-        <RequestsAccordion requestsIn={requestsIn} requestsOut={requestsOut} />
-        <FriendsAccordion friends={friends} setFriends={setFriends} />
+        <br />
+        <br />
       </Box>
     </AuthWrapper>
   );

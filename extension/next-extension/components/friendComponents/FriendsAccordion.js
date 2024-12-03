@@ -67,8 +67,8 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Typography variant="h6" gutterBottom sx={{ fontSize: "1rem", mt: 2 }}>
-        Friends:
+        <Typography variant="h6" gutterBottom sx={{ fontSize: "1.25rem" }}>
+        Friends
       </Typography>
       {friends.map((friend) => (
         <Accordion
