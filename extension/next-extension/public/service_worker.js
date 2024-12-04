@@ -171,3 +171,77 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 });
+
+//functions used by inject
+try {
+  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    if (changeInfo.status === 'complete') {
+      chrome.scripting.executeScript({
+        files: ['inject.js'],
+        target: { tabId: tab.id }
+      });
+    }
+  });
+} catch (e) {
+  console.error('Error in service worker:', e);
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "getCourseEvalRatings") {
+    getCourseEvalRatings(request.profName)
+      .then((rating) => sendResponse(rating))
+      .catch((error) => {
+        console.error("CourseEval Query Error:", error);
+        sendResponse(null);
+      });
+    return true; // Keeps the message channel open for async response
+  }
+});
+
+// Function to get overall average difficulty for a professor
+async function getProfessorAvgDifficulty(professorName) {
+  // Assuming the data is stored in chrome storage or passed from a different source
+  const data = await chrome.storage.local.get('courseData');  // Replace with your data retrieval logic
+
+  if (!data || !data[professorName] || !data[professorName].overall) {
+    console.error(`No overall data found for professor ${professorName}`);
+    return null;
+  }
+
+  const professorData = data[professorName].overall;
+
+  // Return the difficultyAvg directly from the overall section
+  return professorData.difficultyAvg;
+}
+
+// Handling the message to retrieve average difficulty
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "getProfessorAvgDifficulty") {
+    const professorName = request.professorName;
+    console.log("Fetching difficulty for professor:", professorName);
+
+    // Retrieve data from chrome.storage
+    chrome.storage.local.get("professorData", (result) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error retrieving data from storage:", chrome.runtime.lastError);
+        sendResponse({ error: chrome.runtime.lastError });
+        return;
+      }
+      
+      const professorData = result.professorData || {};
+      console.log("Stored professor data:", professorData);
+
+      const professor = professorData[professorName];
+      if (professor && professor.overall) {
+        console.log("Professor data found:", professor);
+        sendResponse({
+          avgDifficulty: professor.overall.difficultyAvg,
+        });
+      } else {
+        console.warn("Professor data not found:", professorName);
+        sendResponse({ error: "Professor data not found." });
+      }
+    });
+    return true; // Keep the message channel open until we respond
+  }
+});

@@ -3,12 +3,18 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
 import AuthWrapper from "./authWrapper";
 
 export default function Settings() {
   const [userName, setUserName] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false); // For dialog state
 
   useEffect(() => {
     const storageListener = (changes, namespace) => {
@@ -74,6 +80,13 @@ export default function Settings() {
     }
   };
 
+  const handleDialogOpen = () => setDialogOpen(true);
+  const handleDialogClose = () => setDialogOpen(false);
+  const handleConfirmDelete = async () => {
+    handleDialogClose();
+    await deleteAccount();
+  };
+
   return (
     <AuthWrapper>
       <Box sx={{ overflow: "auto" }}>
@@ -108,7 +121,11 @@ export default function Settings() {
               >
                 Sign Out
               </Button>
-              <Button variant="contained" color="error" onClick={deleteAccount}>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleDialogOpen} // Open dialog on click
+              >
                 Delete My Account
               </Button>
               {error && (
@@ -118,6 +135,27 @@ export default function Settings() {
           )}
         </Stack>
       </Box>
+
+      <Dialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+      >
+        <DialogTitle>Confirm Account Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete your account? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AuthWrapper>
   );
 }

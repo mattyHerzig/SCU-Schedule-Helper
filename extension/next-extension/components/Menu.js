@@ -42,10 +42,6 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
     window.close();
   };
 
-  useEffect(() => {
-    setActiveMenu("main");
-  }, []);
-
   return (
     <Box sx={{ mb: 3 }}>
       <AppBar
@@ -78,7 +74,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 color: "black",
                 display: "flex",
                 alignItems: "center",
-                padding: "4px 8px",
+                padding: "4px 4px", // Adjusted horizontal padding
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
                 },
@@ -132,6 +128,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
               alignItems: "center",
               flexGrow: 1,
               minWidth: 0,
+              gap: "8px", // Added gap to create space between the icons
             }}
           >
             {menuItems.map((item) => (
@@ -139,7 +136,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 key={item.id}
                 sx={{
                   minWidth: "auto",
-                  padding: "4px 8px",
+                  padding: "4px 4px", // Adjusted horizontal padding
                   position: "relative",
                   color: "black",
                   "&:hover": {
@@ -208,3 +205,5 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
     </Box>
   );
 }
+
+
