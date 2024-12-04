@@ -198,22 +198,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Function to get overall average difficulty for a professor
-async function getProfessorAvgDifficulty(professorName) {
-  // Assuming the data is stored in chrome storage or passed from a different source
-  const data = await chrome.storage.local.get('courseData');  // Replace with your data retrieval logic
-
-  if (!data || !data[professorName] || !data[professorName].overall) {
-    console.error(`No overall data found for professor ${professorName}`);
-    return null;
-  }
-
-  const professorData = data[professorName].overall;
-
-  // Return the difficultyAvg directly from the overall section
-  return professorData.difficultyAvg;
-}
-
+// Function to get overall average difficulty for a profe
 // Handling the message to retrieve average difficulty
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "getProfessorAvgDifficulty") {

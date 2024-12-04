@@ -162,5 +162,3 @@ export default function ProfCourseSearch() {
     </Box>
   );
 }
-
-
