@@ -7,7 +7,7 @@ export default function ProfCourseSearch() {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(""); // To store the search query
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkEvals();

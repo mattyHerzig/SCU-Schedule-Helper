@@ -194,7 +194,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error("CourseEval Query Error:", error);
         sendResponse(null);
       });
-    return true; // Keeps the message channel open for async response
+    return true;
   }
 });
 
@@ -221,21 +221,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("Fetching difficulty for professor:", professorName);
 
     // Retrieve data from chrome.storage
-    chrome.storage.local.get("professorData", (result) => {
+    chrome.storage.local.get("data", (result) => {
       if (chrome.runtime.lastError) {
         console.error("Error retrieving data from storage:", chrome.runtime.lastError);
         sendResponse({ error: chrome.runtime.lastError });
         return;
       }
       
-      const professorData = result.professorData || {};
-      console.log("Stored professor data:", professorData);
+      const data = result.data || {};
+      const professorData = data[professorName];
 
-      const professor = professorData[professorName];
-      if (professor && professor.overall) {
-        console.log("Professor data found:", professor);
+      if (professorData && professorData.overall) {
+        console.log("Professor data found:", professorData);
         sendResponse({
-          avgDifficulty: professor.overall.difficultyAvg,
+          avgDifficulty: professorData.overall.difficultyAvg,
         });
       } else {
         console.warn("Professor data not found:", professorName);
