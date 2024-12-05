@@ -370,43 +370,49 @@ const ProfCourseCard = ({ selected, data }) => {
             Professor-Specific Course Statistics:
           </Typography>
 
-          {selected.professors.map((profName) => {
-            const profEntry = Object.entries(data).find(
-              ([key, value]) => value.type === "prof" && key === profName,
-            );
-
-            if (!profEntry) return null;
-
-            const [profId, profData] = profEntry;
-            const profCourseStats = profData[selected.id];
-
-            return (
-              <Box key={profName} sx={{ mt: 2 }}>
-                <Typography variant="body1" gutterBottom>
-                  {profName}
-                </Typography>
-
-                {profCourseStats?.recentTerms && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ px: 2, mt: 1, mb: 2 }}
-                  >
-                    Quarters Taught: {profCourseStats.recentTerms.join(", ")}
+          {selected.professors
+            .map((profName) => [profName, data[profName][selected.id]])
+            .sort((objA, objB) => {
+              const ratingA = objA[1];
+              const ratingB = objB[1];
+              const scoreA =
+                ratingA.qualityAvg +
+                (5 - ratingA.difficultyAvg) +
+                (15 - ratingA.workloadAvg);
+              const scoreB =
+                ratingB.qualityAvg +
+                (5 - ratingB.difficultyAvg) +
+                (15 - ratingB.workloadAvg);
+              return scoreB - scoreA; // Sort by descending score.
+            })
+            .map(([profName, profCourseStats]) => {
+              return (
+                <Box key={profName} sx={{ mt: 2 }}>
+                  <Typography variant="body1" gutterBottom>
+                    {profName}
                   </Typography>
-                )}
-                {profCourseStats ? (
-                  renderEvalStats(profCourseStats)
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No specific course statistics available for this professor
-                  </Typography>
-                )}
 
-                <Divider sx={{ my: 3 }} />
-              </Box>
-            );
-          })}
+                  {profCourseStats?.recentTerms && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ px: 2, mt: 1, mb: 2 }}
+                    >
+                      Quarters Taught: {profCourseStats.recentTerms.join(", ")}
+                    </Typography>
+                  )}
+                  {profCourseStats ? (
+                    renderEvalStats(profCourseStats)
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No specific course statistics available for this professor
+                    </Typography>
+                  )}
+
+                  <Divider sx={{ my: 3 }} />
+                </Box>
+              );
+            })}
         </CardContent>
       </Card>
     );
