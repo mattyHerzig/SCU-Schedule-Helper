@@ -26,7 +26,9 @@ export default function FriendCoursesTooltip({ friendData }) {
               color="text.primary"
               gutterBottom
             >
-              {friendData.friendInterestedInfos.length}{" "}
+              <span style={{ fontWeight: "bold" }}>
+                {friendData.friendInterestedInfos.length}{" "}
+              </span>
               {friendData.friendInterestedInfos.length === 1
                 ? "friend "
                 : "friends "}
@@ -55,7 +57,9 @@ export default function FriendCoursesTooltip({ friendData }) {
               color="text.primary"
               gutterBottom
             >
-              {friendData.friendTakenInfos.length}{" "}
+              <span style={{ fontWeight: "bold" }}>
+                {friendData.friendTakenInfos.length}{" "}
+              </span>
               {friendData.friendTakenInfos.length === 1
                 ? "friend "
                 : "friends "}

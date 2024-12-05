@@ -22,7 +22,6 @@ const ProfCourseCard = ({ selected, data }) => {
     const getRMPrating = async () => {
       setIsLoadingRmp(true);
       try {
-
         const rmpRating = await new Promise((resolve, reject) => {
           chrome.runtime.sendMessage(
             { type: "getRmpRatings", profName: selected.id },
@@ -68,12 +67,11 @@ const ProfCourseCard = ({ selected, data }) => {
 
           for (const course of courses) {
             const match = course.match(courseTakenPattern);
-            if (match) {
-              const courseCode = match[2]
-                .substring(0, match[2].indexOf("-"))
-                .replace(" ", "");
-              friendTakenInfos.push(`${friendName} had for ${courseCode}`);
-            }
+            if (!match) continue;
+            const courseCode = match[2]
+              .substring(0, match[2].indexOf("-"))
+              .replace(" ", "");
+            friendTakenInfos.push(`${friendName} had for ${courseCode}`);
           }
         }
         for (const friendId in friendData.friendInterestedSections?.[
@@ -84,16 +82,15 @@ const ProfCourseCard = ({ selected, data }) => {
             friendData.friendInterestedSections[selected.id][friendId];
           for (const section of sections) {
             const match = section.match(interestedSectionPattern);
+            if (!match) continue;
             const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
             const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
-            if (match) {
-              const courseCode = match[2]
-                .substring(0, match[2].indexOf("-"))
-                .replace(" ", "");
-              friendInterestedInfos.push(
-                `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
-              );
-            }
+            const courseCode = match[2]
+              .substring(0, match[2].indexOf("-"))
+              .replace(" ", "");
+            friendInterestedInfos.push(
+              `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
+            );
           }
         }
       } else {
@@ -102,11 +99,10 @@ const ProfCourseCard = ({ selected, data }) => {
           const friendName = friendData.friends[friendId].name;
           const course = friendData.friendCoursesTaken[selected.id][friendId];
           const match = course.match(courseTakenPattern);
-          if (match) {
-            friendTakenInfos.push(
-              `${friendName} took with ${match[1] || "unknown prof"}`,
-            );
-          }
+          if (!match) continue;
+          friendTakenInfos.push(
+            `${friendName} took with ${match[1] || "unknown prof"}`,
+          );
         }
         for (const friendId in friendData.friendInterestedSections?.[
           selected.id
@@ -115,13 +111,12 @@ const ProfCourseCard = ({ selected, data }) => {
           const course =
             friendData.friendInterestedSections[selected.id][friendId];
           const match = course.match(interestedSectionPattern);
+          if (!match) continue;
           const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
           const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
-          if (match) {
-            friendInterestedInfos.push(
-              `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
-            );
-          }
+          friendInterestedInfos.push(
+            `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
+          );
         }
       }
 

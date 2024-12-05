@@ -32,13 +32,13 @@ const processButton = (button, index) => {
     if (popup) {
       const table = popup.querySelector("table");
       const rows = table.querySelectorAll("td");
-      // course name : 0, prof: 5
       const courseName = rows[0].innerText.trim();
       let professor = rows[5].innerText.trim();
       const profIndexOfPipe = professor.indexOf("|");
       if (profIndexOfPipe !== -1) {
         professor = professor.substring(0, profIndexOfPipe).trim();
       }
+      professor = professor.replace("\n\n\n", " & ");
       const academicPeriodEl = selectByTextContent(
         popup,
         "label",
@@ -71,7 +71,6 @@ const processButton = (button, index) => {
       closeButton.dispatchEvent(clickEvent);
     }
     await waitForSelectorGone(".wd-popup");
-    // Resolve the promise to indicate this button's processing is complete
     resolve();
   });
 };

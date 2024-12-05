@@ -46,6 +46,10 @@ export default function Friends() {
                       const courseMatch = encodedCourse.match(
                         /P{(.*?)}S{(.*?)}M{(.*?)}/,
                       );
+                      if(!courseMatch) {
+                        console.error("Error parsing interested course:", encodedCourse);
+                        return null;
+                      }
                       const meetingPatternMatch =
                         courseMatch[3].match(/(.*) \| (.*) \| (.*)/);
                       const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
