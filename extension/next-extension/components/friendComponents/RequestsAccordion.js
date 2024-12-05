@@ -48,6 +48,7 @@ const transformUserToCourses = (user) => {
 export default function RequestsAccordion({
   requestsIn = [],
   requestsOut = [],
+  onError = () => {},
 }) {
   const [transformedRequestsIn, setTransformedRequestsIn] =
     useState(requestsIn);
@@ -97,7 +98,7 @@ export default function RequestsAccordion({
   const handleAcceptRequest = async (event, request) => {
     event.stopPropagation();
     try {
-      await chrome.runtime.sendMessage({
+      const updateError = await chrome.runtime.sendMessage({
         type: "updateUser",
         updateItems: {
           friends: {
@@ -105,6 +106,9 @@ export default function RequestsAccordion({
           },
         },
       });
+      if (updateError) {
+        onError(updateError);
+      }
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
@@ -115,7 +119,7 @@ export default function RequestsAccordion({
     const key =
       request.type == "incoming" ? "removeIncoming" : "removeOutgoing";
     try {
-      await chrome.runtime.sendMessage({
+      const updateError = await chrome.runtime.sendMessage({
         type: "updateUser",
         updateItems: {
           friendRequests: {
@@ -123,6 +127,9 @@ export default function RequestsAccordion({
           },
         },
       });
+      if (updateError) {
+        onError(updateError);
+      }
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }

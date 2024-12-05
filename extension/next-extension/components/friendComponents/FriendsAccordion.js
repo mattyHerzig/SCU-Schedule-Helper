@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -18,13 +18,97 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import FriendCourseDetails from "./FriendCourseDetails.js";
 
-const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
+export default function FriendsAccordion({ friends = [], onError = () => {} }) {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null);
+  const [transformedFriends, setTransformedFriends] = useState([]);
+
+  useEffect(() => {
+    console.log("Friends:", friends);
+    const transformedFriends = friends.map((profile) => {
+      return {
+        ...profile,
+        expanded: false,
+        courses: {
+          interested:
+            Object.keys(profile.interestedSections)
+              .map((encodedCourse) => {
+                const courseMatch = encodedCourse.match(
+                  /P{(.*?)}S{(.*?)}M{(.*?)}/,
+                );
+                if (!courseMatch) {
+                  console.error(
+                    "Error parsing interested course:",
+                    encodedCourse,
+                  );
+                  return null;
+                }
+                const meetingPatternMatch =
+                  courseMatch[3].match(/(.*) \| (.*) \| (.*)/);
+                const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+                const indexOfDash = courseMatch[2].indexOf("-");
+                let indexOfEnd = courseMatch[2].indexOf("(-)");
+                if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
+                const courseCode = courseMatch[2]
+                  .substring(0, indexOfDash)
+                  .replace(" ", "");
+                const professor = courseMatch[1];
+                const courseName = courseMatch[2]
+                  .substring(indexOfDash + 1, indexOfEnd)
+                  .trim();
+                return courseMatch
+                  ? {
+                      courseCode,
+                      courseName,
+                      professor,
+                      meetingPattern,
+                    }
+                  : null;
+              })
+              .filter(Boolean) || [],
+          taken: profile.coursesTaken
+            ?.map((encodedCourse) => {
+              const courseMatch = encodedCourse.match(
+                /P{(.*?)}C{(.*?)}T{(.*?)}/,
+              );
+              if (!courseMatch) return null;
+              const firstDash = courseMatch[2].indexOf("-");
+              let secondDash = courseMatch[2].indexOf("-", firstDash + 1);
+              if (secondDash === -1 || secondDash - firstDash > 5) {
+                secondDash = firstDash;
+              }
+              let indexOfEnd = courseMatch[2].indexOf("(-)");
+              if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
+              const courseCode = courseMatch[2]
+                .substring(0, firstDash)
+                .replace(" ", "");
+              const professor = courseMatch[1] || "unknown";
+              const courseName = courseMatch[2]
+                .substring(secondDash + 1, indexOfEnd)
+                .trim();
+              return courseMatch
+                ? {
+                    courseCode,
+                    courseName,
+                    professor,
+                    quarter: courseMatch[3],
+                  }
+                : null;
+            })
+            .sort(mostRecentTermFirst),
+        },
+      };
+    });
+    console.log("Transformed Friends:", transformedFriends);
+    transformedFriends.map((friend) => {
+      console.log("friend courses" + JSON.stringify(friend.courses));
+    });
+    setTransformedFriends(transformedFriends);
+  }, [friends]);
 
   const handleAccordionChange = (id) => {
-    setFriends(
-      friends.map((friend) => ({
+    setTransformedFriends(
+      transformedFriends.map((friend) => ({
         ...friend,
         expanded: friend.id === id ? !friend.expanded : friend.expanded,
       })),
@@ -40,20 +124,21 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
   const handleConfirmRemoveFriend = async () => {
     if (friendToRemove) {
       try {
-        await chrome.runtime.sendMessage({
+        const updateError = await chrome.runtime.sendMessage({
           type: "updateUser",
           updateItems: {
             friends: {
-              remove: [friendToRemove]
-            }
-          }
+              remove: [friendToRemove],
+            },
+          },
         });
-
-        setFriends(friends.filter((friend) => friend.id !== friendToRemove));
+        if (updateError) {
+          onError(updateError);
+        }
         setOpenConfirmDialog(false);
         setFriendToRemove(null);
       } catch (error) {
-        console.error('Error removing friend:', error);
+        console.error("Error removing friend:", error);
       }
     }
   };
@@ -63,14 +148,12 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
     setFriendToRemove(null);
   };
 
-
-
   return (
     <Box sx={{ width: "100%" }}>
-        <Typography variant="h6" gutterBottom sx={{ fontSize: "1.25rem" }}>
+      <Typography variant="h6" gutterBottom sx={{ fontSize: "1.25rem" }}>
         Friends
       </Typography>
-      {friends.map((friend) => (
+      {transformedFriends.map((friend) => (
         <Accordion
           key={friend.id}
           expanded={friend.expanded}
@@ -95,14 +178,14 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
               },
             }}
           >
-            <Stack 
-              direction="row" 
-              spacing={2} 
+            <Stack
+              direction="row"
+              spacing={2}
               alignItems="center"
-              sx={{ width: '100%' }}
+              sx={{ width: "100%" }}
             >
-              <Avatar 
-                src={friend.photoUrl} 
+              <Avatar
+                src={friend.photoUrl}
                 alt={friend.name}
                 sx={{ width: 40, height: 40 }}
               />
@@ -149,9 +232,9 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
           <Button onClick={handleCancelRemoveFriend} color="primary">
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirmRemoveFriend} 
-            color="error" 
+          <Button
+            onClick={handleConfirmRemoveFriend}
+            color="error"
             variant="contained"
             autoFocus
           >
@@ -161,36 +244,21 @@ const FriendsAccordion = ({ friends = [], setFriends = () => {} }) => {
       </Dialog>
     </Box>
   );
-};
+}
 
-FriendsAccordion.propTypes = {
-  friends: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      email: PropTypes.string.isRequired,
-      profilePicture: PropTypes.string,
-      courses: PropTypes.shape({
-        interested: PropTypes.arrayOf(
-          PropTypes.shape({
-            courseCode: PropTypes.string.isRequired,
-            courseName: PropTypes.string.isRequired,
-            professor: PropTypes.string.isRequired,
-            meetingPattern: PropTypes.string.isRequired
-          })
-        ),
-        taken: PropTypes.arrayOf(
-          PropTypes.shape({
-            courseCode: PropTypes.string.isRequired,
-            courseName: PropTypes.string.isRequired,
-            professor: PropTypes.string.isRequired,
-            quarter: PropTypes.string.isRequired
-          })
-        )
-      }).isRequired
-    })
-  ),
-  setFriends: PropTypes.func,
-};
+function mostRecentTermFirst(objA, objB) {
+  const termA = objA.quarter || "Fall 2000";
+  const termB = objB.quarter || "Fall 2000";
+  const [quarterA, yearA] = termA.split(" ");
+  const [quarterB, yearB] = termB.split(" ");
+  if (yearA === yearB) {
+    return quarterCompareDescending(quarterA, quarterB);
+  } else {
+    return parseInt(yearB) - parseInt(yearA);
+  }
+}
 
-export default FriendsAccordion;
+function quarterCompareDescending(quarterA, quarterB) {
+  const quarters = ["Fall", "Summer", "Spring", "Winter"];
+  return quarters.indexOf(quarterA) - quarters.indexOf(quarterB);
+}
