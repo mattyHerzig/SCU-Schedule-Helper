@@ -32,7 +32,7 @@ const FriendCourseDetails = ({ courses }) => {
                       {course.courseCode} - {course.courseName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Prof. {course.professor} | {course.quarter}
+                      Prof. {course.professor} | {course.meetingPattern}
                     </Typography>
                   </Stack>
                   {index < courses.interested.length - 1 && <Divider />}

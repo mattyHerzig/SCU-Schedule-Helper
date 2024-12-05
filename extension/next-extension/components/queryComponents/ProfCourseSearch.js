@@ -70,8 +70,6 @@ export default function ProfCourseSearch() {
           });
         }
       });
-
-      console.log("Final search options:", options);
     } catch (err) {
       console.error("Error processing search options:", err);
     }

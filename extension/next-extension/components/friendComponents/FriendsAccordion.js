@@ -176,7 +176,7 @@ FriendsAccordion.propTypes = {
             courseCode: PropTypes.string.isRequired,
             courseName: PropTypes.string.isRequired,
             professor: PropTypes.string.isRequired,
-            quarter: PropTypes.string.isRequired
+            meetingPattern: PropTypes.string.isRequired
           })
         ),
         taken: PropTypes.arrayOf(

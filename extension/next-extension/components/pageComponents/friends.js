@@ -34,70 +34,76 @@ export default function Friends() {
         setRequestsOut(Object.values(friendRequestsOut));
         setRequestsIn(Object.values(friendRequestsIn));
         // Transform friends data
-        const transformedFriends = Object.entries(friends || {}).map(
-          ([id, profile]) => ({
-            id,
-            ...profile,
-            expanded: false,
-            courses: {
-              interested:
-                profile.interestedSections
+        const transformedFriends = Object.values(friends || {}).map(
+          (profile) => {
+            return {
+              ...profile,
+              expanded: false,
+              courses: {
+                interested:
+                  Object.keys(profile.interestedSections)
+                    .map((encodedCourse) => {
+                      const courseMatch = encodedCourse.match(
+                        /P{(.*?)}S{(.*?)}M{(.*?)}/,
+                      );
+                      const meetingPatternMatch =
+                        courseMatch[3].match(/(.*) \| (.*) \| (.*)/);
+                      const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+                      const indexOfDash = courseMatch[2].indexOf("-");
+                      let indexOfEnd = courseMatch[2].indexOf("(-)");
+                      if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
+                      const courseCode = courseMatch[2]
+                        .substring(0, indexOfDash)
+                        .replace(" ", "");
+                      const professor = courseMatch[1];
+                      const courseName = courseMatch[2]
+                        .substring(indexOfDash + 1, indexOfEnd)
+                        .trim();
+                      return courseMatch
+                        ? {
+                            courseCode,
+                            courseName,
+                            professor,
+                            meetingPattern,
+                          }
+                        : null;
+                    })
+                    .filter(Boolean) || [],
+                taken: profile.coursesTaken
                   ?.map((encodedCourse) => {
                     const courseMatch = encodedCourse.match(
-                      /P{(.*?)}S{(.*?)}M{(.*?)}E{(.*?)}/,
+                      /P{(.*?)}C{(.*?)}T{(.*?)}/,
                     );
-                    const indexOfDash = courseMatch[2].indexOf("-");
+                    if (!courseMatch) return null;
+                    const firstDash = courseMatch[2].indexOf("-");
+                    let secondDash = courseMatch[2].indexOf("-", firstDash + 1);
+                    if (secondDash === -1 || secondDash - firstDash > 5) {
+                      secondDash = firstDash;
+                    }
                     let indexOfEnd = courseMatch[2].indexOf("(-)");
                     if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
                     const courseCode = courseMatch[2]
-                      .substring(0, indexOfDash)
+                      .substring(0, firstDash)
                       .replace(" ", "");
-                    const professor = courseMatch[1];
+                    const professor = courseMatch[1] || "unknown";
                     const courseName = courseMatch[2]
-                      .substring(indexOfDash + 1, indexOfEnd)
+                      .substring(secondDash + 1, indexOfEnd)
                       .trim();
                     return courseMatch
                       ? {
                           courseCode,
                           courseName,
                           professor,
+                          quarter: courseMatch[3],
                         }
                       : null;
                   })
-                  .filter(Boolean) || [],
-              taken: profile.coursesTaken
-                ?.map((encodedCourse) => {
-                  const courseMatch = encodedCourse.match(
-                    /P{(.*?)}C{(.*?)}T{(.*?)}/,
-                  );
-                  if (!courseMatch) return null;
-                  const firstDash = courseMatch[2].indexOf("-");
-                  let secondDash = courseMatch[2].indexOf("-", firstDash + 1);
-                  if (secondDash === -1 || secondDash - firstDash > 5) {
-                    secondDash = firstDash;
-                  }
-                  let indexOfEnd = courseMatch[2].indexOf("(-)");
-                  if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
-                  const courseCode = courseMatch[2]
-                    .substring(0, firstDash)
-                    .replace(" ", "");
-                  const professor = courseMatch[1] || "unknown";
-                  const courseName = courseMatch[2]
-                    .substring(secondDash + 1, indexOfEnd)
-                    .trim();
-                  return courseMatch
-                    ? {
-                        courseCode,
-                        courseName,
-                        professor,
-                        quarter: courseMatch[3],
-                      }
-                    : null;
-                })
-                .sort(mostRecentTermFirst),
-            },
-          }),
+                  .sort(mostRecentTermFirst),
+              },
+            };
+          },
         );
+
         setFriends(transformedFriends);
       } catch (error) {
         console.error("Error fetching friend data:", error);
