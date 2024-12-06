@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import AuthWrapper from "./authWrapper";
 import { clearCourseHistory } from "../../../../extension/next-extension/public/service_worker_utils/user.js";
-
+import UserCourseDetails from "../settingsComponents/UserCourseDetails";
 
 export default function Settings() {
   const [userName, setUserName] = useState(null);
@@ -77,7 +77,7 @@ export default function Settings() {
           personal: {
             photo_url: newPhotoUrl || profilePicture,
             name: name || userName,
-            email: email || "placeholder@gmail.com", // Placeholder for now
+            email: email || "placeholder@gmail.com", 
           },
         },
         allowLocalOnly: true,
@@ -118,8 +118,8 @@ export default function Settings() {
   };
 
   const cancelEditing = () => {
-    setEditedName(userName); // Reset edited name to original
-    setIsEditingName(false); // Exit edit mode
+    setEditedName(userName); 
+    setIsEditingName(false);
   };
 
   const handleSignIn = async () => {
@@ -183,18 +183,17 @@ export default function Settings() {
     <AuthWrapper>
       <Box
         sx={{
+          overflow: "auto",
+          padding: 2,
+          boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          overflow: "auto",
         }}
       >
         <Typography variant="h6" sx={{ mb: 2 }}>
           Settings
         </Typography>
-        {/* Name Editing Section */}
+
         {isLoggedIn && (
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
             {isEditingName ? (
@@ -230,7 +229,7 @@ export default function Settings() {
             )}
           </div>
         )}
-        {/* Profile Picture */}
+
         {isLoggedIn && (
           <div style={{ textAlign: "center", marginBottom: "16px" }}>
             <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
@@ -254,7 +253,9 @@ export default function Settings() {
             />
           </div>
         )}
-        {/* Buttons */}
+
+        {isLoggedIn && <UserCourseDetails />}
+
         <Stack spacing={2} sx={{ width: "100%" }}>
           <Button
             variant="contained"
@@ -274,6 +275,10 @@ export default function Settings() {
             </>
           )}
         </Stack>
+
+        {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+        <br />
+        <br />
       </Box>
     </AuthWrapper>
   );

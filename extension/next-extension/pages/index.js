@@ -30,7 +30,6 @@ export default function Home() {
         flexDirection: 'column',
         overflow: 'hidden',
         position: 'relative',
-
       }}
     >
       <Menu navigateToPage={navigateToPage} openLandingPage={openLandingPage} />
@@ -41,6 +40,9 @@ export default function Home() {
           overflowY: "auto",
           overflowX: "hidden",
           width: "100%",
+          position: 'relative',
+          padding: '0 10px', 
+          paddingBottom: '20px', 
         }}
       >
         {activePage === "main" && <Main navigateToPage={navigateToPage} />}
