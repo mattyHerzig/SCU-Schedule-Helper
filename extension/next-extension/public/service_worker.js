@@ -57,6 +57,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
 
+  if (request.type === "replacePhoto") {
+    const { photoUrl, isDefault } = request; 
+    const updateItems = {
+      personal: {
+        photoUrl: isDefault
+          ? "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png"
+          : photoUrl,
+      },
+    };
+
+    updateUser(updateItems)
+      .then((response) => {
+        if (response) {
+          sendResponse(response);
+        } else {
+          refreshUserData(["personal"]).then(() => {
+            sendResponse({ success: true });
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error replacing photo:", error);
+        sendResponse({ success: false, error: error.message });
+      });
+
+    return true; 
+  }
+
   switch (request) {
     case "settingsChanged":
       chrome.tabs.query({}, (tabs) => {
@@ -110,6 +138,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return true;
 });
+
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
