@@ -11,7 +11,6 @@ export const dynamoClient = new DynamoDBClient({
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
-  console.log(event);
   if (!event.userId) {
     throw new Error("userId is required");
   }

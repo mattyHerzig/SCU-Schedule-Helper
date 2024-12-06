@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import FriendCourseDetails from "../friendComponents/FriendCourseDetails"; 
+import FriendCourseDetails from "../friendComponents/FriendCourseDetails";
 
 export default function UserCourseDetails() {
   const [userCourses, setUserCourses] = useState({
     interested: [],
     taken: [],
   });
+  const [transformedUserCourses, setTransformedUserCourses] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
@@ -24,16 +25,17 @@ export default function UserCourseDetails() {
             console.error("Error parsing interested course:", encodedCourse);
             return null;
           }
-          const meetingPatternMatch = courseMatch[3].match(/(.*) \| (.*) \| (.*)/);
+          const meetingPatternMatch =
+            courseMatch[3].match(/(.*) \| (.*) \| (.*)/);
           const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2]
             .replaceAll(" ", "")
             .replaceAll(":00", "")
             .toLowerCase()}`;
-          
+
           const indexOfDash = courseMatch[2].indexOf("-");
           let indexOfEnd = courseMatch[2].indexOf("(-)");
           if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
-          
+
           const courseCode = courseMatch[2]
             .substring(0, indexOfDash)
             .replace(" ", "");
@@ -41,7 +43,7 @@ export default function UserCourseDetails() {
           const courseName = courseMatch[2]
             .substring(indexOfDash + 1, indexOfEnd)
             .trim();
-          
+
           return courseMatch
             ? {
                 courseCode,
@@ -56,20 +58,20 @@ export default function UserCourseDetails() {
 
     // Function to transform taken courses
     const transformTakenCourses = (coursesTaken) => {
-      return (coursesTaken || [])
+      return coursesTaken
         .map((encodedCourse) => {
           const courseMatch = encodedCourse.match(/P{(.*?)}C{(.*?)}T{(.*?)}/);
           if (!courseMatch) return null;
-          
+
           const firstDash = courseMatch[2].indexOf("-");
           let secondDash = courseMatch[2].indexOf("-", firstDash + 1);
           if (secondDash === -1 || secondDash - firstDash > 5) {
             secondDash = firstDash;
           }
-          
+
           let indexOfEnd = courseMatch[2].indexOf("(-)");
           if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
-          
+
           const courseCode = courseMatch[2]
             .substring(0, firstDash)
             .replace(" ", "");
@@ -77,7 +79,6 @@ export default function UserCourseDetails() {
           const courseName = courseMatch[2]
             .substring(secondDash + 1, indexOfEnd)
             .trim();
-          
           return courseMatch
             ? {
                 courseCode,
@@ -91,15 +92,28 @@ export default function UserCourseDetails() {
         .sort(mostRecentTermFirst);
     };
 
-    // Fetch user courses from Chrome storage
+    const transformedSections = transformInterestedSections(
+      userCourses.interested,
+    );
+    const transformedCourses = transformTakenCourses(userCourses.taken);
+    setTransformedUserCourses({
+      interested: transformedSections,
+      taken: transformedCourses,
+    });
+  }, [userCourses]);
+
+  useEffect(() => {
     const fetchUserCourses = async () => {
       try {
         const { userInfo } = await chrome.storage.local.get("userInfo");
-        
+
         if (userInfo) {
+          userInfo.coursesTaken = userInfo.coursesTaken.filter(
+            (course) => course,
+          );
           setUserCourses({
-            interested: transformInterestedSections(userInfo.interestedSections || {}),
-            taken: transformTakenCourses(userInfo.coursesTaken || []),
+            interested: userInfo.interestedSections || {},
+            taken: userInfo.coursesTaken || [],
           });
         }
       } catch (error) {
@@ -108,6 +122,11 @@ export default function UserCourseDetails() {
     };
 
     fetchUserCourses();
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === "local" && changes.userInfo) {
+        fetchUserCourses();
+      }
+    });
   }, []);
 
   // Utility function for sorting taken courses (same as in FriendsAccordion)
@@ -129,13 +148,16 @@ export default function UserCourseDetails() {
   }
 
   // Only render if there are courses to show
-  if (!userCourses.interested.length && !userCourses.taken.length) {
+  if (
+    !transformedUserCourses.interested.length &&
+    !transformedUserCourses.taken.length
+  ) {
     return null;
   }
 
   return (
-    <Accordion 
-      expanded={isExpanded} 
+    <Accordion
+      expanded={isExpanded}
       onChange={() => setIsExpanded(!isExpanded)}
       sx={{
         mb: 2,
@@ -152,7 +174,7 @@ export default function UserCourseDetails() {
         <Typography variant="subtitle1">My Courses</Typography>
       </AccordionSummary>
       <AccordionDetails>
-        <FriendCourseDetails courses={userCourses} />
+        <FriendCourseDetails courses={transformedUserCourses} />
       </AccordionDetails>
     </Accordion>
   );

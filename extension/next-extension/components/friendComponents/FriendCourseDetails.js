@@ -9,7 +9,6 @@ const FriendCourseDetails = ({
     taken: [],
   },
 }) => {
-  console.log(JSON.stringify(courses));
   return (
     <Card variant="outlined" sx={{ width: "100%", mt: 2 }}>
       <CardContent>

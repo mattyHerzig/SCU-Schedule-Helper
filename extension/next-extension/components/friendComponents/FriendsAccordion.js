@@ -24,7 +24,6 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
   const [transformedFriends, setTransformedFriends] = useState([]);
 
   useEffect(() => {
-    console.log("Friends:", friends);
     const transformedFriends = friends.map((profile) => {
       return {
         ...profile,
@@ -99,9 +98,7 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
         },
       };
     });
-    console.log("Transformed Friends:", transformedFriends);
     transformedFriends.map((friend) => {
-      console.log("friend courses" + JSON.stringify(friend.courses));
     });
     setTransformedFriends(transformedFriends);
   }, [friends]);

@@ -232,7 +232,6 @@ chrome.storage.local.get(
     friendInterestedSections = data.friendInterestedSections || {};
     friendCoursesTaken = data.friendCoursesTaken || {};
     friends = data.friends || {};
-    console.log("Loaded User Preferences:", userInfo.preferences);
     await checkForGrid();
 
     const observer = new MutationObserver(checkForGrid);

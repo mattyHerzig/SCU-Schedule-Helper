@@ -402,7 +402,7 @@ export async function importCourseHistory() {
 
 export async function clearCourseHistory() {
   const currentCoursesTaken =
-    (await chrome.storage.local.get("userInfo")).userInfo?.coursesTaken || [];
+    (await chrome.storage.local.get("userInfo")).userInfo.coursesTaken || [];
   const errorUpdatingUser = await updateUser({
     coursesTaken: { remove: currentCoursesTaken },
   });
