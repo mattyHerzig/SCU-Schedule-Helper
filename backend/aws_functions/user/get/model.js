@@ -18,7 +18,7 @@ export class UserFriendProfile {
     this.name = "";
     this.photoUrl = "";
     this.coursesTaken = [];
-    this.interestedSections = [];
+    this.interestedSections = {};
   }
 }
 

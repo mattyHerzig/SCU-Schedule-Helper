@@ -7,7 +7,7 @@ export default function ProfCourseSearch() {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(""); // To store the search query
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkEvals();
@@ -70,8 +70,6 @@ export default function ProfCourseSearch() {
           });
         }
       });
-
-      console.log("Final search options:", options);
     } catch (err) {
       console.error("Error processing search options:", err);
     }
@@ -162,5 +160,3 @@ export default function ProfCourseSearch() {
     </Box>
   );
 }
-
-

@@ -3,6 +3,7 @@ import {
   DynamoDBClient,
   GetItemCommand,
   QueryCommand,
+  UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
 
 const ddbClient = new DynamoDBClient({ region: process.env.AWS_DDB_REGION });
@@ -14,6 +15,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY,
 );
 
+let badUserEndpoints = {};
 export async function handler(event, context) {
   if (!event.senderId) {
     throw new Error("sending user id is required");
@@ -73,9 +75,14 @@ async function sendNotifications(senderId, senderInfo, notifications) {
     );
   }
   if (notifications.forSelf) {
-    // If the user only has one subscription, don't send them a notification as they are already aware of the update.
-    const contextualUserSubscriptions =
-      senderInfo?.selfSubs || (await getSubscriptions(senderId));
+    let contextualUserSubscriptions = [];
+    if (senderInfo?.selfSubs)
+      contextualUserSubscriptions = senderInfo.selfSubs.map((sub) => ({
+        data: sub,
+        userId: senderId,
+      }));
+    else contextualUserSubscriptions = await getSubscriptions(senderId);
+
     if (contextualUserSubscriptions.length > 1) {
       notificationsToSend.push(
         ...sendToSubs(contextualUserSubscriptions, notifications.forSelf),
@@ -83,6 +90,13 @@ async function sendNotifications(senderId, senderInfo, notifications) {
     }
   }
   await Promise.all(notificationsToSend);
+  const subscriptionUpdates = [];
+  for (const userWithBadSubs in badUserEndpoints) {
+    subscriptionUpdates.push(
+      deleteSubscriptions(userWithBadSubs, badUserEndpoints[userWithBadSubs]),
+    );
+  }
+  await Promise.all(subscriptionUpdates);
 }
 
 async function pushToUsers(userIds, notification) {
@@ -98,10 +112,63 @@ function sendToSubs(subscriptions, notification) {
   const notificationsToSend = [];
   for (const subscription of subscriptions) {
     notificationsToSend.push(
-      webpush.sendNotification(subscription, JSON.stringify(notification)),
+      webpush
+        .sendNotification(subscription.data, JSON.stringify(notification))
+        .catch((error) => {
+          console.error(
+            `Error sending notification to ${subscription.userId}:`,
+            error,
+          );
+          if (error.statusCode === 410) {
+            const badEndpointsForUser =
+              badUserEndpoints[subscription.userId] || [];
+            badEndpointsForUser.push(subscription.data.endpoint);
+            badUserEndpoints[subscription.userId] = badEndpointsForUser;
+          }
+        }),
     );
   }
   return notificationsToSend;
+}
+
+async function deleteSubscriptions(userId, badEndpointsArr) {
+  const badEndpoints = new Set(badEndpointsArr);
+  const command = new GetItemCommand({
+    TableName: process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME,
+    Key: {
+      pk: { S: `u#${userId}` },
+      sk: { S: `info#personal` },
+    },
+  });
+  const response = await ddbClient.send(command);
+  if (
+    !response ||
+    !response.Item ||
+    !response.Item.subscriptions ||
+    !response.Item.subscriptions.SS
+  ) {
+    return;
+  }
+  const currentSubs = response.Item.subscriptions.SS;
+  const updatedSubscriptions = currentSubs.filter(
+    (sub) => !badEndpoints.has(JSON.parse(sub).endpoint),
+  );
+  const updatedSubscriptionsObj =
+    updatedSubscriptions.length > 0
+      ? { SS: updatedSubscriptions }
+      : { NULL: true };
+  const updateParams = {
+    TableName: process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME,
+    Key: {
+      pk: { S: `u#${userId}` },
+      sk: { S: `info#personal` },
+    },
+    UpdateExpression: "SET subscriptions = :subscriptions",
+    ExpressionAttributeValues: {
+      ":subscriptions": updatedSubscriptionsObj,
+    },
+  };
+  await ddbClient.send(new UpdateItemCommand(updateParams));
 }
 
 async function getFriendIds(userId) {
@@ -158,12 +225,13 @@ async function getSubscriptions(userId) {
     !personalInfo.Item.subscriptions ||
     !personalInfo.Item.subscriptions.SS
   ) {
-    throw new Error(`No subscriptions found for user ${userId}`);
+    console.warn(`No subscriptions found for user: ${userId}`);
+    return [];
   }
 
   const subscriptions = [];
   for (const subscription of personalInfo.Item.subscriptions.SS) {
-    subscriptions.push(JSON.parse(subscription));
+    subscriptions.push({ data: JSON.parse(subscription), userId });
   }
   return subscriptions;
 }

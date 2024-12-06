@@ -19,7 +19,6 @@ const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
   try {
-    console.log(JSON.stringify(event, null, 2));
     if (
       !event.queryStringParameters.u ||
       !event.queryStringParameters.sub ||
@@ -39,10 +38,6 @@ export async function handler(event, context) {
     const updatedSubscriptions = subscriptions.filter(
       (sub) => JSON.parse(sub).endpoint !== event.queryStringParameters.sub,
     );
-    for (const sub of subscriptions) {
-      console.log("Subscription:", JSON.stringify(JSON.parse(sub), null, 2));
-    }
-    console.log("Updated subscriptions:", updatedSubscriptions);
     const updatedSubscriptionsObj =
       updatedSubscriptions.length > 0
         ? { SS: updatedSubscriptions }

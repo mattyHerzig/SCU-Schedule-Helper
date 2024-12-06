@@ -6,19 +6,22 @@ import {
   Box,
   CircularProgress,
   Divider,
+  Tooltip,
 } from "@mui/material";
+import FriendCoursesTooltip from "./FriendCoursesTooltip";
+
+export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
+export const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 
 const ProfCourseCard = ({ selected, data }) => {
   if (!selected) return null;
   const [rmpData, setRmpData] = useState(null);
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
-
+  const [friendData, setFriendData] = useState(null);
   useEffect(() => {
     const getRMPrating = async () => {
       setIsLoadingRmp(true);
       try {
-        console.log("Attempting to fetch RMP ratings for:", selected.id);
-
         const rmpRating = await new Promise((resolve, reject) => {
           chrome.runtime.sendMessage(
             { type: "getRmpRatings", profName: selected.id },
@@ -45,6 +48,91 @@ const ProfCourseCard = ({ selected, data }) => {
     } else {
       setIsLoadingRmp(false);
     }
+  }, [selected]);
+
+  useEffect(() => {
+    const fetchFriendData = async () => {
+      const friendData = await chrome.storage.local.get([
+        "friendCoursesTaken",
+        "friendInterestedSections",
+        "friends",
+      ]);
+      const friendTakenInfos = [];
+      const friendInterestedInfos = [];
+      if (selected.type === "prof") {
+        for (const friendId in friendData.friendCoursesTaken?.[selected.id] ||
+          {}) {
+          const friendName = friendData.friends[friendId].name;
+          const courses = friendData.friendCoursesTaken[selected.id][friendId];
+
+          for (const course of courses) {
+            const match = course.match(courseTakenPattern);
+            if (!match) continue;
+            const courseCode = match[2]
+              .substring(0, match[2].indexOf("-"))
+              .replace(" ", "");
+            friendTakenInfos.push(`${friendName} had for ${courseCode}`);
+          }
+        }
+        for (const friendId in friendData.friendInterestedSections?.[
+          selected.id
+        ] || {}) {
+          const friendName = friendData.friends[friendId].name;
+          const sections =
+            friendData.friendInterestedSections[selected.id][friendId];
+          for (const section of sections) {
+            const match = section.match(interestedSectionPattern);
+            if (!match) continue;
+            const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
+            const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+            const courseCode = match[2]
+              .substring(0, match[2].indexOf("-"))
+              .replace(" ", "");
+            friendInterestedInfos.push(
+              `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
+            );
+          }
+        }
+      } else {
+        for (const friendId in friendData.friendCoursesTaken?.[selected.id] ||
+          {}) {
+          const friendName = friendData.friends[friendId].name;
+          const course = friendData.friendCoursesTaken[selected.id][friendId];
+          const match = course.match(courseTakenPattern);
+          if (!match) continue;
+          friendTakenInfos.push(
+            `${friendName} took with ${match[1] || "unknown prof"}`,
+          );
+        }
+        for (const friendId in friendData.friendInterestedSections?.[
+          selected.id
+        ] || {}) {
+          const friendName = friendData.friends[friendId].name;
+          const course =
+            friendData.friendInterestedSections[selected.id][friendId];
+          const match = course.match(interestedSectionPattern);
+          if (!match) continue;
+          const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
+          const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+          friendInterestedInfos.push(
+            `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
+          );
+        }
+      }
+
+      setFriendData({ friendTakenInfos, friendInterestedInfos });
+    };
+    fetchFriendData();
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (
+        namespace === "local" &&
+        (changes.friendCoursesTaken ||
+          changes.friendInterestedSections ||
+          changes.friends)
+      ) {
+        fetchFriendData();
+      }
+    });
   }, [selected]);
 
   const getColor = (rating, type) => {
@@ -209,6 +297,8 @@ const ProfCourseCard = ({ selected, data }) => {
             {selected.id}
           </Typography>
 
+          <FriendCoursesTooltip friendData={friendData} />
+
           {selected.overall && (
             <>
               <Typography variant="subtitle1" gutterBottom>
@@ -217,9 +307,7 @@ const ProfCourseCard = ({ selected, data }) => {
               {renderEvalStats(selected.overall)}
             </>
           )}
-
           {renderRMPStats()}
-
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
             Course Statistics:
           </Typography>
@@ -271,6 +359,8 @@ const ProfCourseCard = ({ selected, data }) => {
             Recent Terms: {selected.recentTerms.join(", ")}
           </Typography>
 
+          <FriendCoursesTooltip friendData={friendData} />
+
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
             Course Overall Statistics:
           </Typography>
@@ -280,43 +370,49 @@ const ProfCourseCard = ({ selected, data }) => {
             Professor-Specific Course Statistics:
           </Typography>
 
-          {selected.professors.map((profName) => {
-            const profEntry = Object.entries(data).find(
-              ([key, value]) => value.type === "prof" && key === profName,
-            );
-
-            if (!profEntry) return null;
-
-            const [profId, profData] = profEntry;
-            const profCourseStats = profData[selected.id];
-
-            return (
-              <Box key={profName} sx={{ mt: 2 }}>
-                <Typography variant="body1" gutterBottom>
-                  {profName}
-                </Typography>
-
-                {profCourseStats?.recentTerms && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ px: 2, mt: 1, mb: 2 }}
-                  >
-                    Quarters Taught: {profCourseStats.recentTerms.join(", ")}
+          {selected.professors
+            .map((profName) => [profName, data[profName][selected.id]])
+            .sort((objA, objB) => {
+              const ratingA = objA[1];
+              const ratingB = objB[1];
+              const scoreA =
+                ratingA.qualityAvg +
+                (5 - ratingA.difficultyAvg) +
+                (15 - ratingA.workloadAvg);
+              const scoreB =
+                ratingB.qualityAvg +
+                (5 - ratingB.difficultyAvg) +
+                (15 - ratingB.workloadAvg);
+              return scoreB - scoreA; // Sort by descending score.
+            })
+            .map(([profName, profCourseStats]) => {
+              return (
+                <Box key={profName} sx={{ mt: 2 }}>
+                  <Typography variant="body1" gutterBottom>
+                    {profName}
                   </Typography>
-                )}
-                {profCourseStats ? (
-                  renderEvalStats(profCourseStats)
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No specific course statistics available for this professor
-                  </Typography>
-                )}
 
-                <Divider sx={{ my: 3 }} />
-              </Box>
-            );
-          })}
+                  {profCourseStats?.recentTerms && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ px: 2, mt: 1, mb: 2 }}
+                    >
+                      Quarters Taught: {profCourseStats.recentTerms.join(", ")}
+                    </Typography>
+                  )}
+                  {profCourseStats ? (
+                    renderEvalStats(profCourseStats)
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      No specific course statistics available for this professor
+                    </Typography>
+                  )}
+
+                  <Divider sx={{ my: 3 }} />
+                </Box>
+              );
+            })}
         </CardContent>
       </Card>
     );

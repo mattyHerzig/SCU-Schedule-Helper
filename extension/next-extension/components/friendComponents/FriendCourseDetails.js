@@ -1,27 +1,33 @@
-import React from 'react';
-import { Card, CardContent, Typography, Stack, Divider } from '@mui/material';
-import SchoolIcon from '@mui/icons-material/School';
-import BookIcon from '@mui/icons-material/Book';
+import React from "react";
+import { Card, CardContent, Typography, Stack, Divider } from "@mui/material";
+import SchoolIcon from "@mui/icons-material/School";
+import BookIcon from "@mui/icons-material/Book";
 
-const FriendCourseDetails = ({ courses }) => {
+const FriendCourseDetails = ({
+  courses = {
+    interested: [],
+    taken: [],
+  },
+}) => {
+  console.log(JSON.stringify(courses));
   return (
-    <Card variant="outlined" sx={{ width: '100%', mt: 2 }}>
+    <Card variant="outlined" sx={{ width: "100%", mt: 2 }}>
       <CardContent>
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
           spacing={2}
           divider={<Divider orientation="vertical" flexItem />}
         >
           <Stack spacing={1} sx={{ flex: 1 }}>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                fontWeight: 'bold' 
+            <Typography
+              variant="subtitle1"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                fontWeight: "bold",
               }}
             >
-              <SchoolIcon sx={{ mr: 1, color: '#703331' }} />
+              <SchoolIcon sx={{ mr: 1, color: "#703331" }} />
               Interested Courses
             </Typography>
             {courses.interested.length > 0 ? (
@@ -32,7 +38,7 @@ const FriendCourseDetails = ({ courses }) => {
                       {course.courseCode} - {course.courseName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Prof. {course.professor} | {course.quarter}
+                      Prof. {course.professor} | {course.meetingPattern}
                     </Typography>
                   </Stack>
                   {index < courses.interested.length - 1 && <Divider />}
@@ -46,15 +52,15 @@ const FriendCourseDetails = ({ courses }) => {
           </Stack>
 
           <Stack spacing={1} sx={{ flex: 1 }}>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                fontWeight: 'bold' 
+            <Typography
+              variant="subtitle1"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                fontWeight: "bold",
               }}
             >
-              <BookIcon sx={{ mr: 1, color: '#703331' }} />
+              <BookIcon sx={{ mr: 1, color: "#703331" }} />
               Taken Courses
             </Typography>
             {courses.taken.length > 0 ? (

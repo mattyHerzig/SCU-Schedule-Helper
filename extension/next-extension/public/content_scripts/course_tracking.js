@@ -37,6 +37,7 @@ const checkForInterestedSections = function (mutationsList) {
                 // Removes the preferred name.
                 curProf = curProf.slice(0, profIndexOfPipe).trim();
               }
+              curProf = curProf.replace("\n\n\n", " & ");
             }
             if (i % 10 === 9) {
               curMeetingPatterns = data[i].innerText;

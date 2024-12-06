@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -14,167 +14,44 @@ export default function Friends() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [friends, setFriends] = useState([]);
-  const [requests, setRequests] = useState([]);
+  const [requestsIn, setRequestsIn] = useState([]);
+  const [requestsOut, setRequestsOut] = useState([]);
+  const [error, setError] = useState(null);
+  const errorTimeout = useRef(null);
 
-  /* for reference this was the fomrat of the test friends
-  const [friends, setFriends] = useState([
-    {
-      id: 1,
-      name: "Bob",
-      details:
-        "Courses registered next quarter: Math14 with Shruthi Shapiro, CSCI60-2 with Nicholas Tran",
-      id: "user123",
-      name: "Bob Smith",
-      email: "bob.smith@scu.edu",
-      profilePicture: "/path/to/bob-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH14",
-            courseName: "Calculus",
-            professor: "Shruthi Shapiro",
-            quarter: "Fall 2024"
-          },
-          {
-            courseCode: "CSCI60-2",
-            courseName: "Intro to Programming",
-            professor: "Nicholas Tran", 
-            quarter: "Fall 2024"
-          }
-        ],
-        taken: [
-          {
-            courseCode: "CSCI56",
-            courseName: "Data Structures",
-            professor: "John Doe",
-            quarter: "Spring 2024"
-          }
-        ]
+  useEffect(() => {
+    const fetchFriendData = async () => {
+      try {
+        let { friendRequestsIn, friendRequestsOut, friends } =
+          await chrome.storage.local.get([
+            "friendRequestsIn",
+            "friendRequestsOut",
+            "friends",
+          ]);
+
+        friendRequestsIn ||= {};
+        friendRequestsOut ||= {};
+        friends ||= {};
+
+        setRequestsOut(Object.values(friendRequestsOut));
+        setRequestsIn(Object.values(friendRequestsIn));
+        setFriends(Object.values(friends));
+      } catch (error) {
+        console.error("Error fetching friend data:", error);
       }
-    },
-    {
-      id: 2,
-      name: "Jess",
-      details:
-        "Courses registered next quarter: MATH12-1 with Mehdi Ahmadi, CSCI60-1 with Tiantian Chen",
-      id: "user456",
-      name: "Jess Williams",
-      email: "jess.williams@scu.edu",
-      profilePicture: "/path/to/jess-profile.jpg", // Add profile picture path
-      expanded: false,
-    },
-      courses: {
-        interested: [
-          {
-            courseCode: "MATH12-1",
-            courseName: "Linear Algebra",
-            professor: "Mehdi Ahmadi",
-            quarter: "Fall 2024"
-          },
-          {
-            courseCode: "CSCI60-1",
-            courseName: "Programming Fundamentals",
-            professor: "Tiantian Chen",
-            quarter: "Fall 2024"
-          }
-        ],
-        taken: [
-          {
-            courseCode: "CSCI61",
-            courseName: "Algorithms",
-            professor: "Jane Smith", 
-            quarter: "Spring 2024"
-          }
-        ]
-      }
-    }
-  ]);
-  
+    };
 
-  //test requests
-  // Updated requests data structure with profile pictures
-  const [requests, setRequests] = useState([
-    { id: 1, name: "Alice", details: "email: aglass@scu.edu", expanded: false },
-    { id: 2, name: "Tom", details: "email: tford@scu.edu", expanded: false },
-    {
-      id: "request123",
-      name: "Alice Glass",
-      email: "aglass@scu.edu",
-      profilePicture: "/path/to/alice-profile.jpg", // Add profile picture path
-      expanded: false,
-      courses: {
-        interested: [
-          {
-            courseCode: "CSCI65",
-            courseName: "Web Development",
-            professor: "Mark Johnson",
-            quarter: "Fall 2024"
-          }
-        ],
-        taken: [
-          {
-            courseCode: "CSCI60",
-            courseName: "Intro to Computer Science",
-            professor: "Sarah Lee",
-            quarter: "Winter 2024"
-          }
-        ]
-      }
-    },
-
-   */
-
- useEffect(() => {
-  const fetchFriendData = async () => {
-    try {
-      const { friendRequestsIn, friendRequestsOut, friends: friendsList } = 
-        await chrome.storage.local.get([
-          'friendRequestsIn', 
-          'friendRequestsOut', 
-          'friends'
-        ]);
-
-      console.log('Outgoing friend requests:', friendRequestsOut);
-
-      const incomingRequests = Object.entries(friendRequestsIn || {}).map(([id, profile]) => ({
-        id, 
-        ...profile 
-      }));
-      setRequests(incomingRequests);
-
-      // Transform friends data
-      const transformedFriends = Object.entries(friendsList || {}).map(([id, profile]) => ({
-        id,  
-        ...profile, 
-        expanded: false,
-        courses: {
-          interested: profile.interestedSections?.map(encodedCourse => {
-            const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-            return courseMatch ? {
-              courseCode: courseMatch[2] || courseMatch[3],
-              courseName: courseMatch[2] || courseMatch[3],
-              professor: courseMatch[1],
-            } : null;
-          }).filter(Boolean) || [],
-          taken: profile.coursesTaken?.map(encodedCourse => {
-            const courseMatch = encodedCourse.match(/P{([^}]+)}(?:C{([^}]+)}|S{([^}]+)})/);
-            return courseMatch ? {
-              courseCode: courseMatch[2] || courseMatch[3],
-              courseName: courseMatch[2] || courseMatch[3],
-              professor: courseMatch[1],
-            } : null;
-          }).filter(Boolean) || []
-        }
-      }));
-      setFriends(transformedFriends);
-    } catch (error) {
-      console.error('Error fetching friend data:', error);
-    }
-  };
-
-  fetchFriendData();
-}, []);
+    fetchFriendData();
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (
+        namespace === "local" &&
+        (changes.friendRequestsIn ||
+          changes.friendRequestsOut ||
+          changes.friends)
+      )
+        fetchFriendData();
+    });
+  }, []);
 
   const searchUsersByName = async (name) => {
     if (!name || name.length < 1) {
@@ -188,10 +65,10 @@ export default function Friends() {
         type: "queryUserByName",
         name: name,
       });
-      
+
       setUsers(foundUsers || []);
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error("Error searching users:", error);
       setUsers([]);
     } finally {
       setSearchLoading(false);
@@ -199,26 +76,35 @@ export default function Friends() {
   };
 
   const sendFriendRequest = async () => {
-  if (!selectedUser) return;
+    if (!selectedUser) return;
 
-  const message = {
-    type: "updateUser",
-    updateItems: {
-      friendRequests: {
-        send: [selectedUser.id],
+    const message = {
+      type: "updateUser",
+      updateItems: {
+        friendRequests: {
+          send: [selectedUser.id],
+        },
       },
-    },
+    };
+
+    try {
+      const updateError = await chrome.runtime.sendMessage(message);
+      if (updateError) {
+        onError(updateError);
+      }
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+    }
   };
 
-  console.log("Message sent to updateUser:", message);
-
-  try {
-    await chrome.runtime.sendMessage(message);
-    setSelectedUser(null);
-  } catch (error) {
-    console.error("Error sending friend request:", error);
-  }
-};
+  const onError = (message) => {
+    setError(message);
+    if (errorTimeout.current) clearTimeout(errorTimeout.current);
+    errorTimeout.current = setTimeout(() => {
+      setError(null);
+    }, 5000);
+  };
 
   return (
     <AuthWrapper>
@@ -231,6 +117,15 @@ export default function Friends() {
           flexDirection: "column",
         }}
       >
+        <FriendsAccordion
+          friends={friends}
+          onError={onError}
+        />
+        <RequestsAccordion
+          requestsIn={requestsIn}
+          requestsOut={requestsOut}
+          onError={onError}
+        />
         <Box
           sx={{
             flexDirection: "column",
@@ -238,13 +133,13 @@ export default function Friends() {
           }}
         >
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Search user
+            Search Users
           </Typography>
           <Autocomplete
             fullWidth
             options={users}
             loading={searchLoading}
-            getOptionLabel={(option) => `${option.name} (${option.email || option.id + '@scu.edu'})`}
+            getOptionLabel={(option) => `${option.name} (${option.id}@scu.edu)`}
             onInputChange={(_, newInputValue) => {
               searchUsersByName(newInputValue);
             }}
@@ -256,22 +151,26 @@ export default function Friends() {
                 {...params}
                 label="Enter name"
                 variant="outlined"
-                InputProps={{
-                  ...params.InputProps,
-                  endAdornment: (
-                    <>
-                      {searchLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                      {params.InputProps.endAdornment}
-                    </>
-                  ),
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {searchLoading ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": {
-                      borderColor: "#ccc", 
+                      borderColor: "#ccc",
                     },
                     "&:hover fieldset": {
-                      borderColor: "#ccc", 
+                      borderColor: "#ccc",
                     },
                     "&.Mui-focused fieldset": {
                       borderColor: "#703331",
@@ -293,26 +192,25 @@ export default function Friends() {
             )}
             sx={{ mb: 2 }}
           />
-          <Button 
-            variant="contained" 
-            color="primary" 
-            fullWidth 
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
             disabled={!selectedUser}
             onClick={sendFriendRequest}
+            sx={{
+              backgroundColor: "#703331",
+              '&:hover': {
+                backgroundColor: "#5a2c28",
+              }
+            }}
           >
             Send Invite
           </Button>
         </Box>
-
-        <RequestsAccordion
-          requests={requests}
-          setRequests={setRequests}
-          setFriends={setFriends}
-        />
-        <FriendsAccordion 
-          friends={friends} 
-          setFriends={setFriends} 
-        />
+        {error && <Typography color="error">{error}</Typography>}
+        <br />
+        <br />
       </Box>
     </AuthWrapper>
   );

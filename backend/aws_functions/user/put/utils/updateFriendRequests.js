@@ -55,6 +55,14 @@ async function sendFriendRequest(userId, friendId) {
       { cause: 400 },
     );
   }
+  if (await usersAlreadyFriends(userId, friendId)) {
+    console.error(
+      `Error sending friend request to ${friendId} from ${userId}: user ${userId} is already friends with ${friendId}`,
+    );
+    throw new Error(`user ${userId} is already friends with ${friendId}`, {
+      cause: 400,
+    });
+  }
   const outgoingReq = {
     PutRequest: {
       Item: {
@@ -140,6 +148,23 @@ async function userExists(userId) {
       },
       sk: {
         S: "info#personal",
+      },
+    },
+    TableName: tableName,
+  };
+  const command = new GetItemCommand(input);
+  const response = await dynamoClient.send(command);
+  return response.Item;
+}
+
+async function usersAlreadyFriends(userId, friendId) {
+  const input = {
+    Key: {
+      pk: {
+        S: `u#${userId}`,
+      },
+      sk: {
+        S: `friend#cur#${friendId}`,
       },
     },
     TableName: tableName,

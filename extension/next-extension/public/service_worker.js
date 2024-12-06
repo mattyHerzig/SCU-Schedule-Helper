@@ -173,7 +173,6 @@ self.addEventListener("activate", async (event) => {
 });
 
 async function runStartupChecks() {
-  console.log("Running startup checks...");
   const refreshSelfDataDate = (
     await chrome.storage.local.get("refreshSelfDataDate")
   ).refreshSelfDataDate;
@@ -181,7 +180,6 @@ async function runStartupChecks() {
     refreshSelfDataDate === undefined ||
     new Date() > new Date(refreshSelfDataDate)
   ) {
-    console.log("Refreshing self data...");
     await refreshUserData();
     await chrome.storage.local.set({
       refreshSelfDataDate: new Date(
@@ -200,5 +198,63 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.tab) {
       chrome.windows.remove(sender.tab.windowId);
     }
+  }
+});
+
+//functions used by inject
+try {
+  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    if (changeInfo.status === 'complete') {
+      chrome.scripting.executeScript({
+        files: ['inject.js'],
+        target: { tabId: tab.id }
+      });
+    }
+  });
+} catch (e) {
+  console.error('Error in service worker:', e);
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "getCourseEvalRatings") {
+    getCourseEvalRatings(request.profName)
+      .then((rating) => sendResponse(rating))
+      .catch((error) => {
+        console.error("CourseEval Query Error:", error);
+        sendResponse(null);
+      });
+    return true;
+  }
+});
+
+// Function to get overall average difficulty for a profe
+// Handling the message to retrieve average difficulty
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "getProfessorAvgDifficulty") {
+    const professorName = request.professorName;
+    console.log("Fetching difficulty for professor:", professorName);
+
+    // Retrieve data from chrome.storage
+    chrome.storage.local.get("data", (result) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error retrieving data from storage:", chrome.runtime.lastError);
+        sendResponse({ error: chrome.runtime.lastError });
+        return;
+      }
+      
+      const data = result.data || {};
+      const professorData = data[professorName];
+
+      if (professorData && professorData.overall) {
+        console.log("Professor data found:", professorData);
+        sendResponse({
+          avgDifficulty: professorData.overall.difficultyAvg,
+        });
+      } else {
+        console.warn("Professor data not found:", professorName);
+        sendResponse({ error: "Professor data not found." });
+      }
+    });
+    return true; // Keep the message channel open until we respond
   }
 });

@@ -20,8 +20,17 @@ export async function refreshUserData(items = []) {
 
   if (items.includes("friends") || items.length === 0) {
     const friends = {};
+    await chrome.storage.local.set({
+      friendCoursesTaken: {},
+      friendInterestedSections: {},
+    });
     for (const friendObj of data.friends) {
       friends[friendObj.id] = friendObj;
+      await updateFriendCourseAndSectionIndexes(
+        friendObj.id,
+        friendObj.coursesTaken,
+        friendObj.interestedSections,
+      );
     }
     await chrome.storage.local.set({
       friends,
@@ -129,7 +138,7 @@ async function updateLocalCache(updateItems) {
   if (updateItems.friends) {
     if (updateItems.friends.add) {
       for (const friendId of updateItems.friends.add) {
-        const errorAddingFriend = await addFriendLocally(friendId);
+        const errorAddingFriend = await addFriendLocally(friendId, "incoming");
         if (errorAddingFriend) {
           return errorAddingFriend;
         }
@@ -186,7 +195,7 @@ export async function deleteAccount() {
   return null;
 }
 
-export async function addFriendLocally(friendId) {
+export async function addFriendLocally(friendId, friendReqType) {
   const getFriendProfileResponse = await fetchWithAuth(
     `${prodUserEndpoint}/${friendId}`,
   );
@@ -207,16 +216,17 @@ export async function addFriendLocally(friendId) {
   };
   const currentFriends =
     (await chrome.storage.local.get("friends")).friends || {};
-  const currentFriendRequestsOut =
-    (await chrome.storage.local.get("friendRequestsOut")).friendRequestsOut ||
-    {};
-  delete currentFriendRequestsOut.friendRequestsOut[friendId];
+  const friendReqsKey =
+    friendReqType === "incoming" ? "friendRequestsIn" : "friendRequestsOut";
+  const currentFriendRequests =
+    (await chrome.storage.local.get(friendReqsKey))[friendReqsKey] || {};
+  delete currentFriendRequests[friendId];
   await chrome.storage.local.set({
     friends: {
       ...currentFriends,
       [friendId]: friendProfile,
     },
-    friendRequestsOut: currentFriendRequestsOut.friendRequestsOut,
+    [friendReqsKey]: currentFriendRequests,
   });
   return null;
 }
@@ -227,17 +237,19 @@ export async function updateFriendCourseAndSectionIndexes(
   interestedSections,
 ) {
   coursesTaken = coursesTaken || [];
-  interestedSections = interestedSections || [];
+  interestedSections = interestedSections || {};
   const friendCoursesTaken =
     (await chrome.storage.local.get("friendCoursesTaken")).friendCoursesTaken ||
     {};
   for (const course of coursesTaken) {
-    const courseMatch = courseTakenPattern.exec(course.courseCode);
+    const courseMatch = courseTakenPattern.exec(course);
     if (!courseMatch) {
       continue;
     }
     const profName = courseMatch[1];
-    const courseCode = courseMatch[2].replace(/\s/g, "");
+    const courseCode = courseMatch[2]
+      .substring(0, courseMatch[2].indexOf("-"))
+      .replace(/\s/g, "");
     const curCourseIndex = friendCoursesTaken[courseCode] || {};
     const curProfIndex = friendCoursesTaken[profName] || {};
     curCourseIndex[friendId] = course; // A friend should only have one course entry per course code.
@@ -249,17 +261,17 @@ export async function updateFriendCourseAndSectionIndexes(
   const friendInterestedSections =
     (await chrome.storage.local.get("friendInterestedSections"))
       .friendInterestedSections || {};
-  for (const section of interestedSections) {
+  for (const section in interestedSections) {
     const sectionMatch = interestedSectionPattern.exec(section);
     if (!sectionMatch) {
       continue;
     }
     const profName = sectionMatch[1];
-    const courseCode = sectionFullString
+    const courseCode = sectionMatch[2]
       .substring(0, sectionMatch[2].indexOf("-"))
       .replace(/\s/g, "");
-    curCourseIndex = friendInterestedSections[courseCode] || {};
-    curProfIndex = friendInterestedSections[profName] || {};
+    const curCourseIndex = friendInterestedSections[courseCode] || {};
+    const curProfIndex = friendInterestedSections[profName] || {};
     curCourseIndex[friendId] = section; // A friend should only have one section entry per course code.
     curProfIndex[friendId] = curProfIndex[friendId] || [];
     curProfIndex[friendId].push(section);

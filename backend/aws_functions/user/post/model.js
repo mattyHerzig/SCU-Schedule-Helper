@@ -7,7 +7,7 @@ export class CreatedUserResponse {
     this.subscriptions = [subscription];
     this.preferences = {
       preferredSectionTimeRange: {
-        startHour: 6,
+        startHour: 8,
         startMinute: 0,
         endHour: 20,
         endMinute: 0,

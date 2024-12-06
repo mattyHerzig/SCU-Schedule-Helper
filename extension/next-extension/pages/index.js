@@ -29,7 +29,7 @@ export default function Home() {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
 
       }}
     >

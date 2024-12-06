@@ -1,4 +1,5 @@
 import { fetchWithAuth, signOut } from "./authorization.js";
+import { prodUserEndpoint } from "./constants.js";
 import {
   addFriendLocally,
   refreshUserData,
@@ -71,7 +72,7 @@ export async function handleNotification(notification) {
 }
 
 async function handleFriendRequestAccepted(friendId) {
-  const addFriendError = await addFriendLocally(friendId);
+  const addFriendError = await addFriendLocally(friendId, "outgoing");
   if (addFriendError) {
     console.error("Error adding friend: ", addFriendError);
     return;
