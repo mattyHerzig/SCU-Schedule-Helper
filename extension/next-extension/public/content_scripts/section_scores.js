@@ -5,6 +5,7 @@ let inButton = false;
 let friendInterestedSections = {};
 let friendCoursesTaken = {};
 let friends = {};
+let tableRowCount = 0;
 const processedSections = new Set();
 const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
@@ -98,14 +99,14 @@ async function displayProfessorDifficulty(
 
   const friendsTaken = [];
   for (const friend in friendCoursesTaken[courseCode]) {
-    if (friendCoursesTaken[courseCode][friend].includes(prof)) {
-      const match =
-        friendCoursesTaken[courseCode][friend].match(courseTakenPattern);
-      if (match) {
-        friendsTaken.push(friends[friend].name);
-      }
+    const match =
+      friendCoursesTaken[courseCode][friend].match(courseTakenPattern);
+    if (!match) continue;
+    if (match[1].includes(prof) || !match[1]) {
+      friendsTaken.push(friends[friend].name);
     }
   }
+
   const friendsInterested = [];
   for (const friend in friendInterestedSections[courseCode]) {
     if (friendInterestedSections[courseCode][friend].includes(prof)) {
@@ -246,7 +247,19 @@ async function checkForGrid() {
   const visibleGrid = document.querySelector(
     '[data-automation-id="VisibleGrid"]',
   );
-  if (visibleGrid) await handleGrid();
+  if (visibleGrid) {
+    const rowCountLabel = document.querySelector(
+      '[data-automation-id="rowCountLabel"]',
+    );
+    if (rowCountLabel) {
+      const newRowCount = parseInt(rowCountLabel.innerText.split(" ")[0]);
+      if (newRowCount !== tableRowCount) {
+        tableRowCount = newRowCount;
+        processedSections.clear();
+      }
+    }
+    await handleGrid();
+  }
 }
 
 function createToolTip(
@@ -330,13 +343,49 @@ function createToolTip(
   return ratingDiv;
 }
 
+function createFriendsToolTip(friendsTaken) {
+  const friendsTakenDiv = document.createElement("div");
+  friendsTakenDiv.innerHTML = `
+        <div style="
+          position: absolute;
+          background-color: #f0f0f0;
+          padding: 8px 8px;
+          border-radius: 10px;
+          font-family: Arial, sans-serif;
+          max-width: 250px;
+          margin: 5px;
+          transform: translateX(-50%);
+          pointer-events: auto;
+          bottom: 0px;
+        ">
+          <!-- Add invisible padding wrapper that maintains absolute positioning -->
+          <div style="
+
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background-color: transparent;
+            pointer-events: auto;
+          "></div>
+          <div style="position: relative; pointer-events: auto; width:max-content">
+            <div style="font-size: 14px; color: #666;">
+              ${friendsTaken.join("\n")}
+            </div>
+          </div>
+        </div>
+      `;
+  return friendsTakenDiv;
+}
+
 function getRatingColor(rating, ratingMin, ratingMax, goodValuesAreHigher) {
   if (!rating) return "rgba(0, 0, 0, 0.5)";
   if (rating < ratingMin) rating = ratingMin;
   if (rating > ratingMax) rating = ratingMax;
-  const greenShade = [104, 227, 0];
+  const greenShade = [66, 134, 67];
   const yellowShade = [255, 234, 0];
-  const redShade = [148, 0, 0];
+  const redShade = [194, 59, 34];
   const ratingMid = ratingMin + (ratingMax - ratingMin) / 2;
   if (rating <= ratingMid && goodValuesAreHigher) {
     return interpolateColor(
@@ -474,6 +523,32 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
               </div>
             </div>
           `;
+  const friendsTakenTooltip = createFriendsToolTip(ratingInfo.friendsTaken);
+  friendsTaken.addEventListener("mouseenter", (event) => {
+    if (ratingInfo.friendsTaken.length === 0) return;
+    document.body.appendChild(friendsTakenTooltip);
+    friendsTakenTooltip.style.display = "block";
+
+    const rect = friendsTaken.getBoundingClientRect();
+
+    const tooltipX = rect.left + rect.width + window.scrollX;
+    const tooltipY =
+      rect.top - friendsTakenTooltip.offsetHeight + window.scrollY;
+
+    friendsTakenTooltip.style.position = "absolute";
+    friendsTakenTooltip.style.left = `${tooltipX - 10}px`;
+    friendsTakenTooltip.style.top = `${tooltipY + 10}px`;
+  });
+
+  friendsTaken.addEventListener("mouseleave", () => {
+    friendsTakenTooltip.style.display = "none";
+
+    // Remove tooltip from the body
+    if (friendsTakenTooltip.parentElement) {
+      document.body.removeChild(friendsTakenTooltip);
+    }
+  });
+
   const friendsInterested = document.createElement("div");
   friendsInterested.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
@@ -482,6 +557,34 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
               </div>
             </div>
           `;
+
+  const friendsInterestedTooltip = createFriendsToolTip(
+    ratingInfo.friendsInterested,
+  );
+  friendsInterested.addEventListener("mouseenter", (event) => {
+    if (ratingInfo.friendsInterested.length === 0) return;
+    document.body.appendChild(friendsInterestedTooltip);
+    friendsInterestedTooltip.style.display = "block";
+
+    const rect = friendsInterested.getBoundingClientRect();
+
+    const tooltipX = rect.left + rect.width + window.scrollX;
+    const tooltipY =
+      rect.top - friendsInterestedTooltip.offsetHeight + window.scrollY;
+
+    friendsInterestedTooltip.style.position = "absolute";
+    friendsInterestedTooltip.style.left = `${tooltipX}px`;
+    friendsInterestedTooltip.style.top = `${tooltipY}px`;
+  });
+
+  friendsInterested.addEventListener("mouseleave", () => {
+    friendsInterestedTooltip.style.display = "none";
+
+    // Remove tooltip from the body
+    if (friendsInterestedTooltip.parentElement) {
+      document.body.removeChild(friendsInterestedTooltip);
+    }
+  });
   infoButton.appendChild(tooltip);
   scoreContainer.appendChild(scoreText);
   scoreContainer.appendChild(infoButton);

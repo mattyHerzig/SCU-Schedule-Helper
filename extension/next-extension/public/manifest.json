@@ -29,7 +29,7 @@
     },
     {
       "matches": ["https://www.myworkday.com/scu/*"],
-      "js": ["inject.js"]
+      "js": ["content_scripts/section_scores.js"]
     }
   ],
   "background": {
