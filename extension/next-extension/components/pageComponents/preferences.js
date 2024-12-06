@@ -131,47 +131,59 @@ export default function Preferences() {
           maxWidth: 600,
           margin: "auto",
           padding: 2,
-          ml: 2,
         }}
       >
         <Box
           sx={{
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-start",
+            alignItems: "center", 
             gap: 2,
           }}
         >
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
+              width: "100%",
             }}
           >
-            <Typography variant="h6">Course Preferences</Typography>
-            <IconButton onClick={handleDialogOpen} aria-label="info">
-              <InfoIcon />
+            <Typography variant="h6" sx={{ mr: 1 }}>Course Preferences</Typography>
+            <IconButton 
+              onClick={handleDialogOpen} 
+              aria-label="info"
+              sx={{ 
+                p: 0,
+                ml: 0.5,
+                display: "flex",
+                alignItems: "center"
+              }}
+            >
+              <InfoIcon fontSize="small" />
             </IconButton>
           </Box>
           <Typography>Preferred Course Times:</Typography>
 
-          <RangeSliderTime
-            initValue={timePreference}
-            onChangeCommitted={handleTimePreferenceChange}
-            sx={{ width: "100%" }}
-          />
+          <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <RangeSliderTime
+              initValue={timePreference}
+              onChangeCommitted={handleTimePreferenceChange}
+              sx={{ width: "90%" }}
+            />
+          </Box>
 
           <Typography>
             How would you like RateMyProfessor and SCU Course Evaluation ratings
             to be weighed:
           </Typography>
 
-          <PercentSlider
-            initValue={scuEvalsPercentage}
-            onChangeCommitted={handlePercentagePreferenceChange}
-            sx={{ width: "100%" }}
-          />
+          <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <PercentSlider
+              initValue={scuEvalsPercentage}
+              onChangeCommitted={handlePercentagePreferenceChange}
+              sx={{ width: "90%" }}
+            />
+          </Box>
 
           <FormControlLabel
             control={

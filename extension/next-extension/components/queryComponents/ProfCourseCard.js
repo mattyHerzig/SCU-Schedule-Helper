@@ -276,15 +276,6 @@ const ProfCourseCard = ({ selected, data }) => {
             type="difficulty"
           />
         </Box>
-        {rmpData.wouldTakeAgain && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ px: 2, mt: 1 }}
-          >
-            Would Take Again: {rmpData.wouldTakeAgain}%
-          </Typography>
-        )}
       </>
     );
   };
