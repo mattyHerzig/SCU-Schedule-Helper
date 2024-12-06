@@ -12,7 +12,10 @@ export default function UserCourseDetails() {
     interested: [],
     taken: [],
   });
-  const [transformedUserCourses, setTransformedUserCourses] = useState([]);
+  const [transformedUserCourses, setTransformedUserCourses] = useState({
+    interested: [],
+    taken: [],
+  });
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
