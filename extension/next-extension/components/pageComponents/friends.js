@@ -198,6 +198,12 @@ export default function Friends() {
             fullWidth
             disabled={!selectedUser}
             onClick={sendFriendRequest}
+            sx={{
+              backgroundColor: "#703331",
+              '&:hover': {
+                backgroundColor: "#5a2c28",
+              }
+            }}
           >
             Send Invite
           </Button>

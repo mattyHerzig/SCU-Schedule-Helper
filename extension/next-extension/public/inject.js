@@ -54,11 +54,11 @@
   }
 
   function calculateColorIntensity(rating) {
-    if (rating <= 2.5) return `rgba(144, 238, 144, 0.5)`; // Light green
+    if (rating <= 2.5) return `rgba(144, 238, 144, 0.5)`;
     if (rating <= 3.0) return interpolateColor([144, 238, 144], [255, 255, 224], (rating - 2.5) / 0.5); 
     if (rating <= 3.5) return interpolateColor([255, 255, 224], [255, 165, 0], (rating - 3.0) / 0.5); 
     if (rating <= 4.5) return interpolateColor([255, 165, 0], [255, 99, 71], (rating - 3.5) / 1.0); 
-    return `rgba(255, 99, 71, 0.5)`; // Red
+    return `rgba(255, 99, 71, 0.5)`;
   }
   
   function interpolateColor(color1, color2, ratio) {
@@ -95,7 +95,6 @@
             courseEvalDifficulty = professorData.overall.difficultyAvg;
           }
   
-          // If both difficulties are available, calculate weighted difficulty
           if (rmpDifficulty !== null && courseEvalDifficulty !== null) {
             const { weightScuEvals = 50, weightRmp = 50 } = userPreferences.scoreWeighting || {};
   
@@ -115,21 +114,19 @@
   
             difficultyContainer.innerHTML = difficultyTexts.join(' | ');
           } 
-          // If only RMP difficulty is available
           else if (rmpDifficulty !== null) {
             const colorIntensity = calculateColorIntensity(rmpDifficulty);
             instructorCell.style.setProperty("background-color", colorIntensity, "important");
   
             difficultyContainer.innerHTML = `RMP Difficulty: ${rmpDifficulty.toFixed(1)}/5`;
           } 
-          // If only course eval difficulty is available
+
           else if (courseEvalDifficulty !== null) {
             const colorIntensity = calculateColorIntensity(courseEvalDifficulty);
             instructorCell.style.setProperty("background-color", colorIntensity, "important");
   
             difficultyContainer.innerHTML = `Course Eval Difficulty: ${courseEvalDifficulty.toFixed(1)}/5`;
           } 
-          // If no difficulty data is available
           else {
             difficultyContainer.textContent = 'Difficulty data unavailable';
           }
