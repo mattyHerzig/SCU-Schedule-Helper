@@ -99,7 +99,7 @@ async function updateLocalCache(updateItems) {
       userInfo.photoUrl =
         "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
     if (updateItems.personal.photo) {
-      userInfo.photoUrl = getS3PhotoUrl(userId);
+      userInfo.photoUrl = getS3PhotoUrl(userInfo.id);
     }
   }
   if (updateItems.preferences) {

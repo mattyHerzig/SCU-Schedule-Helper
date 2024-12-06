@@ -9,10 +9,8 @@ import UserCourseDetails from "../settingsComponents/UserCourseDetails";
 
 export default function Settings() {
   const [userName, setUserName] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState({});
   const [error, setError] = useState(null);
-  const [profilePicture, setProfilePicture] = useState(null);
   const debounceTimerRef = useRef(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -23,11 +21,8 @@ export default function Settings() {
         checkUserInfo();
       }
     };
-
     chrome.storage.onChanged.addListener(storageListener);
-
     checkUserInfo();
-
     return () => {
       chrome.storage.onChanged.removeListener(storageListener);
     };
@@ -37,11 +32,8 @@ export default function Settings() {
     try {
       const data = await chrome.storage.local.get("userInfo");
       const userInfo = data.userInfo;
-      const loggedIn = !!userInfo?.name;
 
-      setIsLoggedIn(loggedIn);
-      setUserName(userInfo?.name || null);
-      setProfilePicture(userInfo?.photoUrl || null);
+      setUserInfo(userInfo);
     } catch (error) {
       console.error("Error checking user info:", error);
     }
@@ -58,14 +50,12 @@ export default function Settings() {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const newPhotoUrl = e.target.result;
-      setProfilePicture(newPhotoUrl);
-      submitPersonal(newPhotoUrl, userName, null);
+      submitPersonal(e.target.result.split(",")[1], userInfo.name);
     };
     reader.readAsDataURL(file);
   };
 
-  const submitPersonal = (newPhotoUrl, name, email) => {
+  const submitPersonal = (b64Photo, name) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -75,32 +65,19 @@ export default function Settings() {
         type: "updateUser",
         updateItems: {
           personal: {
-            photo_url: newPhotoUrl || profilePicture,
-            name: name || userName,
-            email: email || "placeholder@gmail.com", 
+            photo: b64Photo,
+            name,
           },
         },
-        allowLocalOnly: true,
       };
+      if (!b64Photo) delete message.updateItems.personal.photo;
+      if (!name) delete message.updateItems.personal.name;
 
       chrome.runtime.sendMessage(message).then((errorMessage) => {
         if (errorMessage) {
           setError(errorMessage);
         } else {
           setError(null);
-
-          chrome.storage.local.get("userInfo", (data) => {
-            const updatedUserInfo = {
-              ...data.userInfo,
-              photoUrl: newPhotoUrl || data.userInfo?.photoUrl,
-              name: name || data.userInfo?.name,
-              email: email || data.userInfo?.email,
-            };
-
-            chrome.storage.local.set({ userInfo: updatedUserInfo }, () => {
-              console.log("Updated user info saved to Chrome storage.");
-            });
-          });
         }
       });
     }, 300);
@@ -112,29 +89,13 @@ export default function Settings() {
       return;
     }
 
-    submitPersonal(null, newName, null);
-    setUserName(newName);
+    submitPersonal(null, newName);
     setIsEditingName(false);
   };
 
   const cancelEditing = () => {
-    setEditedName(userName); 
+    setEditedName(userName);
     setIsEditingName(false);
-  };
-
-  const handleSignIn = async () => {
-    if (isLoading) return;
-
-    setIsLoading(true);
-    try {
-      const errorMsg = await chrome.runtime.sendMessage("signIn");
-      if (!errorMsg) setError(null);
-      else setError(errorMsg);
-    } catch (error) {
-      setError("Unknown error occurred while signing in. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const signOut = async () => {
@@ -151,13 +112,17 @@ export default function Settings() {
       const errorMessage = await chrome.runtime.sendMessage("deleteAccount");
       setError(errorMessage || null);
     } catch (error) {
-      setError("Unknown error occurred while deleting account. Please try again.");
+      setError(
+        "Unknown error occurred while deleting account. Please try again.",
+      );
     }
   };
 
   const importCourseHistory = async () => {
     try {
-      const errorMessage = await chrome.runtime.sendMessage("importCourseHistory");
+      const errorMessage = await chrome.runtime.sendMessage(
+        "importCourseHistory",
+      );
       setError(errorMessage || null);
     } catch (error) {
       console.error("Error importing course history:", error);
@@ -169,7 +134,7 @@ export default function Settings() {
     try {
       const error = await clearCourseHistory();
       if (error) {
-        setError(error); 
+        setError(error);
       } else {
         setError(null);
       }
@@ -193,90 +158,84 @@ export default function Settings() {
         <Typography variant="h6" sx={{ mb: 2 }}>
           Settings
         </Typography>
-
-        {isLoggedIn && (
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-            {isEditingName ? (
-              <>
-                <input
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  style={{
-                    padding: "5px",
-                    borderRadius: "4px",
-                    border: "1px solid #ccc",
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleNameChange(editedName)}
-                >
-                  Save
-                </Button>
-                <Button variant="outlined" onClick={cancelEditing}>
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Typography variant="body1">{userName || "Guest"}</Typography>
-                <Button variant="text" onClick={() => setIsEditingName(true)}>
-                  Edit
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-        {isLoggedIn && (
-          <div style={{ textAlign: "center", marginBottom: "16px" }}>
-            <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
-              <img
-                src={profilePicture || "https://via.placeholder.com/100"}
-                alt={`${userName || "User"}'s profile`}
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  borderRadius: "50%",
-                  border: "2px solid #ccc",
-                }}
-              />
-            </label>
-            <input
-              type="file"
-              id="profile-picture-upload"
-              accept="image/*"
-              hidden
-              onChange={handlePhotoChange}
-            />
-          </div>
-        )}
-
-        {isLoggedIn && <UserCourseDetails />}
-
-        <Stack spacing={2} sx={{ width: "100%" }}>
-          <Button
-            variant="contained"
-            onClick={handleSignIn}
-            disabled={isLoggedIn || isLoading}
-          >
-            {isLoggedIn ? "Logged In" : "Login with Google"}
-          </Button>
-          {isLoggedIn && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "16px",
+          }}
+        >
+          {isEditingName ? (
             <>
-              <Button onClick={importCourseHistory}>Import Course History</Button>
-              <Button onClick={deleteCourseHistory}>Delete Course History</Button>
-              <Button onClick={signOut}>Sign Out</Button>
-              <Button variant="contained" color="error" onClick={deleteAccount}>
-                Delete My Account
+              <input
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                style={{
+                  padding: "5px",
+                  borderRadius: "4px",
+                  border: "1px solid #ccc",
+                }}
+                placeholder={userInfo.name}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleNameChange(editedName)}
+              >
+                Save
+              </Button>
+              <Button variant="outlined" onClick={cancelEditing}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Typography variant="body1">{userInfo.name}</Typography>
+              <Button variant="text" onClick={() => setIsEditingName(true)}>
+                Edit
               </Button>
             </>
           )}
+        </div>
+        <div style={{ textAlign: "center", marginBottom: "16px" }}>
+          <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
+            <img
+              src={userInfo.photoUrl}
+              alt={`${userInfo.name || "User"}'s profile`}
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                border: "2px solid #ccc",
+              }}
+            />
+          </label>
+          <input
+            type="file"
+            id="profile-picture-upload"
+            accept="image/*"
+            hidden
+            onChange={handlePhotoChange}
+          />
+        </div>
+        <UserCourseDetails />
+        <Stack spacing={2} sx={{ width: "100%" }}>
+          <>
+            <Button onClick={importCourseHistory}>Import Course History</Button>
+            <Button onClick={deleteCourseHistory}>Delete Course History</Button>
+            <Button onClick={signOut}>Sign Out</Button>
+            <Button variant="contained" color="error" onClick={deleteAccount}>
+              Delete My Account
+            </Button>
+          </>
         </Stack>
-
-        {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+        {error && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
         <br />
         <br />
       </Box>
