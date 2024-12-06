@@ -56,6 +56,9 @@ async function getLogsAndPublishToSNS(message, metricFilterData) {
     console.log("===PUBLISHING TO SNS===");
 
     const snsParams = generateSNSContent(logEvents, message);
+    if(logEvents.length === 0) {
+      throw new Error("No logs found for the given metric filters.");
+    }
     const snsResponse = await snsClient.send(new PublishCommand(snsParams));
 
     console.log("===SNS MESSAGE SENT===");
