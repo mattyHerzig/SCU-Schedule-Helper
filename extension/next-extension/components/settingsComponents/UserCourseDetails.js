@@ -111,12 +111,14 @@ export default function UserCourseDetails() {
         const { userInfo } = await chrome.storage.local.get("userInfo");
 
         if (userInfo) {
+          userInfo.coursesTaken = userInfo.coursesTaken || [];
+          userInfo.interestedSections = userInfo.interestedSections || {};
           userInfo.coursesTaken = userInfo.coursesTaken.filter(
             (course) => course,
           );
           setUserCourses({
-            interested: userInfo.interestedSections || {},
-            taken: userInfo.coursesTaken || [],
+            interested: userInfo.interestedSections,
+            taken: userInfo.coursesTaken,
           });
         }
       } catch (error) {

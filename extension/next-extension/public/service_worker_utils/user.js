@@ -127,6 +127,9 @@ async function updateLocalCache(updateItems) {
     userInfo.coursesTaken = Array.from(coursesTaken);
   }
   if (updateItems.interestedSections) {
+    if (!userInfo.interestedSections) {
+      userInfo.interestedSections = {};
+    }
     for (const section in updateItems.interestedSections.add) {
       userInfo.interestedSections[section] =
         updateItems.interestedSections.add[section];

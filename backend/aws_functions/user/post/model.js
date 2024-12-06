@@ -19,7 +19,7 @@ export class CreatedUserResponse {
       courseTracking: true,
     };
     this.coursesTaken = [];
-    this.interestedSections = [];
+    this.interestedSections = {};
   }
 }
 

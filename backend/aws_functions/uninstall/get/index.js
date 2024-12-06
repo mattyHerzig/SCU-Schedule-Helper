@@ -33,7 +33,8 @@ export async function handler(event, context) {
       },
     };
     const data = await ddbClient.send(new GetItemCommand(getParams));
-    if (!data.Item) return validResponse;
+    if (!data.Item || !data.Item.subscriptions || !data.Item.subscriptions.SS)
+      return validResponse;
     const subscriptions = data.Item.subscriptions.SS;
     const updatedSubscriptions = subscriptions.filter(
       (sub) => JSON.parse(sub).endpoint !== event.queryStringParameters.sub,
