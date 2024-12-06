@@ -9,7 +9,7 @@ const generateMarks = (startHour, endHour) => {
   // Generate marks for every 15 minutes
   for (let i = 0; i <= (endHour - startHour) * 4; i++) {
     if (i % 8 !== 0) {
-      marks.push({ value: i, label: "" }); // Don't overcrowd the slider.
+      marks.push({ value: i, label: "" }); 
       continue;
     }
     const hour = Math.floor(i / 4) + startHour;

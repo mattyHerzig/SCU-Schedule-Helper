@@ -56,8 +56,8 @@ export default function PercentSlider({ initValue, onChangeCommitted }) {
           getAriaValueText={valuetext}
           step={1}
           marks
-          min={0}
-          max={100}
+          min={1}
+          max={99}
           valueLabelDisplay="auto"
         />
         <Box sx={{ mt: 2, justifyContent: "center", alignItems: "center" }}>

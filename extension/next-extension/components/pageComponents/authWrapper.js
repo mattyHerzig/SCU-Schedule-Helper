@@ -13,7 +13,7 @@ const AuthWrapper = ({ children }) => {
 
     checkAuthStatus();
     const authListener = (changes, namespace) => {
-      if (namespace === "local" && changes.userInfo) {
+      if (changes.accessToken) {
         checkAuthStatus();
       }
     };
@@ -27,9 +27,11 @@ const AuthWrapper = ({ children }) => {
   const checkAuthStatus = async () => {
     setIsCheckingAuth(true);
     try {
-      const { userInfo } = await chrome.storage.local.get("userInfo");
+      // Retrieve user info from chrome storage
+      const accessToken = (await chrome.storage.sync.get("accessToken"))
+        .accessToken;
       // Set logged-in state based on whether user info exists
-      setIsLoggedIn(!!userInfo?.name);
+      setIsLoggedIn(accessToken);
     } catch (error) {
       console.error("Error checking auth status:", error);
     }

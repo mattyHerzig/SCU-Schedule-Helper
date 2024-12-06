@@ -16,17 +16,14 @@ import IconButton from "@mui/material/IconButton";
 
 export default function Preferences() {
   const [courseTracking, setCourseTracking] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
   const [timePreference, setTimePreference] = useState({
     startHour: 8,
     startMinute: 0,
     endHour: 20,
     endMinute: 0,
   });
-  const [scuEvalsPercentage, setScuEvalsPercentage] = useState(50);
+  const [scuEvalsPercentage, setScuEvalsPercentage] = useState([50]);
   const [errorMessage, setErrorMessage] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogContent, setDialogContent] = useState("");
   const debounceTimerRef = useRef(null);
   const shouldSendUpdate = useRef(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -62,7 +59,6 @@ export default function Preferences() {
   }, [courseTracking, timePreference, scuEvalsPercentage]);
 
   const checkUserPreferences = async () => {
-    setIsLoading(true);
     try {
       const userInfo = await chrome.storage.local.get("userInfo");
       if (userInfo.userInfo?.preferences) {
@@ -70,14 +66,17 @@ export default function Preferences() {
         shouldSendUpdate.current = false;
 
         // Update state with stored preferences
-        setCourseTracking(prefs.courseTracking ?? true);
-        setTimePreference(prefs.preferredSectionTimeRange ?? timePreference);
-        setScuEvalsPercentage([prefs.scoreWeighting?.scuEvals ?? 50]);
+        if (prefs.courseTracking != courseTracking)
+          setCourseTracking(prefs.courseTracking);
+        if (prefs.preferredSectionTimeRange != timePreference)
+          setTimePreference(prefs.preferredSectionTimeRange);
+        if (prefs.scoreWeighting.scuEvals != scuEvalsPercentage[0]) {
+          setScuEvalsPercentage([prefs.scoreWeighting.scuEvals]);
+        }
       }
     } catch (error) {
       console.error("Error checking user preferences:", error);
     }
-    setIsLoading(false);
   };
 
   const handleSwitchChange = (event) => {
@@ -126,23 +125,36 @@ export default function Preferences() {
 
   return (
     <AuthWrapper>
-      <Box sx={{ overflow: "auto", maxWidth: 600, margin: "auto", padding: 2,}}>
-            <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-              <Typography variant="h6" sx={{ mb: 2, mr: 1 }}>
-                Preferences
-              </Typography>
-              <IconButton
-                onClick={handleDialogOpen}
-                aria-label="info"
-                sx={{ padding: 0, marginTop: "-10px" }}
-              >
-                <InfoIcon />
-              </IconButton>
-            </Box>
-          
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-          
-          <Typography sx={{ textAlign: "center" }}>Preferred Course Times:</Typography>
+      <Box
+        sx={{
+          overflow: "auto",
+          maxWidth: 600,
+          margin: "auto",
+          padding: 2,
+          ml: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 2,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6">Course Preferences</Typography>
+            <IconButton onClick={handleDialogOpen} aria-label="info">
+              <InfoIcon />
+            </IconButton>
+          </Box>
+          <Typography>Preferred Course Times:</Typography>
 
           <RangeSliderTime
             initValue={timePreference}
@@ -150,8 +162,9 @@ export default function Preferences() {
             sx={{ width: "100%" }}
           />
 
-          <Typography sx={{ textAlign: "center" }}>
-            How would you like RateMyProfessor and SCU Course Evaluation ratings to be weighed:
+          <Typography>
+            How would you like RateMyProfessor and SCU Course Evaluation ratings
+            to be weighed:
           </Typography>
 
           <PercentSlider
@@ -173,7 +186,7 @@ export default function Preferences() {
                     backgroundColor: "#802a25", 
                   },
                   "& .MuiSwitch-switchBase": {
-                    color: "#802a25", 
+                    color: "#703331",
                   },
                   "& .MuiSwitch-track": {
                     backgroundColor: "#ccc", 
@@ -186,7 +199,7 @@ export default function Preferences() {
           />
           
           {errorMessage && (
-            <Typography sx={{ color: "error.main", ml: 2, textAlign: "center" }}>
+            <Typography sx={{ color: "error.main", ml: 2 }}>
               {errorMessage}
             </Typography>
           )}
@@ -199,21 +212,24 @@ export default function Preferences() {
               Preferred Course Times:
             </Typography>
             <Typography variant="body2" paragraph>
-              Use the slider to select your preferred time range for classes. Courses outside your time range will be marked in Workday.
+              Use the slider to select your preferred time range for classes.
+              Courses outside your time range will be marked in Workday.
             </Typography>
 
             <Typography variant="subtitle1" gutterBottom>
               RateMyProfessor vs SCU Course Evaluations:
             </Typography>
             <Typography variant="body2" paragraph>
-              Adjust the slider to weigh how much each rating source influences your preference. Courses will be color coded according to the course statistics adjusted with your weight.
+              Adjust the slider to weigh how much each rating source influences
+              your preference. Courses will be color coded according to the
+              course statistics adjusted with your weight
             </Typography>
 
             <Typography variant="subtitle1" gutterBottom>
               Automatic Course Tracking:
             </Typography>
             <Typography variant="body2">
-              Enable this in order to automatically update your interested and taken courses
+              Enable this to allow others to see what courses you are taking
             </Typography>
           </DialogContent>
           <DialogActions>
