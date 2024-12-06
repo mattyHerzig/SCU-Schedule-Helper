@@ -74,22 +74,23 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 color: "black",
                 display: "flex",
                 alignItems: "center",
-                padding: "4px 4px", // Adjusted horizontal padding
+                padding: "4px 4px",
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
                 },
                 "&:hover::after, &.active::after": {
                   backgroundColor: "#703331",
+                  width: "calc(100% - 8px)", // Adjusted to match padding
                 },
                 "&::after": {
                   content: '""',
                   position: "absolute",
                   bottom: -2,
-                  left: 0,
-                  right: 0,
+                  left: "4px", // Matches horizontal padding
                   height: "2px",
+                  width: 0,
                   backgroundColor: "transparent",
-                  transition: "background-color 0.3s",
+                  transition: "background-color 0.3s, width 0.3s",
                 },
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -107,24 +108,40 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                   color: activeMenu === "home" ? "#703331" : "#d1d1d1",
                   marginRight: 1,
                   transition: "color 0.3s",
+                  "&:hover, button:hover &": {
+                    color: "#703331", // Icon changes color on hover of the button or text
+                  },
                 }}
               />
-              <span
+              <Box
                 sx={{
+                  position: "relative",
                   color: activeMenu === "home" ? "#703331" : "black",
                   fontWeight: "bold",
-                  fontSize: { xs: "0.8rem", sm: "1rem" },
+                  fontSize: { xs: "0.9rem", sm: "1rem" },
+                  // Removed hover underline effect for SCU Schedule Helper text
+                  "&::after": {
+                    content: '""',
+                    position: "absolute",
+                    bottom: -2,
+                    left: "4px", // Matches horizontal padding
+                    right: "4px", // Matches horizontal padding
+                    height: "2px",
+                    backgroundColor: "transparent", // No underline on hover
+                    width: 0,
+                    transition: "background-color 0.3s, width 0.3s",
+                  },
                 }}
               >
                 SCU Schedule Helper
-              </span>
+              </Box>
             </Button>
           </Box>
 
           <Box
             sx={{
               display: "flex",
-              justifyContent: "center",
+              justifyContent: "space-evenly", // Ensures buttons are evenly spaced
               alignItems: "center",
               flexGrow: 1,
               minWidth: 0,
@@ -147,6 +164,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                   },
                   "&:hover::after, &.active::after": {
                     backgroundColor: "#703331",
+                    width: "100%",
                   },
                   "&::after": {
                     content: '""',
@@ -155,8 +173,9 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                     left: 0,
                     right: 0,
                     height: "2px",
+                    width: 0,
                     backgroundColor: "transparent",
-                    transition: "background-color 0.3s",
+                    transition: "background-color 0.3s, width 0.3s",
                   },
                 }}
                 onClick={() => {
@@ -184,11 +203,27 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 minWidth: "auto",
                 color: "#703331",
                 padding: "4px 8px",
+                position: "relative",
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
                   "& .MuiSvgIcon-root": {
                     color: "#703331",
                   },
+                  "&::after": {
+                    backgroundColor: "#703331",
+                    width: "100%",
+                  },
+                },
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -2,
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  width: 0,
+                  backgroundColor: "transparent",
+                  transition: "background-color 0.3s, width 0.3s",
                 },
               }}
             >
@@ -196,6 +231,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 sx={{
                   fontSize: 24,
                   color: "#d1d1d1",
+                  transition: "color 0.3s",
                 }}
               />
             </Button>

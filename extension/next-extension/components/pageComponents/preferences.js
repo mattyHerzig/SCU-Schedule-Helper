@@ -42,7 +42,6 @@ export default function Preferences() {
   useEffect(() => {
     checkUserPreferences();
 
-    // Listen for changes in storage
     const storageListener = (changes, namespace) => {
       if (namespace === "local" && changes.userInfo) {
         checkUserPreferences();
@@ -127,26 +126,38 @@ export default function Preferences() {
 
   return (
     <AuthWrapper>
-      <Box sx={{ overflow: "auto", maxWidth: 600, margin: "auto", padding: 2, ml: 2 }}>
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Typography variant="h6">Course Preferences</Typography>
-            <IconButton onClick={handleDialogOpen} aria-label="info">
-              <InfoIcon />
-            </IconButton>
-          </Box>
-          <Typography>Preferred Course Times:</Typography>
+      <Box sx={{ overflow: "auto", maxWidth: 600, margin: "auto", padding: 2,}}>
+            <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+              <Typography variant="h6" sx={{ mb: 2, mr: 1 }}>
+                Preferences
+              </Typography>
+              <IconButton
+                onClick={handleDialogOpen}
+                aria-label="info"
+                sx={{ padding: 0, marginTop: "-10px" }}
+              >
+                <InfoIcon />
+              </IconButton>
+            </Box>
+          
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          
+          <Typography sx={{ textAlign: "center" }}>Preferred Course Times:</Typography>
 
           <RangeSliderTime
             initValue={timePreference}
             onChangeCommitted={handleTimePreferenceChange}
+            sx={{ width: "100%" }}
           />
 
-          <Typography>How would you like RateMyProfessor and SCU Course Evaluation ratings to be weighed:</Typography>
+          <Typography sx={{ textAlign: "center" }}>
+            How would you like RateMyProfessor and SCU Course Evaluation ratings to be weighed:
+          </Typography>
 
           <PercentSlider
             initValue={scuEvalsPercentage}
             onChangeCommitted={handlePercentagePreferenceChange}
+            sx={{ width: "100%" }}
           />
 
           <FormControlLabel
@@ -156,59 +167,60 @@ export default function Preferences() {
                 onChange={handleSwitchChange}
                 sx={{
                   "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#703331",
+                    color: "#802a25", 
                   },
                   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#703331",
+                    backgroundColor: "#802a25", 
                   },
                   "& .MuiSwitch-switchBase": {
-                    color: "#703331", 
+                    color: "#802a25", 
                   },
                   "& .MuiSwitch-track": {
-                    backgroundColor: "#ccc",
+                    backgroundColor: "#ccc", 
                   },
                 }}
               />
             }
             label="Automatically keep track of my courses"
+            sx={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}
           />
-
+          
           {errorMessage && (
-            <Typography sx={{ color: "error.main", ml: 2 }}>{errorMessage}</Typography>
+            <Typography sx={{ color: "error.main", ml: 2, textAlign: "center" }}>
+              {errorMessage}
+            </Typography>
           )}
         </Box>
 
         <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>More Information</DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="subtitle1" gutterBottom>
-            Preferred Course Times:
-          </Typography>
-          <Typography variant="body2" paragraph>
-            Use the slider to select your preferred time range for classes. Courses outside your time range will be marked in Workday.
-          </Typography>
+          <DialogTitle>More Information</DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="subtitle1" gutterBottom>
+              Preferred Course Times:
+            </Typography>
+            <Typography variant="body2" paragraph>
+              Use the slider to select your preferred time range for classes. Courses outside your time range will be marked in Workday.
+            </Typography>
 
-          <Typography variant="subtitle1" gutterBottom>
-            RateMyProfessor vs SCU Course Evaluations:
-          </Typography>
-          <Typography variant="body2" paragraph>
-            Adjust the slider to weigh how much each rating source influences your preference. Courses will be color coded according to the course statistics adjusted
-            with your weight
-          </Typography>
+            <Typography variant="subtitle1" gutterBottom>
+              RateMyProfessor vs SCU Course Evaluations:
+            </Typography>
+            <Typography variant="body2" paragraph>
+              Adjust the slider to weigh how much each rating source influences your preference. Courses will be color coded according to the course statistics adjusted with your weight.
+            </Typography>
 
-          <Typography variant="subtitle1" gutterBottom>
-            Automatic Course Tracking:
-          </Typography>
-          <Typography variant="body2">
-            Enable this to allow others to see what courses you are taking
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
+            <Typography variant="subtitle1" gutterBottom>
+              Automatic Course Tracking:
+            </Typography>
+            <Typography variant="body2">
+              Enable this in order to automatically update your interested and taken courses
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDialogClose}>Close</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </AuthWrapper>
   );
 }
-

@@ -10,10 +10,8 @@ const AuthWrapper = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check authentication status when component mounts
-    checkAuthStatus();
 
-    // Listen for auth status changes
+    checkAuthStatus();
     const authListener = (changes, namespace) => {
       if (namespace === "local" && changes.userInfo) {
         checkAuthStatus();
@@ -21,8 +19,6 @@ const AuthWrapper = ({ children }) => {
     };
 
     chrome.storage.onChanged.addListener(authListener);
-
-    // Cleanup listener
     return () => {
       chrome.storage.onChanged.removeListener(authListener);
     };
@@ -31,7 +27,6 @@ const AuthWrapper = ({ children }) => {
   const checkAuthStatus = async () => {
     setIsCheckingAuth(true);
     try {
-      // Retrieve user info from chrome storage
       const { userInfo } = await chrome.storage.local.get("userInfo");
       // Set logged-in state based on whether user info exists
       setIsLoggedIn(!!userInfo?.name);
@@ -77,13 +72,20 @@ const AuthWrapper = ({ children }) => {
           You must be signed in to access this feature.
         </Typography>
         <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSignIn}
-          disabled={isLoggingIn}
-        >
-          {isLoggingIn ? "Logging in..." : "Sign In with Google"}
-        </Button>
+            variant="contained"
+            color="primary"
+            onClick={handleSignIn}
+            disabled={isLoggingIn}
+            sx={{
+              backgroundColor: "#802a25", 
+              color: "white", 
+              "&:hover": {
+                backgroundColor: "#671f1a", 
+              },
+            }}
+          >
+            {isLoggingIn ? "Logging in..." : "Sign In with Google"}
+          </Button>
         {error && (
           <Typography sx={{ color: "error.main", mt: 2 }}>{error}</Typography>
         )}
@@ -91,7 +93,6 @@ const AuthWrapper = ({ children }) => {
     );
   }
 
-  // If logged in, render children (main app content)
   return <>{children}</>;
 };
 

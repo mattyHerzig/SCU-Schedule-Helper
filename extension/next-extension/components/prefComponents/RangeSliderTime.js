@@ -51,19 +51,19 @@ const theme = createTheme({
     MuiSlider: {
       styleOverrides: {
         root: {
-          color: "#703331",
+          color: "#802a25", // Updated to #802a25
         },
         thumb: {
-          backgroundColor: "#703331",
+          backgroundColor: "#802a25", // Updated to #802a25
           "&:hover, &.Mui-active": {
-            boxShadow: "0 0 0 8px rgba(112, 51, 49, 0.16)",
+            boxShadow: "0 0 0 8px rgba(128, 42, 37, 0.16)", // Slightly lighter for hover effect
           },
         },
         track: {
-          backgroundColor: "#703331",
+          backgroundColor: "#802a25", // Updated to #802a25
         },
         rail: {
-          backgroundColor: "#703331",
+          backgroundColor: "#802a25", // Updated to #802a25
           opacity: 0.3,
         },
       },
@@ -88,7 +88,7 @@ export default function RangeSliderTime({ initValue, onChangeCommitted }) {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ width: 350 }}>
+      <Box sx={{ width: 300}}>
         <Slider
           value={value}
           onChange={handleChange}

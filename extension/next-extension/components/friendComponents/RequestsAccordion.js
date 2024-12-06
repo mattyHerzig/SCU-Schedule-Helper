@@ -13,7 +13,6 @@ import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 
 const transformUserToCourses = (user) => {
-  // Transform coursesTaken and interestedSections to component's course format
   const transformCourses = (courseList, type) => {
     return courseList
       .map((encodedCourseCode) => {

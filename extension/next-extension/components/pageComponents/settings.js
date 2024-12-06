@@ -1,19 +1,24 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import AuthWrapper from "./authWrapper";
 import { clearCourseHistory } from "../../../../extension/next-extension/public/service_worker_utils/user.js";
 import UserCourseDetails from "../settingsComponents/UserCourseDetails";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 
 export default function Settings() {
-  const [userName, setUserName] = useState(null);
   const [userInfo, setUserInfo] = useState({});
   const [error, setError] = useState(null);
   const debounceTimerRef = useRef(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+  const [openDialog, setOpenDialog] = useState(false); // Dialog state
 
   useEffect(() => {
     const storageListener = (changes, namespace) => {
@@ -34,6 +39,7 @@ export default function Settings() {
       const userInfo = data.userInfo;
 
       setUserInfo(userInfo);
+      setEditedName(userInfo.name || "");
     } catch (error) {
       console.error("Error checking user info:", error);
     }
@@ -94,7 +100,7 @@ export default function Settings() {
   };
 
   const cancelEditing = () => {
-    setEditedName(userName);
+    setEditedName(userInfo.name || "");
     setIsEditingName(false);
   };
 
@@ -144,101 +150,244 @@ export default function Settings() {
     }
   };
 
+   const handleOpenDialog = () => {
+    setOpenDialog(true);
+  };
+
+  // Close Dialog without deleting the account
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  // Confirm account deletion
+  const handleConfirmDeleteAccount = async () => {
+    await deleteAccount();
+    setOpenDialog(false); // Close dialog after deletion
+  };
   return (
     <AuthWrapper>
-      <Box
-        sx={{
-          overflow: "auto",
-          padding: 2,
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <Box sx={{ padding: 2, boxSizing: "border-box" }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Settings
         </Typography>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "16px",
-          }}
-        >
-          {isEditingName ? (
-            <>
-              <input
-                type="text"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                style={{
-                  padding: "5px",
-                  borderRadius: "4px",
-                  border: "1px solid #ccc",
-                }}
-                placeholder={userInfo.name}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleNameChange(editedName)}
+
+        {/* Name Editing Section */}
+        <Box sx={{ mb: 2 }}>
+          {!isEditingName ? (
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Stack direction="column" spacing={1} alignItems="flex-start">
+                <Typography variant="body1">Preferred Name:</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="body1">{userInfo.name}</Typography>
+                  <Button
+                    variant="text"
+                    sx={{
+                      backgroundColor: "#802a25",
+                      color: "white",
+                      "&:hover": {
+                        backgroundColor: "#671f1a",
+                      },
+                    }}
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    Edit
+                  </Button>
+                </Stack>
+              </Stack>
+
+              <label
+                htmlFor="profile-picture-upload"
+                style={{ cursor: "pointer", marginLeft: "auto" }}
               >
-                Save
-              </Button>
-              <Button variant="outlined" onClick={cancelEditing}>
-                Cancel
-              </Button>
-            </>
+                <img
+                  src={userInfo.photoUrl}
+                  alt={`${userInfo.name || "User"}'s profile`}
+                  style={{
+                    width: "100px",
+                    height: "100px",
+                    borderRadius: "50%",
+                    border: "7px solid #802a25",
+                    objectFit: "cover",
+                  }}
+                />
+              </label>
+
+              <input
+                type="file"
+                id="profile-picture-upload"
+                accept="image/*"
+                hidden
+                onChange={handlePhotoChange}
+              />
+            </Stack>
           ) : (
-            <>
-              <Typography variant="body1">{userInfo.name}</Typography>
-              <Button variant="text" onClick={() => setIsEditingName(true)}>
-                Edit
-              </Button>
-            </>
+            <Stack direction="column" spacing={2}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="column" spacing={1} sx={{ width: "100%" }}>
+                  <Typography variant="body1" sx={{ textAlign: "left" }}>
+                    Preferred Name:
+                  </Typography>
+                  <TextField
+                      variant="outlined"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      placeholder={userInfo.name}
+                      sx={{
+                        width: "250px",
+                        "& .MuiOutlinedInput-root": {
+                          "& fieldset": {
+                            borderColor: "#802a25", 
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "#671f1a", 
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#671f1a",
+                          },
+                        },
+                      }}
+                    />
+                </Stack>
+                <label
+                  htmlFor="profile-picture-upload"
+                  style={{ cursor: "pointer" }}
+                >
+                  <img
+                    src={userInfo.photoUrl}
+                    alt={`${userInfo.name || "User"}'s profile`}
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "50%",
+                      border: "7px solid #802a25",
+                      objectFit: "cover",
+                    }}
+                  />
+                </label>
+                <input
+                  type="file"
+                  id="profile-picture-upload"
+                  accept="image/*"
+                  hidden
+                  onChange={handlePhotoChange}
+                />
+              </Stack>
+              <Box>
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleNameChange(editedName)}
+                    sx={{
+                      backgroundColor: "#802a25",
+                      color: "white",
+                      "&:hover": {
+                        backgroundColor: "#671f1a",
+                      },
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={cancelEditing}
+                    sx={{
+                      borderColor: "#802a25",
+                      color: "#802a25",
+                      "&:hover": {
+                        borderColor: "#802a25",
+                        backgroundColor: "#802a25",
+                        color: "white",
+                      },
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Box>
+            </Stack>
           )}
-        </div>
-        <div style={{ textAlign: "center", marginBottom: "16px" }}>
-          <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
-            <img
-              src={userInfo.photoUrl}
-              alt={`${userInfo.name || "User"}'s profile`}
-              style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "50%",
-                border: "2px solid #ccc",
-              }}
-            />
-          </label>
-          <input
-            type="file"
-            id="profile-picture-upload"
-            accept="image/*"
-            hidden
-            onChange={handlePhotoChange}
-          />
-        </div>
-        <UserCourseDetails />
+        </Box>
+
+        {/* User Course Details Accordion */}
+        <Box sx={{ mb: 3 }}>
+          <UserCourseDetails />
+        </Box>
+
+        {/* Button Stack */}
         <Stack spacing={2} sx={{ width: "100%" }}>
-          <>
-            <Button onClick={importCourseHistory}>Import Course History</Button>
-            <Button onClick={deleteCourseHistory}>Delete Course History</Button>
-            <Button onClick={signOut}>Sign Out</Button>
-            <Button variant="contained" color="error" onClick={deleteAccount}>
-              Delete My Account
-            </Button>
-          </>
+          <Button
+            sx={{
+              backgroundColor: "#802a25",
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#671f1a",
+              },
+            }}
+            onClick={importCourseHistory}
+          >
+            Import Course History
+          </Button>
+          <Button
+            sx={{
+              backgroundColor: "#802a25",
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#671f1a",
+              },
+            }}
+            onClick={deleteCourseHistory}
+          >
+            Delete Course History
+          </Button>
+          <Button
+            sx={{
+              backgroundColor: "#802a25",
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#671f1a",
+              },
+            }}
+            onClick={signOut}
+          >
+            Sign Out
+          </Button>
+          <Button
+            sx={{
+              backgroundColor: "red", // Red color for Delete Account
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#ff4d4d", // Lighter red on hover
+              },
+            }}
+            onClick={handleOpenDialog}
+          >
+            Delete Account
+          </Button>
         </Stack>
-        {error && (
-          <Typography color="error" sx={{ mt: 2 }}>
-            {error}
-          </Typography>
-        )}
-        <br />
-        <br />
       </Box>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete your account?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDeleteAccount}
+            color="secondary"
+            autoFocus
+          >
+            Delete Account
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AuthWrapper>
   );
 }
+
