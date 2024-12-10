@@ -45,7 +45,7 @@ const checkForInterestedSections = function (mutationsList) {
                 const interestedSectionString = `P{${curProf}}S{${curSection}}M{${curMeetingPatterns}}`;
                 if (!sentInterestedSections.has(interestedSectionString)) {
                   sentInterestedSections.add(interestedSectionString);
-                  add[interestedSectionString] = expDate.getTime();
+                  add[interestedSectionString] = expDate.toISOString();
                 }
               }
               curSection = null;

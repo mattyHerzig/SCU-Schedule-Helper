@@ -175,6 +175,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorReponse"
   /user:
+    get:
+      summary: Query users by name
+      tags:
+        - Users
+      description: Get a list of users that match the specified name.
+      operationId: getUsersByName
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: The name to search for. Note that this is a case-insensitive search, where the query name is matched to the beginning of the user's name (e.g., "j" would match "John Doe", but "doe" would not).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserMinimalProfile"
+        "401":
+          description: Unauthorized - missing or invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to retrieve users.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
     post:
       summary: Create a new user
       tags:
@@ -204,7 +238,7 @@ paths:
               schema:
                 type: object
                 allOf:
-                  - $ref: "#/components/schemas/UserLimitedProfile"
+                  - $ref: "#/components/schemas/UserFriendProfile"
                 properties:
                   subscriptions:
                     type: array
@@ -229,66 +263,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorReponse"
-  /user/{userId}:
-    get:
-      operationId: getUser
-      tags:
-        - Users
-      summary: Get a user's info
-      description: Get the maximum amount of information about a user that the current user is authorized to see.
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: The ID of the user to get information for (for the contextual user, this should just be "me").
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Successfully retrieved user information.
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - type: object
-                    title: Contextual user profile
-                    $ref: "#/components/schemas/User"
-                  - type: object
-                    title: Friend profile
-                    $ref: "#/components/schemas/UserFriendProfile"
-                  - type: object
-                    title: Non-friend profile
-                    $ref: "#/components/schemas/UserLimitedProfile"
-        "401":
-          description: Unauthorized - User is not authorized to view this information or missing/invalid JWT.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorReponse"
-        "404":
-          description: Not Found - User with the specified `userId` does not exist.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorReponse"
-        "500":
-          description: Internal Server Error - Unable to retrieve the user information.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorReponse"
     put:
       operationId: updateUser
       tags:
         - Users
       summary: Update a user
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: The ID of the user to update (for the contextual user, this should just be "me").
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -346,13 +325,6 @@ paths:
         - Users
       description: Deletes all entries associated with a given userId from the database if the user is authorized
       operationId: deleteUser
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: The ID of the user to delete (for the contextual user, this should just be "me").
-          schema:
-            type: string
       responses:
         "204":
           description: Success - User and all of their entries are successfully deleted.
@@ -374,7 +346,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorReponse"
-
+  /user/{userId}:
+    get:
+      operationId: getUser
+      tags:
+        - Users
+      summary: Get a user's info
+      description: Get the maximum amount of information about a user that the current user is authorized to see.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: The ID of the user to get information for (for the contextual user, this should just be "me").
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved user information.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    title: Contextual user profile
+                    $ref: "#/components/schemas/User"
+                  - type: object
+                    title: Friend profile
+                    $ref: "#/components/schemas/UserFriendProfile"
+                  - type: object
+                    title: Non-friend profile
+                    $ref: "#/components/schemas/UserLimitedProfile"
+        "401":
+          description: Unauthorized - User is not authorized to view this information or missing/invalid JWT.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "404":
+          description: Not Found - User with the specified `userId` does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
+        "500":
+          description: Internal Server Error - Unable to retrieve the user information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReponse"
 components:
   schemas:
     AccessTokenResponse:
@@ -383,7 +402,7 @@ components:
         accessToken:
           type: string
           description: An access token (JWT) for the current user.
-        accessTokenExpiration:
+        accessTokenExpirationDate:
           type: string
           format: date-time
           description: The expiration date of the access token, as an ISO-formatted timestamp.
@@ -443,6 +462,15 @@ components:
           example: ["P{Natalie Linnell}C{CSCI187}"]
     UserLimitedProfile:
       type: object
+      allOf:
+        - $ref: "#/components/schemas/UserMinimalProfile"
+      properties:
+        email:
+          type: string
+          description: The user's email address.
+          example: "jdoe@scu.edu"
+    UserMinimalProfile:
+      type: object
       properties:
         id:
           type: string
@@ -452,10 +480,6 @@ components:
           type: string
           description: The user's full name.
           example: "John Doe"
-        email:
-          type: string
-          description: The user's email address.
-          example: "jdoe@scu.edu"
         photoUrl:
           type: string
           description: A URL to the user's profile picture.
@@ -489,20 +513,26 @@ components:
           properties:
             startHour:
               type: integer
+              description: Hour between 0-23.
             startMinute:
               type: integer
+              description: Minute between 0-59.
             endHour:
               type: integer
+              description: Hour between 0-23.
             endMinute:
               type: integer
+              description: Minute between 0-59.
         scoreWeighting:
           type: object
-          description: The user's preferred weighting for SCU Evaluations and Rate My Professors scores.
+          description: The user's preferred weighting among different data sources for scoring sections.
           properties:
-            weightScuEvals:
+            scuEvals:
               type: integer
-            weightRmp:
+              description: The percentage of the score that should come from SCU Evaluations data.
+            rmp:
               type: integer
+              description: The percentage of the score that should come from Rate My Professors data.
       example:
         preferredSectionTimeRange:
           startHour: 8
@@ -531,35 +561,76 @@ components:
       properties:
         interestedSections:
           type: object
-          allOf:
-            - $ref: "#/components/schemas/ListUpdate"
+          properties:
+            add:
+              type: object
+              description: Sections to add to the user's interested sections, where the keys are strings that match the regular expression `P{.*}S{.*}M{.*}`. Within the P brackets is the professor name, within the S the full section string, and within the M the meeting pattern string.
+              patternProperties:
+                "P{.*}S{.*}M{.*}":
+                  type: string
+                  format: date-time
+                  description: An ISO-formatted timestamp of the section's expiration date--should be 45 days from the creation time.
+            remove:
+              type: array
+              items:
+                type: string
+                pattern: "P{.*}S{.*}M{.*}"
+              description: Sections to remove from the user's interested sections, where the sections are strings that match the regular expression `P{.*}S{.*}M{.*}`.
       example:
         interestedSections:
           {
-            add: ["P{Natalie Linnell}S{CSCI187-1}"],
-            remove: ["P{Natalie Linnell}S{CSCI187-2}"],
+            add:
+              {
+                "P{Stacey Ritter}S{ACTG 11-1 - Introduction to Financial Accounting (-)}M{M W F | 8:00 AM - 9:05 AM | Rm 306 Kenna Hall}": "2024-03-01T00:00:00Z",
+              },
+            remove:
+              [
+                "P{Stacey Ritter}S{ACTG 11-1 - Introduction to Financial Accounting (-)}M{M W F | 8:00 AM - 9:05 AM | Rm 306 Kenna Hall}",
+              ],
           }
     CoursesTakenUpdate:
       type: object
-      description: An object containing courses to add or remove from the user's taken courses.
+      description: An object containing courses to add or remove from the user's taken courses, where the courses are strings which match the regular expression `P{.*}C{.*}T{.*}`. The P brackets contain the professor name, the C brackets contain the course code, section number, and course name, and the T brackets contain the term.
       properties:
         coursesTaken:
           type: object
           allOf:
             - $ref: "#/components/schemas/ListUpdate"
+          properties:
+            add:
+              items:
+                type: string
+                pattern: "P{.*}C{.*}T{.*}"
+              description: An array containing courses to add to the user's taken courses, where the courses are strings which match the regular expression `P{.*}C{.*}T{.*}`. The P brackets contain the professor name, the C brackets contain the course code, section number, and course name, and the T brackets contain the term.
+            remove:
+              items:
+                type: string
+                pattern: "P{.*}C{.*}T{.*}"
+              description: An array containing courses to remove from the user's taken courses, where the courses are strings which match the regular expression `P{.*}C{.*}T{.*}`.
       example:
         coursesTaken:
           {
-            add: ["P{Natalie Linnell}C{CSCI187}"],
-            remove: ["P{Natalie Linnell}C{CSCI161}"],
+            add:
+              [
+                "P{Bryson White}C{RSOC 143-1 - Religion and Mass Incarceration in the US}T{Spring 2024}",
+              ],
+            remove:
+              [
+                "P{Bryson White}C{RSOC 143-1 - Religion and Mass Incarceration in the US}T{Spring 2024}",
+              ],
           }
     PersonalInfoUpdate:
       type: object
       properties:
-        personalInfo:
+        personal:
           type: object
           allOf:
             - $ref: "#/components/schemas/PersonalInfo"
+          properties:
+            photoUrl:
+              type: string
+              description: A URL to the user's profile picture, or "default," to reset to the default avatar. Don't use this field if you're also uploading a photo with the `photo` field.
+              example: "https://lh3.googleusercontent.com/a-/ALV-UjWL_k37N0YhW2rcCDgt-DLpzSzHB3yNIifm8m8VrpvPilE0VD8V=s128-c?"
     PreferencesUpdate:
       type: object
       properties:
@@ -575,6 +646,11 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/ListUpdate"
+          properties:
+            add:
+              description: The ids of the users to add to the user's friends list.
+            remove:
+              description: The ids of the users to remove from the user's friends list.
       example:
         friends: { add: ["userd1", "userId2"], remove: ["userId3", "userId4"] }
     FriendRequestsUpdate:
@@ -585,17 +661,17 @@ components:
           properties:
             send:
               type: array
-              description: Friend requests to send to other users.
+              description: The ids of the users to send friend requests to.
               items:
                 type: string
             removeIncoming:
               type: array
-              description: Friend requests to remove from the user's incoming friend requests.
+              description: The ids of the users to remove incoming friend requests from.
               items:
                 type: string
             removeOutgoing:
               type: array
-              description: Friend requests to remove from the user's outgoing friend requests.
+              description: The ids of the users to remove outgoing friend requests to.
               items:
                 type: string
       example:
@@ -747,11 +823,11 @@ components:
       scheme: bearer
       bearerFormat: JWT
     oauth:
-      description: An OAuth token generated for our Google Cloud app by Google. Used in the authorization header as "OAuth {token}"
+      description: An OAuth token generated for our Google Cloud app by Google. Format the `Authorization` header as `OAuth <token>` to use this token. This authorization scheme is only used for the GET `/auth_token` endpoint.
       type: http
       scheme: oauth
     bearerRefreshToken:
-      description: A refresh token issued by our server. The type of the token is "refresh"
+      description: A refresh token issued by our server. The type field in the payload of the token has the value `refresh`.
       type: http
       scheme: bearer
       bearerFormat: JWT

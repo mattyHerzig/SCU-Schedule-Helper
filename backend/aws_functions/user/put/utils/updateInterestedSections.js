@@ -12,7 +12,7 @@ export async function updateInterestedSections(userId, updateData) {
   if (updateData.add)
     for (const section in updateData.add)
       updatedInterestedSections.set(section, {
-        N: updateData.add[section].toString(),
+        S: updateData.add[section].toString(),
       });
   if (updateData.remove)
     for (const section of updateData.remove)

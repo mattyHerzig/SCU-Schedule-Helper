@@ -54,9 +54,9 @@ export async function updatePreferences(userId, updateData) {
 
   if (scoreWeighting) {
     if (
-      !scoreWeighting.scuEvals ||
-      !scoreWeighting.rmp ||
-      scoreWeighting.scuEvals + scoreWeighting.rmp > 100
+      nullOrUndefined(scoreWeighting.scuEvals) ||
+      nullOrUndefined(scoreWeighting.rmp) ||
+      scoreWeighting.scuEvals + scoreWeighting.rmp != 100
     ) {
       throw new Error("Invalid score weighting.", { cause: 400 });
     }

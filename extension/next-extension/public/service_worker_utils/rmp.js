@@ -20,11 +20,22 @@ const edgecases = {
   actual_mismatches: new Set(["eun park"]),
 };
 
+function findClosingBrace(str, openingBraceIndex) {
+  let closingBraceIndex = openingBraceIndex + 1;
+  let braceCount = 1;
+  while (braceCount > 0 && closingBraceIndex < str.length) {
+    closingBraceIndex++;
+    if (str[closingBraceIndex] == "{") braceCount++;
+    if (str[closingBraceIndex] == "}") braceCount--;
+  }
+  return closingBraceIndex;
+}
+
 async function getHtml(url) {
   const response = await fetch(url);
   return await response.text();
 }
-``;
+
 async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   const url = `https://www.ratemyprofessors.com/professor/${profId}`;
   if (debuggingEnabled) console.log("Querying " + url + "...");
@@ -38,13 +49,7 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   let indexOfTeacher = html.indexOf('"__typename":"Teacher"');
   let openingBraceIndex = html.lastIndexOf("{", indexOfTeacher);
   // Find closing brace that matches the opening brace
-  let closingBraceIndex = indexOfTeacher;
-  let braceCount = 1;
-  while (braceCount > 0) {
-    closingBraceIndex++;
-    if (html[closingBraceIndex] == "{") braceCount++;
-    if (html[closingBraceIndex] == "}") braceCount--;
-  }
+  let closingBraceIndex = findClosingBrace(html, openingBraceIndex);
   let teacherInfoString = html.substring(
     openingBraceIndex,
     closingBraceIndex + 1,
@@ -70,7 +75,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
   let schoolId = -1;
   while (indexOfSchool != -1) {
     let openingBraceIndex = html.lastIndexOf("{", indexOfSchool);
-    let closingBraceIndex = html.indexOf("}", indexOfSchool);
+    let closingBraceIndex = findClosingBrace(html, openingBraceIndex);
     let schoolInfoString = html.substring(
       openingBraceIndex,
       closingBraceIndex + 1,
