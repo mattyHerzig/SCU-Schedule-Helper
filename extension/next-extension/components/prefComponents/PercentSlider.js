@@ -4,8 +4,8 @@ import Slider from "@mui/material/Slider";
 import Typography from "@mui/material/Typography";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-function valuetext(value) {
-  return `${value}`;
+function getValueText(value) {
+  return `${100 - value}% RMP | ${value}% SCU Evals`;
 }
 
 const theme = createTheme({
@@ -48,28 +48,24 @@ export default function PercentSlider({ initValue, onChangeCommitted }) {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ width: 300, mt: 1 }}>
+      <Box sx={{ width: 300, mt: 3 }}>
         <Slider
           value={sliderValue}
           onChange={handleChange}
           onChangeCommitted={handleChangeCommitted}
-          getAriaValueText={valuetext}
+          getAriaValueText={getValueText}
+          valueLabelFormat={getValueText}
           step={1}
-          marks
+          marks={
+            [
+              { value: 0, label: "Only RMP" },
+              { value: 50, label: "Use both equally" },
+              { value: 100, label: "Only SCU evals" },]
+          }
           min={0}
           max={100}
           valueLabelDisplay="auto"
         />
-        <Box sx={{ mt: 2, justifyContent: "center", alignItems: "center" }}>
-          <Typography
-            align="center"
-            gutterBottom
-            sx={{ fontSize: ".75rem", whiteSpace: "nowrap" }}
-          >
-            SCU Course Evaluations: {sliderValue}% | RateMyProfessor:{" "}
-            {100 - sliderValue}%
-          </Typography>
-        </Box>
       </Box>
     </ThemeProvider>
   );

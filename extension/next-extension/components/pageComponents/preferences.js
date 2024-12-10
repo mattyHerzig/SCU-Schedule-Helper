@@ -173,8 +173,7 @@ export default function Preferences() {
           </Box>
 
           <Typography>
-            How would you like RateMyProfessor and SCU Course Evaluation ratings
-            to be weighed:
+            How should we use SCU Course Evaluations and RateMyProfessors data to calculate section scores?
           </Typography>
 
           <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
