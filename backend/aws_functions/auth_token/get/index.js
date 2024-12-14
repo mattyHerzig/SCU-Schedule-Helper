@@ -27,8 +27,7 @@ export async function handler(event, context) {
     tokenResponse.accessToken = generateDataAccessToken(
       userAuthorization.userId,
     );
-    // 2 days less than a year (the actual expiration date), just to be safe :)
-    let tokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 363);
+    let tokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
     tokenResponse.accessTokenExpirationDate = tokenExpDate.toISOString();
     if (userAuthorization.oAuthInfo != null) {
       tokenResponse.refreshToken = generateRefreshToken(
@@ -112,13 +111,13 @@ function verifyRefreshToken(refreshToken) {
 
 function generateDataAccessToken(userId) {
   return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, {
-    expiresIn: "1y",
+    expiresIn: "7d",
   });
 }
 
 function generateRefreshToken(userId) {
   return jwtLib.sign({ sub: userId, type: "refresh" }, process.env.JWT_SECRET, {
-    expiresIn: "100y",
+    expiresIn: "30d",
   });
 }
 

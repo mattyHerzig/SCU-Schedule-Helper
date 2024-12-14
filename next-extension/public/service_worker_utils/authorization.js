@@ -219,6 +219,7 @@ async function refreshAccessToken() {
   const data = await response.json();
   if (response.status !== 200) {
     console.error("Error refreshing access token:", data.message);
+    await signOut();
     return null;
   }
   await chrome.storage.sync.set({

@@ -4,7 +4,7 @@
   "description": "Next.js Chrome Extension for SCU Schedule Helper",
   "main": "index.js",
   "scripts": {
-
+    "build": "next build && node out.js",
     "start": "next start",
     "run": "next start",
     "dev": "next dev"

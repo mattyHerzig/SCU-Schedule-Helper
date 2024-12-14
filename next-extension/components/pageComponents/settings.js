@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import AuthWrapper from "./authWrapper";
-import { clearCourseHistory } from "../../../../extension/next-extension/public/service_worker_utils/user.js";
+import { clearCourseHistory } from "../../public/service_worker_utils/user.js";
 import UserCourseDetails from "../settingsComponents/UserCourseDetails";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
