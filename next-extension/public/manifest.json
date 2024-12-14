@@ -28,6 +28,10 @@
       "js": ["content_scripts/course_history.js"]
     },
     {
+      "matches" : ["https://www.myworkday.com/scu/d/task/2998$28771.htmld"],
+      "js": ["content_scripts/current_courses.js"]
+    },
+    {
       "matches": ["https://www.myworkday.com/scu/*"],
       "js": ["content_scripts/section_scores.js"]
     }

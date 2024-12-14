@@ -6,9 +6,6 @@ const nextConfig = {
   },
   // Since this is a Chrome extension, disable features that won't work
   reactStrictMode: true,
-  async headers() {
-    return [];
-  },
   // Disable server features
   trailingSlash: true,
 };

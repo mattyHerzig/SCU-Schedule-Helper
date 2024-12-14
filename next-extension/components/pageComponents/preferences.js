@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
+import {
+  Box,
+  Typography,
+  FormControlLabel,
+  Switch,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Button,
+  IconButton,
+} from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
 import AuthWrapper from "./authWrapper";
 import RangeSliderTime from "../prefComponents/RangeSliderTime";
 import PercentSlider from "../prefComponents/PercentSlider";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import Button from "@mui/material/Button";
-import InfoIcon from "@mui/icons-material/Info";
-import IconButton from "@mui/material/IconButton";
 
 export default function Preferences() {
   const [courseTracking, setCourseTracking] = useState(true);
@@ -137,7 +139,7 @@ export default function Preferences() {
           sx={{
             display: "flex",
             flexDirection: "column",
-            alignItems: "center", 
+            alignItems: "center",
             gap: 2,
           }}
         >
@@ -148,15 +150,17 @@ export default function Preferences() {
               width: "100%",
             }}
           >
-            <Typography variant="h6" sx={{ mr: 1 }}>Course Preferences</Typography>
-            <IconButton 
-              onClick={handleDialogOpen} 
+            <Typography variant="h6" sx={{ mr: 1 }}>
+              Course Preferences
+            </Typography>
+            <IconButton
+              onClick={handleDialogOpen}
               aria-label="info"
-              sx={{ 
+              sx={{
                 p: 0,
                 ml: 0.5,
                 display: "flex",
-                alignItems: "center"
+                alignItems: "center",
               }}
             >
               <InfoIcon fontSize="small" />
@@ -164,7 +168,9 @@ export default function Preferences() {
           </Box>
           <Typography>Preferred Course Times:</Typography>
 
-          <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <Box
+            sx={{ width: "100%", display: "flex", justifyContent: "center" }}
+          >
             <RangeSliderTime
               initValue={timePreference}
               onChangeCommitted={handleTimePreferenceChange}
@@ -173,10 +179,13 @@ export default function Preferences() {
           </Box>
 
           <Typography>
-            How should we use SCU Course Evaluations and RateMyProfessors data to calculate section scores?
+            How should we use SCU Course Evaluations and RateMyProfessors data
+            to calculate section scores?
           </Typography>
 
-          <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <Box
+            sx={{ width: "100%", display: "flex", justifyContent: "center" }}
+          >
             <PercentSlider
               initValue={scuEvalsPercentage}
               onChangeCommitted={handlePercentagePreferenceChange}
@@ -191,24 +200,29 @@ export default function Preferences() {
                 onChange={handleSwitchChange}
                 sx={{
                   "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#802a25", 
+                    color: "#802a25",
                   },
                   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#802a25", 
+                    backgroundColor: "#802a25",
                   },
                   "& .MuiSwitch-switchBase": {
                     color: "#703331",
                   },
                   "& .MuiSwitch-track": {
-                    backgroundColor: "#ccc", 
+                    backgroundColor: "#ccc",
                   },
                 }}
               />
             }
             label="Automatically keep track of my courses"
-            sx={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+            }}
           />
-          
+
           {errorMessage && (
             <Typography sx={{ color: "error.main", ml: 2 }}>
               {errorMessage}

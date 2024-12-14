@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
+import { useState, useEffect } from "react";
+import { Box, Button, Typography } from "@mui/material";
 
 const AuthWrapper = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -10,7 +8,6 @@ const AuthWrapper = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-
     checkAuthStatus();
     const authListener = (changes, namespace) => {
       if (changes.accessToken) {
@@ -74,20 +71,20 @@ const AuthWrapper = ({ children }) => {
           You must be signed in to access this feature.
         </Typography>
         <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSignIn}
-            disabled={isLoggingIn}
-            sx={{
-              backgroundColor: "#802a25", 
-              color: "white", 
-              "&:hover": {
-                backgroundColor: "#671f1a", 
-              },
-            }}
-          >
-            {isLoggingIn ? "Logging in..." : "Sign In with Google"}
-          </Button>
+          variant="contained"
+          color="primary"
+          onClick={handleSignIn}
+          disabled={isLoggingIn}
+          sx={{
+            backgroundColor: "#802a25",
+            color: "white",
+            "&:hover": {
+              backgroundColor: "#671f1a",
+            },
+          }}
+        >
+          {isLoggingIn ? "Logging in..." : "Sign In with Google"}
+        </Button>
         {error && (
           <Typography sx={{ color: "error.main", mt: 2 }}>{error}</Typography>
         )}

@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
+import { useState, useEffect, useRef } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  Stack,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
 import AuthWrapper from "./authWrapper";
-import { clearCourseHistory } from "../../public/service_worker_utils/user.js";
 import UserCourseDetails from "../settingsComponents/UserCourseDetails";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
+import { clearCourseHistory } from "../../public/utils/user.js";
 
 export default function Settings() {
   const [userInfo, setUserInfo] = useState({});
@@ -124,6 +126,17 @@ export default function Settings() {
     }
   };
 
+  const addCurrentCourses = async () => {
+    try {
+      const errorMessage =
+        await chrome.runtime.sendMessage("addCurrentCourses");
+      setError(errorMessage || null);
+    } catch (error) {
+      console.error("Error adding current courses:", error);
+      setError("An unknown error occurred while adding current courses.");
+    }
+  };
+
   const importCourseHistory = async () => {
     try {
       const errorMessage = await chrome.runtime.sendMessage(
@@ -150,7 +163,7 @@ export default function Settings() {
     }
   };
 
-   const handleOpenDialog = () => {
+  const handleOpenDialog = () => {
     setOpenDialog(true);
   };
 
@@ -228,25 +241,25 @@ export default function Settings() {
                     Preferred Name:
                   </Typography>
                   <TextField
-                      variant="outlined"
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      placeholder={userInfo.name}
-                      sx={{
-                        width: "250px",
-                        "& .MuiOutlinedInput-root": {
-                          "& fieldset": {
-                            borderColor: "#802a25", 
-                          },
-                          "&:hover fieldset": {
-                            borderColor: "#671f1a", 
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#671f1a",
-                          },
+                    variant="outlined"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    placeholder={userInfo.name}
+                    sx={{
+                      width: "250px",
+                      "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                          borderColor: "#802a25",
                         },
-                      }}
-                    />
+                        "&:hover fieldset": {
+                          borderColor: "#671f1a",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#671f1a",
+                        },
+                      },
+                    }}
+                  />
                 </Stack>
                 <label
                   htmlFor="profile-picture-upload"
@@ -324,6 +337,18 @@ export default function Settings() {
                 backgroundColor: "#671f1a",
               },
             }}
+            onClick={addCurrentCourses}
+          >
+            Import Current Courses
+          </Button>
+          <Button
+            sx={{
+              backgroundColor: "#802a25",
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#671f1a",
+              },
+            }}
             onClick={importCourseHistory}
           >
             Import Course History
@@ -390,4 +415,3 @@ export default function Settings() {
     </AuthWrapper>
   );
 }
-

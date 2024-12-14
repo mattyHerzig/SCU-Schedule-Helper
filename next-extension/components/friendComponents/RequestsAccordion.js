@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import IconButton from "@mui/material/IconButton";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
-import Avatar from "@mui/material/Avatar";
-import Stack from "@mui/material/Stack";
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  IconButton,
+  Avatar,
+  Stack,
+} from "@mui/material";
+import { ExpandMore, Check, Close } from "@mui/icons-material";
 
 const transformUserToCourses = (user) => {
   const transformCourses = (courseList, type) => {
@@ -154,7 +153,7 @@ export default function RequestsAccordion({
         }}
       >
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
+          expandIcon={<ExpandMore />}
           aria-controls="received-requests-content"
           id="received-requests-header"
           sx={{
@@ -185,7 +184,7 @@ export default function RequestsAccordion({
               }}
             >
               <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
+                expandIcon={<ExpandMore />}
                 aria-controls={`panel${request.id}-content`}
                 id={`panel${request.id}-header`}
                 sx={{
@@ -221,7 +220,7 @@ export default function RequestsAccordion({
                         },
                       }}
                     >
-                      <CheckIcon fontSize="small" />
+                      <Check fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
@@ -234,7 +233,7 @@ export default function RequestsAccordion({
                         },
                       }}
                     >
-                      <CloseIcon fontSize="small" />
+                      <Close fontSize="small" />
                     </IconButton>
                   </Stack>
                 </Stack>
@@ -268,7 +267,7 @@ export default function RequestsAccordion({
         }}
       >
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
+          expandIcon={<ExpandMore />}
           aria-controls="sent-requests-content"
           id="sent-requests-header"
           sx={{
@@ -299,7 +298,7 @@ export default function RequestsAccordion({
               }}
             >
               <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
+                expandIcon={<ExpandMore />}
                 aria-controls={`panel${request.id}-content`}
                 id={`panel${request.id}-header`}
                 sx={{
@@ -335,7 +334,7 @@ export default function RequestsAccordion({
                         },
                       }}
                     >
-                      <CloseIcon fontSize="small" />
+                      <Close fontSize="small" />
                     </IconButton>
                   </Stack>
                 </Stack>

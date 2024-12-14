@@ -1,8 +1,5 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Slider from "@mui/material/Slider";
-import Typography from "@mui/material/Typography";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { useState } from "react";
+import { Box, Slider, createTheme, ThemeProvider } from "@mui/material";
 
 function getValueText(value) {
   return `${100 - value}% RMP | ${value}% SCU Evals`;
@@ -34,7 +31,7 @@ const theme = createTheme({
 });
 
 export default function PercentSlider({ initValue, onChangeCommitted }) {
-  const [sliderValue, setSliderValue] = React.useState(initValue);
+  const [sliderValue, setSliderValue] = useState(initValue);
 
   const handleChange = (event, newValue) => {
     setSliderValue(newValue);
@@ -56,12 +53,11 @@ export default function PercentSlider({ initValue, onChangeCommitted }) {
           getAriaValueText={getValueText}
           valueLabelFormat={getValueText}
           step={1}
-          marks={
-            [
-              { value: 0, label: "Only RMP" },
-              { value: 50, label: "Use both equally" },
-              { value: 100, label: "Only SCU evals" },]
-          }
+          marks={[
+            { value: 0, label: "Only RMP" },
+            { value: 50, label: "Use both equally" },
+            { value: 100, label: "Only SCU evals" },
+          ]}
           min={0}
           max={100}
           valueLabelDisplay="auto"

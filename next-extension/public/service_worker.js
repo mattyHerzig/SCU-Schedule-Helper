@@ -1,11 +1,12 @@
-import { signIn, signOut } from "./service_worker_utils/authorization.js";
-import { downloadEvals } from "./service_worker_utils/evals.js";
+import { signIn, signOut } from "./utils/authorization.js";
+import { downloadEvals } from "./utils/evals.js";
 import {
   handleNotification,
   subscribe,
-} from "./service_worker_utils/notifications.js";
-import { getRmpRatings } from "./service_worker_utils/rmp.js";
+} from "./utils/notifications.js";
+import { getRmpRatings } from "./utils/rmp.js";
 import {
+  addCurrentCourses,
   clearCourseHistory,
   deleteAccount,
   importCourseHistory,
@@ -13,7 +14,7 @@ import {
   refreshInterestedSections,
   refreshUserData,
   updateUser,
-} from "./service_worker_utils/user.js";
+} from "./utils/user.js";
 
 const defaults = {
   extendColorHorizontally: false,
@@ -125,14 +126,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse();
       });
       break;
+    case "addCurrentCourses":
+      addCurrentCourses().then((response) => {
+        sendResponse(response);
+      });
+      break;
     case "importCourseHistory":
       importCourseHistory().then((response) => {
         sendResponse(response);
       });
+      break;
     case "runStartupChecks":
       runStartupChecks().then(() => {
         sendResponse();
       });
+      break;
     default:
       break;
   }

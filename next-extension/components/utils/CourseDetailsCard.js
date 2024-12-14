@@ -3,7 +3,7 @@ import { Card, CardContent, Typography, Stack, Divider } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
 import BookIcon from "@mui/icons-material/Book";
 
-const FriendCourseDetails = ({
+const CourseDetailsCard = ({
   courses = {
     interested: [],
     taken: [],
@@ -70,7 +70,9 @@ const FriendCourseDetails = ({
                       {course.courseCode} - {course.courseName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Prof. {course.professor} | {course.quarter}
+                      {(course.professor !== "Not taken at SCU" &&
+                        `Prof. ${course.professor} | ${course.quarter}`) ||
+                        "Not taken at SCU"}
                     </Typography>
                   </Stack>
                   {index < courses.taken.length - 1 && <Divider />}
@@ -88,4 +90,4 @@ const FriendCourseDetails = ({
   );
 };
 
-export default FriendCourseDetails;
+export default CourseDetailsCard;

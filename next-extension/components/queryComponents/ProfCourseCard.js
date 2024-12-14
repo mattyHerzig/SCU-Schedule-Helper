@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -6,7 +6,6 @@ import {
   Box,
   CircularProgress,
   Divider,
-  Tooltip,
 } from "@mui/material";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
 

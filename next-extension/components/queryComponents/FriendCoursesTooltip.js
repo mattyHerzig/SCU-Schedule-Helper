@@ -1,5 +1,4 @@
 import { Box, Typography, Tooltip } from "@mui/material";
-import React from "react";
 
 export default function FriendCoursesTooltip({ friendData }) {
   return (

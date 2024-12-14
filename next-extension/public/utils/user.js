@@ -3,6 +3,7 @@ import {
   interestedSectionPattern,
   prodUserEndpoint,
   workdayCourseHistoryUrl,
+  workdayCurrentCoursesUrl,
 } from "./constants.js";
 
 import { fetchWithAuth, signOut } from "./authorization.js";
@@ -393,6 +394,25 @@ export async function queryUserByName(name) {
     return `Error querying users: ${data.message}`;
   }
   return data;
+}
+
+export async function addCurrentCourses() {
+  await chrome.storage.local.set({
+    addCurrentCoursesRequestTime: new Date().getTime(),
+  });
+  const createdTab = await chrome.tabs.create({
+    url: workdayCurrentCoursesUrl,
+  });
+  console.log("created tab", createdTab);
+  setTimeout(async () => {
+    // send message
+    const response = await chrome.tabs.sendMessage(
+      createdTab.id,
+      "hey hey hey hey",
+    );
+    console.log("response", response);
+  }, 2000);
+  return null;
 }
 
 export async function importCourseHistory() {

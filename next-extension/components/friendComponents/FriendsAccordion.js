@@ -1,22 +1,27 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import IconButton from "@mui/material/IconButton";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CloseIcon from "@mui/icons-material/Close";
-import Avatar from "@mui/material/Avatar";
-import Stack from "@mui/material/Stack";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import Button from "@mui/material/Button";
-import FriendCourseDetails from "./FriendCourseDetails.js";
+import { useEffect, useState } from "react";
+import {
+  Typography,
+  Box,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  IconButton,
+  Avatar,
+  Stack,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+} from "@mui/material";
+import { ExpandMore, Close } from "@mui/icons-material";
+import CourseDetailsCard from "../utils/CourseDetailsCard.js";
+import {
+  mostRecentTermFirst,
+  transformInterestedSections,
+  transformTakenCourses,
+} from "../utils/user.js";
 
 export default function FriendsAccordion({ friends = [], onError = () => {} }) {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
@@ -29,88 +34,15 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
         ...profile,
         expanded: false,
         courses: {
-          interested:
-            Object.keys(profile.interestedSections)
-              .map((encodedCourse) => {
-                const courseMatch = encodedCourse.match(
-                  /P{(.*?)}S{(.*?)}M{(.*?)}/,
-                );
-                if (!courseMatch) {
-                  console.error(
-                    "Error parsing interested course:",
-                    encodedCourse,
-                  );
-                  return null;
-                }
-                const meetingPatternMatch =
-                  courseMatch[3].match(/(.*) \| (.*) \| (.*)/);
-                const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
-                const indexOfDash = courseMatch[2].indexOf("-");
-                let indexOfEnd = courseMatch[2].indexOf("(-)");
-                if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
-                const courseCode = courseMatch[2]
-                  .substring(0, indexOfDash)
-                  .replace(" ", "");
-                const professor = courseMatch[1];
-                const courseName = courseMatch[2]
-                  .substring(indexOfDash + 1, indexOfEnd)
-                  .trim();
-                return courseMatch
-                  ? {
-                      courseCode,
-                      courseName,
-                      professor,
-                      meetingPattern,
-                    }
-                  : null;
-              })
-              .filter(Boolean) || [],
-          taken: profile.coursesTaken
-            ?.map((encodedCourse) => {
-              const courseMatch = encodedCourse.match(
-                /P{(.*?)}C{(.*?)}T{(.*?)}/,
-              );
-              if (!courseMatch) return null;
-              const firstDash = courseMatch[2].indexOf("-");
-              let secondDash = courseMatch[2].indexOf("-", firstDash + 1);
-              if (secondDash === -1 || secondDash - firstDash > 5) {
-                secondDash = firstDash;
-              }
-              let indexOfEnd = courseMatch[2].indexOf("(-)");
-              if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
-              const courseCode = courseMatch[2]
-                .substring(0, firstDash)
-                .replace(" ", "");
-              const professor = courseMatch[1] || "unknown";
-              const courseName = courseMatch[2]
-                .substring(secondDash + 1, indexOfEnd)
-                .trim();
-              return courseMatch
-                ? {
-                    courseCode,
-                    courseName,
-                    professor,
-                    quarter: courseMatch[3],
-                  }
-                : null;
-            })
-            .sort(mostRecentTermFirst),
+          interested: transformInterestedSections(profile.interestedSections),
+          taken: transformTakenCourses(profile.coursesTaken).sort(
+            mostRecentTermFirst,
+          ),
         },
       };
     });
-    transformedFriends.map((friend) => {
-    });
     setTransformedFriends(transformedFriends);
   }, [friends]);
-
-  const handleAccordionChange = (id) => {
-    setTransformedFriends(
-      transformedFriends.map((friend) => ({
-        ...friend,
-        expanded: friend.id === id ? !friend.expanded : friend.expanded,
-      })),
-    );
-  };
 
   const handleRemoveFriendClick = (event, id) => {
     event.stopPropagation();
@@ -153,8 +85,6 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
       {transformedFriends.map((friend) => (
         <Accordion
           key={friend.id}
-          expanded={friend.expanded}
-          onChange={() => handleAccordionChange(friend.id)}
           sx={{
             mb: 1,
             "&:before": {
@@ -163,7 +93,7 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
           }}
         >
           <AccordionSummary
-            expandIcon={<ExpandMoreIcon />}
+            expandIcon={<ExpandMore />}
             aria-controls={`panel${friend.id}-content`}
             id={`panel${friend.id}-header`}
             sx={{
@@ -198,7 +128,7 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
                   },
                 }}
               >
-                <CloseIcon fontSize="small" />
+                <Close fontSize="small" />
               </IconButton>
             </Stack>
           </AccordionSummary>
@@ -207,7 +137,7 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
               <Typography variant="body2" sx={{ mb: 2 }}>
                 Email: {friend.email}
               </Typography>
-              <FriendCourseDetails courses={friend.courses} />
+              <CourseDetailsCard courses={friend.courses} />
             </Box>
           </AccordionDetails>
         </Accordion>
@@ -241,21 +171,4 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
       </Dialog>
     </Box>
   );
-}
-
-function mostRecentTermFirst(objA, objB) {
-  const termA = objA.quarter || "Fall 2000";
-  const termB = objB.quarter || "Fall 2000";
-  const [quarterA, yearA] = termA.split(" ");
-  const [quarterB, yearB] = termB.split(" ");
-  if (yearA === yearB) {
-    return quarterCompareDescending(quarterA, quarterB);
-  } else {
-    return parseInt(yearB) - parseInt(yearA);
-  }
-}
-
-function quarterCompareDescending(quarterA, quarterB) {
-  const quarters = ["Fall", "Summer", "Spring", "Winter"];
-  return quarters.indexOf(quarterA) - quarters.indexOf(quarterB);
 }

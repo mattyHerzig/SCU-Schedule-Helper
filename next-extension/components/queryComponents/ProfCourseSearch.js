@@ -1,5 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Autocomplete, TextField, Box, Typography, Button } from "@mui/material";
+import { useState, useMemo, useEffect } from "react";
+import {
+  Autocomplete,
+  TextField,
+  Box,
+  Typography,
+  Button,
+} from "@mui/material";
 import ProfCourseCard from "./ProfCourseCard";
 
 export default function ProfCourseSearch() {
@@ -23,12 +29,15 @@ export default function ProfCourseSearch() {
     setIsLoading(true);
     setError(null);
 
-    const evalsDataFromStorage = (await chrome.storage.local.get("evals")).evals;
+    const evalsDataFromStorage = (await chrome.storage.local.get("evals"))
+      .evals;
     if (evalsDataFromStorage) {
       if (typeof evalsDataFromStorage === "object") {
         setEvalsData(evalsDataFromStorage);
       } else {
-        console.error(`Invalid data type ${typeof evalsDataFromStorage} for evals`);
+        console.error(
+          `Invalid data type ${typeof evalsDataFromStorage} for evals`,
+        );
         setError(`You must be signed in to view course evaluations data.`);
       }
     } else {
@@ -40,7 +49,7 @@ export default function ProfCourseSearch() {
   };
 
   const searchOptions = useMemo(() => {
-    if (!evalsData || searchQuery.length < 1) return []; 
+    if (!evalsData || searchQuery.length < 1) return [];
 
     const options = [];
 
@@ -74,8 +83,8 @@ export default function ProfCourseSearch() {
       console.error("Error processing search options:", err);
     }
 
-    return options.filter(option =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+    return options.filter((option) =>
+      option.label.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [evalsData, searchQuery]);
 
@@ -114,7 +123,7 @@ export default function ProfCourseSearch() {
       <Box sx={{ mb: 2 }}>
         <Autocomplete
           options={searchOptions}
-          groupBy={(option) => option.groupLabel} 
+          groupBy={(option) => option.groupLabel}
           getOptionLabel={(option) => option.label}
           value={selected}
           onChange={(event, newValue) => {

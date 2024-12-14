@@ -1,15 +1,12 @@
-import Box from "@mui/material/Box";
-import Slider from "@mui/material/Slider";
-import Typography from "@mui/material/Typography";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useState } from "react";
+import { Box, Slider, createTheme, ThemeProvider } from "@mui/material";
 
 const generateMarks = (startHour, endHour) => {
   const marks = [];
   // Generate marks for every 15 minutes
   for (let i = 0; i <= (endHour - startHour) * 4; i++) {
     if (i % 8 !== 0) {
-      marks.push({ value: i, label: "" }); 
+      marks.push({ value: i, label: "" });
       continue;
     }
     const hour = Math.floor(i / 4) + startHour;
@@ -88,7 +85,7 @@ export default function RangeSliderTime({ initValue, onChangeCommitted }) {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ width: 300}}>
+      <Box sx={{ width: 300 }}>
         <Slider
           value={value}
           onChange={handleChange}
@@ -108,4 +105,3 @@ export default function RangeSliderTime({ initValue, onChangeCommitted }) {
     </ThemeProvider>
   );
 }
-
