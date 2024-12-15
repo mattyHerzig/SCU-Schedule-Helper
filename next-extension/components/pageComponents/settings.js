@@ -63,10 +63,10 @@ export default function Settings() {
     }
   };
 
-  const addCurrentCourses = async () => {
+  const importCurrentCourses = async () => {
     try {
       const errorMessage =
-        await chrome.runtime.sendMessage("addCurrentCourses");
+        await chrome.runtime.sendMessage("importCurrentCourses");
       setError(errorMessage || null);
     } catch (error) {
       console.error("Error adding current courses:", error);
@@ -149,7 +149,7 @@ export default function Settings() {
                 backgroundColor: "#671f1a",
               },
             }}
-            onClick={addCurrentCourses}
+            onClick={importCurrentCourses}
           >
             Import Current Courses
           </Button>

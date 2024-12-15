@@ -396,31 +396,33 @@ export async function queryUserByName(name) {
   return data;
 }
 
-export async function addCurrentCourses() {
-  await chrome.storage.local.set({
-    addCurrentCoursesRequestTime: new Date().getTime(),
-  });
-  const createdTab = await chrome.tabs.create({
-    url: workdayCurrentCoursesUrl,
-  });
-  console.log("created tab", createdTab);
-  setTimeout(async () => {
-    // send message
-    const response = await chrome.tabs.sendMessage(
-      createdTab.id,
-      "hey hey hey hey",
-    );
-    console.log("response", response);
-  }, 2000);
-  return null;
+export async function importCurrentCourses() {
+  return await openTabAndSendMessage(
+    workdayCurrentCoursesUrl,
+    "importCurrentCourses",
+  );
 }
 
 export async function importCourseHistory() {
-  await chrome.storage.local.set({
-    importCourseHistoryRequestTime: new Date().getTime(),
-  });
-  const createdTab = await chrome.tabs.create({ url: workdayCourseHistoryUrl });
-  return null;
+  return await openTabAndSendMessage(
+    workdayCourseHistoryUrl,
+    "importCourseHistory",
+  );
+}
+
+async function openTabAndSendMessage(url, message) {
+  const createdTab = await chrome.tabs.create({ url });
+
+  const tabListener = async (tabId, changeInfo, tab) => {
+    if (tabId === createdTab.id && changeInfo.status === "complete") {
+      try {
+        const response = await chrome.tabs.sendMessage(createdTab.id, message);
+        chrome.tabs.onUpdated.removeListener(tabListener);
+        return response;
+      } catch (ignore) {}
+    }
+  };
+  chrome.tabs.onUpdated.addListener(tabListener);
 }
 
 export async function clearCourseHistory() {
