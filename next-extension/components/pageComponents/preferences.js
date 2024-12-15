@@ -4,17 +4,14 @@ import {
   Typography,
   FormControlLabel,
   Switch,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Button,
   IconButton,
+  Stack
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import AuthWrapper from "./authWrapper";
 import RangeSliderTime from "../prefComponents/RangeSliderTime";
 import PercentSlider from "../prefComponents/PercentSlider";
+import PreferencesDialog from "../prefComponents/PreferencesDialog";
 
 export default function Preferences() {
   const [courseTracking, setCourseTracking] = useState(true);
@@ -67,7 +64,6 @@ export default function Preferences() {
         const prefs = userInfo.userInfo.preferences;
         shouldSendUpdate.current = false;
 
-        // Update state with stored preferences
         if (prefs.courseTracking != courseTracking)
           setCourseTracking(prefs.courseTracking);
         if (prefs.preferredSectionTimeRange != timePreference)
@@ -127,71 +123,60 @@ export default function Preferences() {
 
   return (
     <AuthWrapper>
+      <Box sx={{ padding: 2}}>
+        <Stack direction="row" alignItems="center">
+          <Typography variant="h6" sx={{ textAlign: 'center' }}>
+            Course Preferences
+          </Typography>
+          <IconButton
+            onClick={handleDialogOpen}
+            aria-label="info"
+          >
+            <InfoIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      </Box>
+
       <Box
         sx={{
-          overflow: "auto",
-          maxWidth: 600,
-          margin: "auto",
-          padding: 2,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',  
+          justifyContent: 'center', 
+          gap: 2,
+          padding: 0, 
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 2,
+        <Typography textAlign="center">What are your preferred course times?</Typography>
+
+        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <RangeSliderTime
+            initValue={timePreference}
+            onChangeCommitted={handleTimePreferenceChange}
+            sx={{ width: '90%' }}
+          />
+        </Box>
+
+        <Box 
+          sx={{ 
+            width: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center',  // Align items to the center
+            textAlign: 'center', 
+            gap: 2 
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-            }}
-          >
-            <Typography variant="h6" sx={{ mr: 1 }}>
-              Course Preferences
-            </Typography>
-            <IconButton
-              onClick={handleDialogOpen}
-              aria-label="info"
-              sx={{
-                p: 0,
-                ml: 0.5,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          <Typography>Preferred Course Times:</Typography>
-
-          <Box
-            sx={{ width: "100%", display: "flex", justifyContent: "center" }}
-          >
-            <RangeSliderTime
-              initValue={timePreference}
-              onChangeCommitted={handleTimePreferenceChange}
-              sx={{ width: "90%" }}
-            />
-          </Box>
-
           <Typography>
-            How should we use SCU Course Evaluations and RateMyProfessors data
-            to calculate section scores?
+            How would you like SCU Course Evaluations and RateMyProfessor data to be weighed in the Workday course section scores?
           </Typography>
 
-          <Box
-            sx={{ width: "100%", display: "flex", justifyContent: "center" }}
-          >
-            <PercentSlider
-              initValue={scuEvalsPercentage}
-              onChangeCommitted={handlePercentagePreferenceChange}
-              sx={{ width: "90%" }}
-            />
-          </Box>
+          <PercentSlider
+            initValue={scuEvalsPercentage}
+            onChangeCommitted={handlePercentagePreferenceChange}
+            sx={{ width: '90%' }}
+          />
 
           <FormControlLabel
             control={
@@ -216,52 +201,25 @@ export default function Preferences() {
             }
             label="Automatically keep track of my courses"
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
             }}
           />
 
           {errorMessage && (
-            <Typography sx={{ color: "error.main", ml: 2 }}>
+            <Typography sx={{ color: "error.main", textAlign: 'center' }}>
               {errorMessage}
             </Typography>
           )}
         </Box>
-
-        <Dialog open={dialogOpen} onClose={handleDialogClose}>
-          <DialogTitle>More Information</DialogTitle>
-          <DialogContent dividers>
-            <Typography variant="subtitle1" gutterBottom>
-              Preferred Course Times:
-            </Typography>
-            <Typography variant="body2" paragraph>
-              Use the slider to select your preferred time range for classes.
-              Courses outside your time range will be marked in Workday.
-            </Typography>
-
-            <Typography variant="subtitle1" gutterBottom>
-              RateMyProfessor vs SCU Course Evaluations:
-            </Typography>
-            <Typography variant="body2" paragraph>
-              Adjust the slider to weigh how much each rating source influences
-              your preference. Courses will be color coded according to the
-              course statistics adjusted with your weight
-            </Typography>
-
-            <Typography variant="subtitle1" gutterBottom>
-              Automatic Course Tracking:
-            </Typography>
-            <Typography variant="body2">
-              Enable this to allow others to see what courses you are taking
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDialogClose}>Close</Button>
-          </DialogActions>
-        </Dialog>
       </Box>
+
+      <PreferencesDialog 
+        open={dialogOpen} 
+        onClose={handleDialogClose} 
+      />
     </AuthWrapper>
   );
 }

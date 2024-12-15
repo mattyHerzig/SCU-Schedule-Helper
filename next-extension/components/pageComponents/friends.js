@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import AuthWrapper from "./authWrapper";
 import FriendsAccordion from "../friendComponents/FriendsAccordion";
 import RequestsAccordion from "../friendComponents/RequestsAccordion";
+import UserSearch from "../friendComponents/UserSearch"
 
 export default function Friends() {
   const [friends, setFriends] = useState([]);
@@ -78,9 +79,8 @@ export default function Friends() {
           }}
         ></Box>
         {error && <Typography color="error">{error}</Typography>}
-        <br />
-        <br />
       </Box>
+      <UserSearch></UserSearch>
     </AuthWrapper>
   );
 }

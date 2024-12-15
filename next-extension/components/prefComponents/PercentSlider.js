@@ -10,19 +10,19 @@ const theme = createTheme({
     MuiSlider: {
       styleOverrides: {
         root: {
-          color: "#872f2a", // Updated to #872f2a
+          color: "#872f2a", 
         },
         thumb: {
-          backgroundColor: "#872f2a", // Updated to #872f2a
+          backgroundColor: "#872f2a", 
           "&:hover, &.Mui-active": {
-            boxShadow: "0 0 0 8px rgba(135, 47, 42, 0.16)", // Updated shadow with new color
+            boxShadow: "0 0 0 8px rgba(135, 47, 42, 0.16)", 
           },
         },
         track: {
-          backgroundColor: "#872f2a", // Updated to #872f2a
+          backgroundColor: "#872f2a", 
         },
         rail: {
-          backgroundColor: "#872f2a", // Updated to #872f2a
+          backgroundColor: "#872f2a", 
           opacity: 0.3,
         },
       },
@@ -45,7 +45,7 @@ export default function PercentSlider({ initValue, onChangeCommitted }) {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ width: 300, mt: 3 }}>
+      <Box sx={{ width: 225 }}>
         <Slider
           value={sliderValue}
           onChange={handleChange}

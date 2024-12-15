@@ -14,7 +14,7 @@ export default function Home() {
   };
 
   const openLandingPage = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("tab/index.html") });
+    chrome.tabs.create({ url: chrome.runtime.getURL("landing_page/index.html") });
   };
 
   useEffect(() => {
@@ -41,7 +41,6 @@ export default function Home() {
           overflowX: "hidden",
           width: "100%",
           position: 'relative',
-          padding: '0 10px', 
           paddingBottom: '20px', 
         }}
       >
