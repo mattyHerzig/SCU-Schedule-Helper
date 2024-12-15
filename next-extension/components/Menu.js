@@ -3,12 +3,14 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Button from "@mui/material/Button";
-import HomeIcon from "@mui/icons-material/Home";
-import SearchIcon from "@mui/icons-material/Search";
-import TuneIcon from "@mui/icons-material/Tune";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import SettingsIcon from "@mui/icons-material/Settings";
-import CloseIcon from "@mui/icons-material/Close";
+import {
+  Home,
+  AccountCircle,
+  Search,
+  Tune,
+  PersonAdd,
+  Close,
+} from "@mui/icons-material";
 
 export const supportEmail = "swdean@scu.edu";
 
@@ -16,21 +18,21 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
   const [activeMenu, setActiveMenu] = useState("main");
 
   const menuItems = [
-    { icon: <SearchIcon />, id: "main", action: () => navigateToPage("main") },
+    { icon: <Search />, id: "main", action: () => navigateToPage("main") },
     {
-      icon: <TuneIcon />,
+      icon: <Tune />,
       id: "preferences",
       action: () => navigateToPage("preferences"),
     },
     {
-      icon: <PersonAddIcon />,
+      icon: <PersonAdd />,
       id: "friends",
       action: () => navigateToPage("friends"),
     },
     {
-      icon: <SettingsIcon />,
-      id: "settings",
-      action: () => navigateToPage("settings"),
+      icon: <AccountCircle />,
+      id: "profile",
+      action: () => navigateToPage("profile"),
     },
   ];
 
@@ -102,7 +104,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
               }}
               className={activeMenu === "home" ? "active" : ""}
             >
-              <HomeIcon
+              <Home
                 sx={{
                   fontSize: 24,
                   color: activeMenu === "home" ? "#703331" : "#d1d1d1",
@@ -227,7 +229,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 },
               }}
             >
-              <CloseIcon
+              <Close
                 sx={{
                   fontSize: 24,
                   color: "#d1d1d1",
@@ -241,5 +243,3 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
     </Box>
   );
 }
-
-

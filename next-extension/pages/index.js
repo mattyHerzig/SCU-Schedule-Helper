@@ -4,7 +4,7 @@ import Main from "../components/pageComponents/main";
 import Preferences from "../components/pageComponents/preferences";
 import Menu from "../components/Menu";
 import Friends from "../components/pageComponents/friends";
-import Settings from "../components/pageComponents/settings";
+import Profile from "../components/pageComponents/profile";
 
 export default function Home() {
   const [activePage, setActivePage] = useState("main");
@@ -51,8 +51,8 @@ export default function Home() {
         {activePage === "friends" && (
           <Friends navigateToPage={navigateToPage} />
         )}
-        {activePage === "settings" && (
-          <Settings navigateToPage={navigateToPage} />
+        {activePage === "profile" && (
+          <Profile navigateToPage={navigateToPage} />
         )}
       </Box>
     </Box>

@@ -1,19 +1,26 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
   Button,
   Stack,
   TextField,
+  Tooltip,
   Snackbar,
   Alert,
 } from "@mui/material";
+import { Close, Check, Edit } from "@mui/icons-material";
 
-export default function ProfileSection({ userInfo, setUserInfo, setError }) {
+export default function ProfileSection({ userInfo }) {
   const [editedName, setEditedName] = useState(userInfo.name || "");
   const [isEditingName, setIsEditingName] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const debounceTimerRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
+
+  useEffect(() => {
+    setEditedName(userInfo.name || "");
+  }, [userInfo]);
 
   const handlePhotoChange = (event) => {
     const file = event.target.files[0];
@@ -32,40 +39,27 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
   };
 
   const submitPersonal = (b64Photo, name) => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      const message = {
-        type: "updateUser",
-        updateItems: {
-          personal: {
-            photo: b64Photo,
-            name,
-          },
+    const message = {
+      type: "updateUser",
+      updateItems: {
+        personal: {
+          photo: b64Photo,
+          name,
         },
-      };
-      if (!b64Photo) delete message.updateItems.personal.photo;
-      if (!name) delete message.updateItems.personal.name;
+      },
+    };
+    if (!b64Photo) delete message.updateItems.personal.photo;
+    if (!name) delete message.updateItems.personal.name;
 
-      chrome.runtime.sendMessage(message).then((errorMessage) => {
-        if (errorMessage) {
-          setError(errorMessage);
-        } else {
-          setError(null);
-          setUserInfo(prevInfo => ({
-            ...prevInfo,
-            ...(b64Photo && { photoUrl: `data:image/jpeg;base64,${b64Photo}` }),
-            ...(name && { name }),
-          }));
-          // Show success message
-          setShowSuccessMessage(true);
-          // Remove Save/Cancel buttons
-          setIsEditingName(false);
-        }
-      });
-    }, 300);
+    chrome.runtime.sendMessage(message).then((errorMessage) => {
+      if (errorMessage) {
+        setError(errorMessage);
+      } else {
+        setError(null);
+        setIsEditingName(false);
+      }
+      setShowActionCompletedMessage(true);
+    });
   };
 
   const handleNameChange = () => {
@@ -93,12 +87,8 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
   return (
     <Box sx={{ mb: 2 }}>
       <Stack direction="row" spacing={2} alignItems="center">
-        
         {/* Profile Picture Section */}
-        <label 
-          htmlFor="profile-picture-upload"
-          style={{ cursor: "pointer" }}
-        >
+        <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
           <Box
             sx={{
               position: "relative",
@@ -137,16 +127,7 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
                 },
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "white",
-                  fontWeight: "bold",
-                  textAlign: "center",
-                }}
-              >
-                Edit Picture
-              </Typography>
+              <Edit htmlColor="white" />
             </Box>
           </Box>
         </label>
@@ -161,7 +142,9 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
 
         {/* Preferred Name Section */}
         <Stack direction="column" spacing={1} sx={{ flexGrow: 1 }}>
-          <Typography variant="body1" sx={{ mb: '5px' }}>Preferred Name:</Typography>
+          <Typography variant="body1" sx={{ mb: "5px" }}>
+            Preferred Name:
+          </Typography>
 
           <TextField
             variant="outlined"
@@ -188,38 +171,42 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
             }}
           />
 
-          <Box sx={{ height: '40px', mt: 1 }}>
+          <Box sx={{ height: "40px", mt: 1 }}>
             {isEditingName && (
               <Stack direction="row" spacing={2}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleNameChange}
-                  sx={{
-                    backgroundColor: "#802a25",
-                    color: "white",
-                    "&:hover": {
-                      backgroundColor: "#671f1a",
-                    },
-                  }}
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={cancelEditing}
-                  sx={{
-                    borderColor: "#802a25",
-                    color: "#802a25",
-                    "&:hover": {
-                      borderColor: "#802a25",
+                <Tooltip title="Save">
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleNameChange}
+                    sx={{
                       backgroundColor: "#802a25",
                       color: "white",
-                    },
-                  }}
-                >
-                  Cancel
-                </Button>
+                      "&:hover": {
+                        backgroundColor: "#671f1a",
+                      },
+                    }}
+                  >
+                    <Check />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Cancel">
+                  <Button
+                    variant="outlined"
+                    onClick={cancelEditing}
+                    sx={{
+                      borderColor: "#802a25",
+                      color: "#802a25",
+                      "&:hover": {
+                        borderColor: "#802a25",
+                        backgroundColor: "#802a25",
+                        color: "white",
+                      },
+                    }}
+                  >
+                    <Close />
+                  </Button>
+                </Tooltip>
               </Stack>
             )}
           </Box>
@@ -227,24 +214,19 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
       </Stack>
 
       <Snackbar
-        open={showSuccessMessage}
+        open={showActionCompletedMessage}
         autoHideDuration={3000}
-        onClose={() => setShowSuccessMessage(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setShowActionCompletedMessage(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={() => setShowSuccessMessage(false)}
-          severity="success"
-          sx={{ width: '100%' }}
+          onClose={() => setShowActionCompletedMessage(false)}
+          severity={error ? "error" : "success"}
+          sx={{ width: "100%" }}
         >
-          Successfully changed
+          {error || "Successfully updated"}
         </Alert>
       </Snackbar>
     </Box>
   );
 }
-
-
-
-
-

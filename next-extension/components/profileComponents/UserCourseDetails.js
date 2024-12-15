@@ -80,7 +80,7 @@ export default function UserCourseDetails() {
         aria-controls="user-courses-content"
         id="user-courses-header"
       >
-        <Typography variant="subtitle1">My Courses</Typography>
+        <Typography variant="subtitle1">Your Courses</Typography>
       </AccordionSummary>
       <AccordionDetails>
         <CourseDetailsCard courses={transformedUserCourses} />

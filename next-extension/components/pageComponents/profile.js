@@ -9,15 +9,14 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import AuthWrapper from "./authWrapper";
-import UserCourseDetails from "../settingsComponents/UserCourseDetails";
+import AuthWrapper from "./authWrapper.js";
+import UserCourseDetails from "../profileComponents/UserCourseDetails.js";
 import { clearCourseHistory } from "../../public/utils/user.js";
-import ProfileSection from "../settingsComponents/ProfileSection";
+import ProfileSection from "../profileComponents/ProfileSection.js";
 
-export default function Settings() {
+export default function Profile() {
   const [userInfo, setUserInfo] = useState(null);
   const [error, setError] = useState(null);
-  const debounceTimerRef = useRef(null);
   const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
@@ -124,7 +123,7 @@ export default function Settings() {
     <AuthWrapper>
       <Box sx={{ padding: 2, boxSizing: "border-box" }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Settings
+          Your Profile
         </Typography>
 
         {/* Profile Section */}

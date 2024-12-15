@@ -15,7 +15,6 @@ import MenuItem from "@mui/material/MenuItem";
 
 
 const pages = [];
-const settings = ["Logout"];
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
