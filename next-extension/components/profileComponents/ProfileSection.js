@@ -1,26 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Box,
   Typography,
   Button,
   Stack,
   TextField,
-  Tooltip,
   Snackbar,
   Alert,
 } from "@mui/material";
-import { Close, Check, Edit } from "@mui/icons-material";
+import EditIcon from '@mui/icons-material/Edit';
 
-export default function ProfileSection({ userInfo }) {
+export default function ProfileSection({ userInfo, setUserInfo, setError }) {
   const [editedName, setEditedName] = useState(userInfo.name || "");
   const [isEditingName, setIsEditingName] = useState(false);
-  const [error, setError] = useState(null);
-  const [showActionCompletedMessage, setShowActionCompletedMessage] =
-    useState(false);
-
-  useEffect(() => {
-    setEditedName(userInfo.name || "");
-  }, [userInfo]);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const debounceTimerRef = useRef(null);
 
   const handlePhotoChange = (event) => {
     const file = event.target.files[0];
@@ -39,27 +33,33 @@ export default function ProfileSection({ userInfo }) {
   };
 
   const submitPersonal = (b64Photo, name) => {
-    const message = {
-      type: "updateUser",
-      updateItems: {
-        personal: {
-          photo: b64Photo,
-          name,
-        },
-      },
-    };
-    if (!b64Photo) delete message.updateItems.personal.photo;
-    if (!name) delete message.updateItems.personal.name;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-    chrome.runtime.sendMessage(message).then((errorMessage) => {
-      if (errorMessage) {
-        setError(errorMessage);
-      } else {
-        setError(null);
-        setIsEditingName(false);
-      }
-      setShowActionCompletedMessage(true);
-    });
+    debounceTimerRef.current = setTimeout(() => {
+      const message = {
+        type: "replacePhoto", 
+        photoUrl: b64Photo ? `data:image/jpeg;base64,${b64Photo}` : null,
+        isDefault: !b64Photo
+      };
+
+      chrome.runtime.sendMessage(message).then((response) => {
+        if (response && response.success) {
+          setError(null);
+          setUserInfo(prevInfo => ({
+            ...prevInfo,
+            photoUrl: b64Photo ? `data:image/jpeg;base64,${b64Photo}` : "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png",
+            ...(name && { name }),
+          }));
+
+          setShowSuccessMessage(true);
+          setIsEditingName(false);
+        } else {
+          setError(response?.error || "Photo update failed");
+        }
+      });
+    }, 300);
   };
 
   const handleNameChange = () => {
@@ -80,15 +80,19 @@ export default function ProfileSection({ userInfo }) {
     const newName = e.target.value;
     setEditedName(newName);
     if (newName !== userInfo.name) {
-      setIsEditingName(true); // Show buttons only if there is a change
+      setIsEditingName(true); 
     }
   };
 
   return (
     <Box sx={{ mb: 2 }}>
       <Stack direction="row" spacing={2} alignItems="center">
-        {/* Profile Picture Section */}
-        <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
+        
+
+        <label 
+          htmlFor="profile-picture-upload"
+          style={{ cursor: "pointer" }}
+        >
           <Box
             sx={{
               position: "relative",
@@ -97,7 +101,7 @@ export default function ProfileSection({ userInfo }) {
               borderRadius: "50%",
               border: "7px solid #802a25",
               overflow: "hidden",
-              flexShrink: 0, // Ensures it doesn't resize
+              flexShrink: 0, 
             }}
           >
             <img
@@ -127,7 +131,12 @@ export default function ProfileSection({ userInfo }) {
                 },
               }}
             >
-              <Edit htmlColor="white" />
+              <EditIcon 
+                sx={{
+                  color: "white",
+                  fontSize: 25,
+                }}
+              />
             </Box>
           </Box>
         </label>
@@ -139,12 +148,8 @@ export default function ProfileSection({ userInfo }) {
           hidden
           onChange={handlePhotoChange}
         />
-
-        {/* Preferred Name Section */}
         <Stack direction="column" spacing={1} sx={{ flexGrow: 1 }}>
-          <Typography variant="body1" sx={{ mb: "5px" }}>
-            Preferred Name:
-          </Typography>
+          <Typography variant="body1" sx={{ mb: '5px' }}>Preferred Name:</Typography>
 
           <TextField
             variant="outlined"
@@ -154,7 +159,7 @@ export default function ProfileSection({ userInfo }) {
             sx={{
               width: "250px",
               "& .MuiOutlinedInput-root": {
-                height: "40px", // Custom height for the TextField
+                height: "40px", 
                 "& fieldset": {
                   borderColor: "#802a25",
                 },
@@ -165,48 +170,44 @@ export default function ProfileSection({ userInfo }) {
                   borderColor: "#671f1a",
                 },
                 "& input": {
-                  padding: "10px 12px", // Custom padding for input
+                  padding: "10px 12px", 
                 },
               },
             }}
           />
 
-          <Box sx={{ height: "40px", mt: 1 }}>
+          <Box sx={{ height: '40px', mt: 1 }}>
             {isEditingName && (
               <Stack direction="row" spacing={2}>
-                <Tooltip title="Save">
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleNameChange}
-                    sx={{
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleNameChange}
+                  sx={{
+                    backgroundColor: "#802a25",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#671f1a",
+                    },
+                  }}
+                >
+                  Save
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={cancelEditing}
+                  sx={{
+                    borderColor: "#802a25",
+                    color: "#802a25",
+                    "&:hover": {
+                      borderColor: "#802a25",
                       backgroundColor: "#802a25",
                       color: "white",
-                      "&:hover": {
-                        backgroundColor: "#671f1a",
-                      },
-                    }}
-                  >
-                    <Check />
-                  </Button>
-                </Tooltip>
-                <Tooltip title="Cancel">
-                  <Button
-                    variant="outlined"
-                    onClick={cancelEditing}
-                    sx={{
-                      borderColor: "#802a25",
-                      color: "#802a25",
-                      "&:hover": {
-                        borderColor: "#802a25",
-                        backgroundColor: "#802a25",
-                        color: "white",
-                      },
-                    }}
-                  >
-                    <Close />
-                  </Button>
-                </Tooltip>
+                    },
+                  }}
+                >
+                  Cancel
+                </Button>
               </Stack>
             )}
           </Box>
@@ -214,17 +215,17 @@ export default function ProfileSection({ userInfo }) {
       </Stack>
 
       <Snackbar
-        open={showActionCompletedMessage}
+        open={showSuccessMessage}
         autoHideDuration={3000}
-        onClose={() => setShowActionCompletedMessage(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        onClose={() => setShowSuccessMessage(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setShowActionCompletedMessage(false)}
-          severity={error ? "error" : "success"}
-          sx={{ width: "100%" }}
+          onClose={() => setShowSuccessMessage(false)}
+          severity="success"
+          sx={{ width: '100%' }}
         >
-          {error || "Successfully updated"}
+          Successfully changed
         </Alert>
       </Snackbar>
     </Box>

@@ -163,7 +163,7 @@ export default function Preferences() {
             width: '100%', 
             display: 'flex', 
             flexDirection: 'column', 
-            alignItems: 'center',  // Align items to the center
+            alignItems: 'center', 
             textAlign: 'center', 
             gap: 2 
           }}

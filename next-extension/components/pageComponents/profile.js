@@ -126,19 +126,16 @@ export default function Profile() {
           Your Profile
         </Typography>
 
-        {/* Profile Section */}
         <ProfileSection 
           userInfo={userInfo} 
           setUserInfo={setUserInfo} 
           setError={setError} 
         />
 
-        {/* User Course Details Accordion */}
         <Box sx={{ mb: 3 }}>
           <UserCourseDetails />
         </Box>
 
-        {/* Button Stack */}
         <Stack spacing={2} sx={{ width: "100%" }}>
           <Button
             sx={{
@@ -202,7 +199,6 @@ export default function Profile() {
           </Button>
         </Stack>
 
-        {/* Confirmation Dialog */}
         <Dialog open={openDialog} onClose={handleCloseDialog}>
           <DialogTitle>Confirm Deletion</DialogTitle>
           <DialogContent>
