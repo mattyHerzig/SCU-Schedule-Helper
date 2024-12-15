@@ -6,7 +6,7 @@ import {
 } from "./utils/notifications.js";
 import { getRmpRatings } from "./utils/rmp.js";
 import {
-  addCurrentCourses,
+  importCurrentCourses,
   clearCourseHistory,
   deleteAccount,
   importCourseHistory,
@@ -87,18 +87,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   switch (request) {
-    case "settingsChanged":
-      chrome.tabs.query({}, (tabs) => {
-        for (let tab of tabs) {
-          if (tab.url && tab.url.startsWith("https://www.myworkday.com/scu/")) {
-            chrome.tabs.sendMessage(tab.id, "settingsChanged", (response) => {
-              if (chrome.runtime.lastError) {
-              } // ignore
-            });
-          }
-        }
-      });
-      break;
     case "clearCourseHistory":
       clearCourseHistory().then((response) => {
         sendResponse(response);
@@ -126,8 +114,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse();
       });
       break;
-    case "addCurrentCourses":
-      addCurrentCourses().then((response) => {
+    case "importCurrentCourses":
+      importCurrentCourses().then((response) => {
         sendResponse(response);
       });
       break;
@@ -145,22 +133,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
   }
   return true;
-});
-
-
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  chrome.tabs.get(activeInfo.tabId, (tab) => {
-    if (tab.url && tab.url.startsWith("https://www.myworkday.com/scu/")) {
-      chrome.tabs.sendMessage(
-        activeInfo.tabId,
-        "settingsChanged",
-        (response) => {
-          if (chrome.runtime.lastError) {
-          } // ignore
-        },
-      );
-    }
-  });
 });
 
 self.addEventListener("push", function (event) {
