@@ -65,7 +65,7 @@ export default function CurrentCourseImporter({
   }
 
   return (
-    <Fade appear={false} in={shouldImport} timeout={1000}>
+    <Fade appear={false} in={shouldImport} timeout={2000}>
       <div>
         <ProgressCard
           title={"Importing courses"}

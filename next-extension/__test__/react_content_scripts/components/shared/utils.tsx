@@ -69,8 +69,11 @@ export async function updateUserCourseData(results: CourseData[]) {
       updateItems: payload,
     };
 
-    const putError = await chrome.runtime.sendMessage(message);
-    return putError;
+    const putResponse = await chrome.runtime.sendMessage(message);
+    if (putResponse && !putResponse.message.includes("success")) {
+      return putResponse.message;
+    }
+    return null;
   } catch (error) {
     console.error(
       "Error occurred while sending data to service worker:",
