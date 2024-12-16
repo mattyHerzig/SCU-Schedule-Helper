@@ -5,7 +5,7 @@ import { updatePreferences } from "./utils/updatePreferences.js";
 import { updateFriends } from "./utils/updateFriends.js";
 import { updateFriendRequests } from "./utils/updateFriendRequests.js";
 import { handleWithAuthorization } from "./utils/authorization.js";
-import { internalServerError, validResponse } from "./model.js";
+import { internalServerError, validResponse, validResponseWithBody } from "./model.js";
 import { badRequestResponse } from "./model.js";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { LambdaClient } from "@aws-sdk/client-lambda";
@@ -56,7 +56,13 @@ async function putUser(event, context, userId) {
     if (body.preferences) {
       profileUpdates.push(updatePreferences(userId, body.preferences));
     }
-    await Promise.all(profileUpdates);
+    const updates = await Promise.all(profileUpdates);
+    let presignedUploadUrl;
+    for (const update of updates) {
+      if (update && update.presignedUploadUrl) {
+        presignedUploadUrl = update.presignedUploadUrl;
+      }
+    }
     await sendProfileUpdateNotifications(userId, body);
 
     if (body.friends) {
@@ -73,6 +79,12 @@ async function putUser(event, context, userId) {
       sendSelfUpdateNotifications(userId, body),
     ]);
 
+    if (presignedUploadUrl) {
+      return validResponseWithBody({
+        message: "All actions processed successfully",
+        presignedUploadUrl,
+      });
+    }
     return validResponse("All actions processed successfully");
   } catch (error) {
     console.error(error);

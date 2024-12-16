@@ -33,7 +33,7 @@ export async function updateCourses(userId, updateData) {
   );
   if (result.$metadata.httpStatusCode !== 200) {
     console.error(`Error updating courses for user ${userId}`);
-    throw new Error(`Error updating courses for user ${userId}`, {
+    throw new Error(`error updating courses for user ${userId}`, {
       cause: 500,
     });
   }

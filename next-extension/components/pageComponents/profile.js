@@ -127,9 +127,7 @@ export default function Profile() {
         </Typography>
 
         <ProfileSection 
-          userInfo={userInfo} 
-          setUserInfo={setUserInfo} 
-          setError={setError} 
+          userInfo={userInfo}
         />
 
         <Box sx={{ mb: 3 }}>

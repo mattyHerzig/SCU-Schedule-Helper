@@ -8,6 +8,16 @@ export const validResponse = (response) => {
   };
 };
 
+export const validResponseWithBody = (response) => {
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(response),
+  };
+}
+
 export const badRequestResponse = (message) => {
   return {
     statusCode: 400,

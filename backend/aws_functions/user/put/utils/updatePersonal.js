@@ -1,10 +1,12 @@
 import { GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { InvokeCommand } from "@aws-sdk/client-lambda";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { dynamoClient, lambdaClient, s3Client, tableName } from "../index.js";
 import { getSetItems } from "./getSetOrMapItems.js";
 
 export async function updatePersonal(userId, updateData) {
+  let presignedUploadUrl;
   const updatedSubscriptions = await getSetItems(
     userId,
     "info#personal",
@@ -12,7 +14,17 @@ export async function updatePersonal(userId, updateData) {
   );
 
   if (updateData.photo) {
-    updateData.photoUrl = await uploadUserPhotoToS3(userId, updateData.photo);
+    if (!updateData.photo.size) {
+      throw new Error("photo size is required.", { cause: 400 });
+    }
+    updateData.photoUrl = getUserPhotoUrl(userId);
+    if (updateData.photo.size > 10 * 1024 * 1024) {
+      throw new Error("photo must be less than 10MB.", { cause: 400 });
+    }
+    presignedUploadUrl = await createPresignedUrlWithClient(
+      `u#${userId}/photo`,
+      updateData.photo.size,
+    );
   }
   if (updateData.photoUrl == "default") {
     updateData.photoUrl =
@@ -46,7 +58,7 @@ export async function updatePersonal(userId, updateData) {
   });
 
   if (updateExpression === "SET ") {
-    throw new Error("No valid fields to update.", { cause: 400 });
+    throw new Error("no valid fields to update.", { cause: 400 });
   }
 
   updateExpression = updateExpression.slice(0, -2); // Remove trailing comma and space.
@@ -67,9 +79,12 @@ export async function updatePersonal(userId, updateData) {
     new UpdateItemCommand(updatePersonalInfo),
   );
   if (result.$metadata.httpStatusCode !== 200) {
-    throw new Error(`Error updating personal info for user ${userId}`, {
+    throw new Error(`error updating personal info for user ${userId}`, {
       cause: 500,
     });
+  }
+  if (presignedUploadUrl) {
+    return { presignedUploadUrl };
   }
 }
 
@@ -85,7 +100,7 @@ async function updateNameIndex(userId, newName, photoUrl) {
     new GetItemCommand(getCurrentUser),
   );
   if (currentUser.$metadata.httpStatusCode !== 200) {
-    throw new Error(`Error getting current user info for user ${userId}`, {
+    throw new Error(`error getting current user info for user ${userId}`, {
       cause: 500,
     });
   }
@@ -107,27 +122,26 @@ async function updateNameIndex(userId, newName, photoUrl) {
     new InvokeCommand(invokeNameIndexUpdater),
   );
   if (response.$metadata.httpStatusCode !== 202) {
-    throw new Error(`Error updating name index for user ${userId}`, {
+    throw new Error(`error updating name index for user ${userId}`, {
       cause: 500,
     });
   }
 }
 
-async function uploadUserPhotoToS3(userId, base64EncodedPhoto) {
-  const photoKey = `u#${userId}/photo`;
-  const photoParams = {
-    Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
-    Key: photoKey,
-    Body: Buffer.from(base64EncodedPhoto, "base64"),
-    ContentType: "image/jpeg",
-    ACL: "public-read",
-  };
-  const s3Response = await s3Client.send(new PutObjectCommand(photoParams));
-  if (s3Response.$metadata.httpStatusCode !== 200) {
-    console.error(`Error uploading profile photo to S3: ${s3Response}`);
-    throw new Error(`could not upload user profile photo`, { cause: 500 });
-  }
+function getUserPhotoUrl(userId) {
+  const photoKey = encodeURIComponent(`u#${userId}/photo`);
   return `https://${
     process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME
-  }.s3.amazonaws.com/${photoKey.replace("#", "%23")}`;
+  }.s3.amazonaws.com/${photoKey}`;
+}
+
+function createPresignedUrlWithClient(key, contentLength) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.SCU_SCHEDULE_HELPER_BUCKET_NAME,
+    Key: key,
+    ContentType: "image/jpeg",
+    ACL: "public-read",
+    ContentLength: contentLength,
+  });
+  return getSignedUrl(s3Client, command, { expiresIn: 3600 });
 }

@@ -89,13 +89,17 @@ export async function updateUser(updateItems) {
   if (!response.ok) {
     return `Error updating user data: ${data.message}`;
   }
-  return await updateLocalCache(updateItems);
+  const errorUpdatingLocalCache = await updateLocalCache(updateItems);
+  if (errorUpdatingLocalCache) {
+    return errorUpdatingLocalCache;
+  }
+  return data;
 }
 
 async function updateLocalCache(updateItems) {
   const userInfo = (await chrome.storage.local.get("userInfo")).userInfo || {};
   if (updateItems.personal) {
-    userInfo.name = updateItems.personal.name;
+    if (updateItems.personal.name) userInfo.name = updateItems.personal.name;
     if (updateItems.personal.photoUrl === "default")
       userInfo.photoUrl =
         "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";

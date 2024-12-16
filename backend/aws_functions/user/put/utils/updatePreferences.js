@@ -34,7 +34,7 @@ export async function updatePreferences(userId, updateData) {
       endMinute < 0 ||
       endMinute > 59
     ) {
-      throw new Error("Invalid preferred time range.", { cause: 400 });
+      throw new Error("invalid preferred time range.", { cause: 400 });
     }
     const preferredSectionTimeRangeValue = getTimeRange(
       startHour,
@@ -58,7 +58,7 @@ export async function updatePreferences(userId, updateData) {
       nullOrUndefined(scoreWeighting.rmp) ||
       scoreWeighting.scuEvals + scoreWeighting.rmp != 100
     ) {
-      throw new Error("Invalid score weighting.", { cause: 400 });
+      throw new Error("invalid score weighting.", { cause: 400 });
     }
     const { scuEvals, rmp } = scoreWeighting;
 
@@ -74,7 +74,7 @@ export async function updatePreferences(userId, updateData) {
     if (typeof courseTracking === "boolean")
       courseTracking = courseTracking.toString();
     if (courseTracking !== "true" && courseTracking !== "false") {
-      throw new Error("Invalid course tracking value.", { cause: 400 });
+      throw new Error("invalid course tracking value.", { cause: 400 });
     }
     updateExpressionParts.push("#courseTracking = :courseTracking");
     expressionAttributeNames["#courseTracking"] = "courseTracking";
@@ -84,7 +84,7 @@ export async function updatePreferences(userId, updateData) {
   }
 
   if (updateExpressionParts.length === 0) {
-    throw new Error("No valid preferences to update.", { cause: 400 });
+    throw new Error("no valid preferences to update.", { cause: 400 });
   }
 
   const updateExpression = `SET ${updateExpressionParts.join(", ")}`;
@@ -103,7 +103,7 @@ export async function updatePreferences(userId, updateData) {
   const result = await dynamoClient.send(new UpdateItemCommand(params));
   if (result.$metadata.httpStatusCode !== 200) {
     console.error(`Error updating preferences for user ${userId}`);
-    throw new Error(`Error updating preferences for user ${userId}`, {
+    throw new Error(`error updating preferences for user ${userId}`, {
       cause: 500,
     });
   }

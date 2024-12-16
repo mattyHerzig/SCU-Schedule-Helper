@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -8,91 +8,117 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
+import { Edit } from "@mui/icons-material";
+import { compress } from "compress.js/src/compress.js";
 
-export default function ProfileSection({ userInfo, setUserInfo, setError }) {
-  const [editedName, setEditedName] = useState(userInfo.name || "");
+export default function ProfileSection({ userInfo }) {
+  const [name, setName] = useState(userInfo.name || "");
+  const [photoUrl, setPhotoUrl] = useState(
+    getUniquePhotoUrl(userInfo.photoUrl) ||
+      "https://scu-schedule-helper.s3.amazonaws.com/default-avatar.png",
+  );
   const [isEditingName, setIsEditingName] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const debounceTimerRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
 
-  const handlePhotoChange = (event) => {
+  function getUniquePhotoUrl(url) {
+    if (!url) return null;
+    return `${url}?${new Date().getTime()}`;
+  }
+
+  useEffect(() => {
+    setName(userInfo.name || "");
+    setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
+  }, [userInfo]);
+
+  const handlePhotoChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Invalid file type. Please upload an image.");
+    if (
+      !file.type.startsWith("image/png") &&
+      !file.type.startsWith("image/jpeg")
+    ) {
+      setError("File must be a png/jpg image.");
+      setShowActionCompletedMessage(true);
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      submitPersonal(e.target.result.split(",")[1], userInfo.name);
-    };
-    reader.readAsDataURL(file);
+    const compressedFile = await compress(file, {
+      quality: 0.9,
+      crop: true,
+      aspectRatio: "1:1",
+      maxWidth: 1000,
+      maxHeight: 1000,
+    });
+    submitPersonal(compressedFile, null);
   };
 
-  const submitPersonal = (b64Photo, name) => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
+  const submitPersonal = async (photoFile, newName) => {
+    const message = {
+      type: "updateUser",
+      updateItems: {
+        personal: {
+          photo: {
+            size: photoFile ? photoFile.size : 0,
+          },
+          name: newName,
+        },
+      },
+    };
+    if (!photoFile) delete message.updateItems.personal.photo;
+    if (!newName) delete message.updateItems.personal.newName;
+    const response = await chrome.runtime.sendMessage(message);
+    if (response && response.message && !response.message.includes("success")) {
+      setError(response.message);
+    } else {
+      setError(null);
+      setIsEditingName(false);
+      if (response && response.presignedUploadUrl) {
+        const uploadResponse = await fetch(response.presignedUploadUrl, {
+          method: "PUT",
+          body: photoFile,
+          headers: {
+            "Content-Type": "image/jpeg",
+            "Content-Length": photoFile.size,
+          },
+        });
+        if (!uploadResponse.ok)
+          setError(
+            "Failed to upload photo. Contact stephenwdean@gmail.com if this issue persists.",
+          );
+        else setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
+      }
     }
-
-    debounceTimerRef.current = setTimeout(() => {
-      const message = {
-        type: "replacePhoto", 
-        photoUrl: b64Photo ? `data:image/jpeg;base64,${b64Photo}` : null,
-        isDefault: !b64Photo
-      };
-
-      chrome.runtime.sendMessage(message).then((response) => {
-        if (response && response.success) {
-          setError(null);
-          setUserInfo(prevInfo => ({
-            ...prevInfo,
-            photoUrl: b64Photo ? `data:image/jpeg;base64,${b64Photo}` : "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png",
-            ...(name && { name }),
-          }));
-
-          setShowSuccessMessage(true);
-          setIsEditingName(false);
-        } else {
-          setError(response?.error || "Photo update failed");
-        }
-      });
-    }, 300);
+    setShowActionCompletedMessage(true);
   };
 
   const handleNameChange = () => {
-    if (editedName.trim() === "") {
+    if (name.trim() === "") {
       alert("Name cannot be empty!");
       return;
     }
 
-    submitPersonal(null, editedName);
+    submitPersonal(null, name);
   };
 
   const cancelEditing = () => {
-    setEditedName(userInfo.name || "");
+    setName(userInfo.name || "");
     setIsEditingName(false);
   };
 
   const handleInputChange = (e) => {
     const newName = e.target.value;
-    setEditedName(newName);
+    setName(newName);
     if (newName !== userInfo.name) {
-      setIsEditingName(true); 
+      setIsEditingName(true);
     }
   };
 
   return (
     <Box sx={{ mb: 2 }}>
       <Stack direction="row" spacing={2} alignItems="center">
-        
-
-        <label 
-          htmlFor="profile-picture-upload"
-          style={{ cursor: "pointer" }}
-        >
+        <label htmlFor="profile-picture-upload" style={{ cursor: "pointer" }}>
           <Box
             sx={{
               position: "relative",
@@ -101,12 +127,12 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
               borderRadius: "50%",
               border: "7px solid #802a25",
               overflow: "hidden",
-              flexShrink: 0, 
+              flexShrink: 0,
             }}
           >
             <img
-              src={userInfo.photoUrl}
-              alt={`${userInfo.name || "User"}'s profile`}
+              src={photoUrl}
+              alt={`${name || "User"}'s profile photo`}
               style={{
                 width: "100px",
                 height: "100px",
@@ -131,7 +157,7 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
                 },
               }}
             >
-              <EditIcon 
+              <Edit
                 sx={{
                   color: "white",
                   fontSize: 25,
@@ -144,22 +170,24 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
         <input
           type="file"
           id="profile-picture-upload"
-          accept="image/*"
+          accept="image/png, image/jpeg"
           hidden
           onChange={handlePhotoChange}
         />
         <Stack direction="column" spacing={1} sx={{ flexGrow: 1 }}>
-          <Typography variant="body1" sx={{ mb: '5px' }}>Preferred Name:</Typography>
+          <Typography variant="body1" sx={{ mb: "5px" }}>
+            Preferred Name:
+          </Typography>
 
           <TextField
             variant="outlined"
-            value={editedName}
+            value={name}
             onChange={handleInputChange}
             placeholder={userInfo.name || "Enter Name"}
             sx={{
               width: "250px",
               "& .MuiOutlinedInput-root": {
-                height: "40px", 
+                height: "40px",
                 "& fieldset": {
                   borderColor: "#802a25",
                 },
@@ -170,13 +198,13 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
                   borderColor: "#671f1a",
                 },
                 "& input": {
-                  padding: "10px 12px", 
+                  padding: "10px 12px",
                 },
               },
             }}
           />
 
-          <Box sx={{ height: '40px', mt: 1 }}>
+          <Box sx={{ height: "40px", mt: 1 }}>
             {isEditingName && (
               <Stack direction="row" spacing={2}>
                 <Button
@@ -215,17 +243,17 @@ export default function ProfileSection({ userInfo, setUserInfo, setError }) {
       </Stack>
 
       <Snackbar
-        open={showSuccessMessage}
+        open={showActionCompletedMessage}
         autoHideDuration={3000}
-        onClose={() => setShowSuccessMessage(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setShowActionCompletedMessage(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={() => setShowSuccessMessage(false)}
-          severity="success"
-          sx={{ width: '100%' }}
+          onClose={() => setShowActionCompletedMessage(false)}
+          severity={error ? "error" : "success"}
+          sx={{ width: "100%" }}
         >
-          Successfully changed
+          {error || "Updated successfully."}
         </Alert>
       </Snackbar>
     </Box>
