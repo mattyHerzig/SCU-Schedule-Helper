@@ -79,8 +79,9 @@ export default function Friends() {
           }}
         ></Box>
         {error && <Typography color="error">{error}</Typography>}
+
+        <UserSearch></UserSearch>
       </Box>
-      <UserSearch></UserSearch>
     </AuthWrapper>
   );
 }

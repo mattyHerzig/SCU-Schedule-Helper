@@ -210,6 +210,18 @@ const ProfCourseCard = ({ selected, data }) => {
   };
 
   const renderRMPStats = () => {
+    const getProfPreferredName = (name) => {
+      // Simple implementation to clean up professor name for RMP search
+      return name.split(',')[0].trim().replace(/\s+/g, '+');
+    };
+
+    const getRmpLink = () => {
+      if (rmpData && rmpData.legacyId) {
+        return `https://www.ratemyprofessors.com/professor/${rmpData.legacyId}`;
+      }
+      return `https://www.ratemyprofessors.com/search/professors?q=${getProfPreferredName(selected.id)}`;
+    };
+
     if (isLoadingRmp) {
       return (
         <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
@@ -220,9 +232,21 @@ const ProfCourseCard = ({ selected, data }) => {
 
     if (!rmpData) {
       return (
-        <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
-          No RMP data available
-        </Typography>
+        <Box sx={{ px: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            No RMP data available
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            <a 
+              href={`https://www.ratemyprofessors.com/search/professors?q=${getProfPreferredName(selected.id)}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#802a25' }}
+            >
+              Search RateMyProfessors
+            </a>
+          </Typography>
+        </Box>
       );
     }
 
@@ -257,8 +281,22 @@ const ProfCourseCard = ({ selected, data }) => {
 
     return (
       <>
-        <Typography variant="subtitle1" gutterBottom sx={{ mt: 3, px: 2 }}>
+        <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
           RateMyProfessor Statistics:
+          <Typography 
+            variant="body2" 
+            component="span" 
+            sx={{ ml: 1, color: 'text.secondary' }}
+          >
+            <a 
+              href={getRmpLink()} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#802a25' }}
+            >
+              View Profile
+            </a>
+          </Typography>
         </Typography>
         <Box
           sx={{
@@ -268,12 +306,14 @@ const ProfCourseCard = ({ selected, data }) => {
             px: 2,
           }}
         >
-          <StatBox label="Quality" value={rmpData.avgRating} type="quality" />
-          <StatBox
-            label="Difficulty"
-            value={rmpData.avgDifficulty}
-            type="difficulty"
-          />
+          <Box sx={{ display: 'flex', gap: 8.5 }}>
+            <StatBox label="Quality" value={rmpData.avgRating} type="quality" />
+            <StatBox
+              label="Difficulty"
+              value={rmpData.avgDifficulty}
+              type="difficulty"
+            />
+          </Box>
         </Box>
       </>
     );
