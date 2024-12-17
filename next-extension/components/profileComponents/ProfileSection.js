@@ -58,7 +58,6 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
     if (!newName) delete message.updateItems.personal.newName;
     const response = await chrome.runtime.sendMessage(message);
     if (response && !response.ok) {
-      setName(userInfo.name || "");
       handleActionCompleted(response.message, "error");
     } else {
       if (response && response.presignedUploadUrl) {
@@ -79,8 +78,8 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
         } else setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
       }
       handleActionCompleted("Profile updated successfully.", "success");
+      setIsEditingName(false);
     }
-    setIsEditingName(false);
   };
 
   const handleNameChange = () => {
