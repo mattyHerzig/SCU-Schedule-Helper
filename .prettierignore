@@ -2,7 +2,6 @@ node_modules
 exclude
 dist
 testing
-persistent_data
 out
 .env
 *.zip

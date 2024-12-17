@@ -149,9 +149,9 @@ const ProfCourseCard = ({ selected, data }) => {
   const renderEvalStats = (stats) => {
     if (
       !stats ||
-      stats.qualityAvg === undefined ||
-      stats.difficultyAvg === undefined ||
-      stats.workloadAvg === undefined
+      stats.qualityTotal === undefined ||
+      stats.difficultyTotal === undefined ||
+      stats.workloadTotal === undefined
     ) {
       return (
         <Typography variant="body2" color="text.secondary">
@@ -198,13 +198,21 @@ const ProfCourseCard = ({ selected, data }) => {
           px: 2,
         }}
       >
-        <StatBox label="Quality" value={stats.qualityAvg} type="quality" />
+        <StatBox
+          label="Quality"
+          value={stats.qualityTotal / stats.qualityCount}
+          type="quality"
+        />
         <StatBox
           label="Difficulty"
-          value={stats.difficultyAvg}
+          value={stats.difficultyTotal / stats.difficultyCount}
           type="difficulty"
         />
-        <StatBox label="Workload" value={stats.workloadAvg} type="workload" />
+        <StatBox
+          label="Workload"
+          value={stats.workloadTotal / stats.workloadCount}
+          type="workload"
+        />
       </Box>
     );
   };
@@ -212,7 +220,7 @@ const ProfCourseCard = ({ selected, data }) => {
   const renderRMPStats = () => {
     const getProfPreferredName = (name) => {
       // Simple implementation to clean up professor name for RMP search
-      return name.split(',')[0].trim().replace(/\s+/g, '+');
+      return name.split(",")[0].trim().replace(/\s+/g, "+");
     };
 
     const getRmpLink = () => {
@@ -237,11 +245,11 @@ const ProfCourseCard = ({ selected, data }) => {
             No RMP data available
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            <a 
-              href={`https://www.ratemyprofessors.com/search/professors?q=${getProfPreferredName(selected.id)}`} 
-              target="_blank" 
+            <a
+              href={`https://www.ratemyprofessors.com/search/professors?q=${getProfPreferredName(selected.id)}`}
+              target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#802a25' }}
+              style={{ color: "#802a25" }}
             >
               Search RateMyProfessors
             </a>
@@ -283,16 +291,16 @@ const ProfCourseCard = ({ selected, data }) => {
       <>
         <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
           RateMyProfessor Statistics:
-          <Typography 
-            variant="body2" 
-            component="span" 
-            sx={{ ml: 1, color: 'text.secondary' }}
+          <Typography
+            variant="body2"
+            component="span"
+            sx={{ ml: 1, color: "text.secondary" }}
           >
-            <a 
-              href={getRmpLink()} 
-              target="_blank" 
+            <a
+              href={getRmpLink()}
+              target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#802a25' }}
+              style={{ color: "#802a25" }}
             >
               View Profile
             </a>
@@ -306,7 +314,7 @@ const ProfCourseCard = ({ selected, data }) => {
             px: 2,
           }}
         >
-          <Box sx={{ display: 'flex', gap: 8.5 }}>
+          <Box sx={{ display: "flex", gap: 8.5 }}>
             <StatBox label="Quality" value={rmpData.avgRating} type="quality" />
             <StatBox
               label="Difficulty"
@@ -404,7 +412,17 @@ const ProfCourseCard = ({ selected, data }) => {
             .map((profName) => [profName, data[profName][selected.id]])
             .sort((objA, objB) => {
               const ratingA = objA[1];
+              ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+              ratingA.difficultyAvg =
+                ratingA.difficultyTotal / ratingA.difficultyCount;
+              ratingA.workloadAvg =
+                ratingA.workloadTotal / ratingA.workloadCount;
               const ratingB = objB[1];
+              ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+              ratingB.difficultyAvg =
+                ratingB.difficultyTotal / ratingB.difficultyCount;
+              ratingB.workloadAvg =
+                ratingB.workloadTotal / ratingB.workloadCount;
               const scoreA =
                 ratingA.qualityAvg +
                 (5 - ratingA.difficultyAvg) +

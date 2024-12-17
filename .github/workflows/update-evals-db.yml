@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
         working-directory: backend/web_scraping
       - name: Run update script
-        run: node main.js
+        run: node index.js
         env:
           SCU_USERNAME: ${{ secrets.SCU_USERNAME }}
           SCU_PASSWORD: ${{ secrets.SCU_PASSWORD }}

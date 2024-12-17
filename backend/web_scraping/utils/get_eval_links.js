@@ -6,7 +6,7 @@ import {
   REQUEST_INTERVAL_MS,
   EVALUATIONS_URL,
   REQUEST_MAX_RETRIES,
-} from "../main.js";
+} from "../index.js";
 import { processEvalLinks } from "./download_evals.js";
 import jsdom from "jsdom";
 

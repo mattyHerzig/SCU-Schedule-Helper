@@ -72,7 +72,6 @@ export default function ProfCourseSearch() {
     if (!evalsData || searchQuery.length < 1) return [];
     const options = [];
     try {
-      const evalsData = evalsData;
       if (evalsData === null) {
         console.error("Stored data is not a valid object", evalsData);
         return [];

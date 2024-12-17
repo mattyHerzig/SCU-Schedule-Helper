@@ -5,39 +5,76 @@ let inButton = false;
 let friendInterestedSections = {};
 let friendCoursesTaken = {};
 let friends = {};
-let tableRowCount = 0;
-const processedSections = new Set();
+
+const Difficulty = Object.freeze({
+  VeryEasy: 0,
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+  VeryHard: 4,
+});
+
+const prefferedDifficulty = Difficulty.VeryEasy; // Eventually this will be a user preference
+const preferredDifficultyPercentile = prefferedDifficulty / 4;
+
 const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 
-function parseTime(timeString) {
-  const [time, period] = timeString.trim().split(/\s+/);
-  let [hours, minutes] = time.split(":").map(Number);
+chrome.storage.local.get(
+  [
+    "evals",
+    "userInfo",
+    "friendInterestedSections",
+    "friendCoursesTaken",
+    "friends",
+  ],
+  async (data) => {
+    userInfo = data.userInfo || {};
+    evalsData = data.evals || {};
+    friendInterestedSections = data.friendInterestedSections || {};
+    friendCoursesTaken = data.friendCoursesTaken || {};
+    friends = data.friends || {};
+    await checkForGrid();
 
-  if (period.toUpperCase() === "PM" && hours !== 12) hours += 12;
-  if (period.toUpperCase() === "AM" && hours === 12) hours = 0;
+    const observer = new MutationObserver(checkForGrid);
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  },
+);
 
-  return { hours, minutes };
+async function checkForGrid() {
+  if (document.querySelector('[data-automation-id="VisibleGrid"]')) {
+    await handleGrid();
+  }
 }
 
-function isTimeWithinPreference(meetingTime) {
-  if (!meetingTime || !userInfo?.preferences) return false;
-
-  const { startHour, startMinute, endHour, endMinute } =
-    userInfo.preferences.preferredSectionTimeRange;
-
-  const [startTimeStr, endTimeStr] = meetingTime
-    .split("-")
-    .map((t) => t.trim());
-  const startTime = parseTime(startTimeStr);
-  const endTime = parseTime(endTimeStr);
-
-  return (
-    (startTime.hours > startHour ||
-      (startTime.hours === startHour && startTime.minutes >= startMinute)) &&
-    (endTime.hours < endHour ||
-      (endTime.hours === endHour && endTime.minutes <= endMinute))
+async function handleGrid() {
+  const courseSectionRows = document.querySelectorAll(
+    "table.lockedTable tbody tr",
   );
+  const mainSectionRows = document.querySelectorAll("table.mainTable tbody tr");
+
+  for (let i = 0; i < courseSectionRows.length; i++) {
+    const row = courseSectionRows[i];
+    const courseSectionCell = row.cells[0];
+    let courseText = courseSectionCell.innerText.trim();
+    if (courseText === "") continue;
+    if (courseSectionCell.hasAttribute("has-ratings")) continue;
+    courseSectionCell.setAttribute("has-ratings", "true");
+    const mainRow = mainSectionRows[i];
+    const instructorCell = mainRow.cells[5];
+    let professorName = instructorCell.innerText.trim().split("\n")[0];
+    const pushDown = document.createElement("div");
+    pushDown.style.height = "100px";
+    courseSectionCell.appendChild(pushDown);
+    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName);
+    courseSectionCell.removeChild(pushDown);
+    mainRow.cells[0].appendChild(document.createElement("br"));
+    mainRow.cells[0].appendChild(document.createElement("br"));
+    mainRow.cells[0].appendChild(document.createElement("br"));
+  }
 }
 
 async function displayProfessorDifficulty(
@@ -49,7 +86,6 @@ async function displayProfessorDifficulty(
   difficultyContainer.style.fontSize = "1em";
   difficultyContainer.style.color = "gray";
   difficultyContainer.style.marginTop = "5px";
-  difficultyContainer.setAttribute("data-from-scu-schedule-helper", "true");
 
   const rmpResponse = await chrome.runtime.sendMessage({
     type: "getRmpRatings",
@@ -58,33 +94,29 @@ async function displayProfessorDifficulty(
   let courseEvalQuality = null;
   let courseEvalDifficulty = null;
   let courseEvalWorkload = null;
-  let rmpLink = `https://www.ratemyprofessors.com/search/professors?q=${getProfPreferredName(professorName)}`;
+  let rmpLink = `https://www.ratemyprofessors.com/search/professors?q=${getProfName(professorName, true)}`;
   if (rmpResponse && rmpResponse.legacyId)
     rmpLink = `https://www.ratemyprofessors.com/professor/${rmpResponse.legacyId}`;
 
-  let prof = getRealProfName(professorName);
+  let prof = getProfName(professorName);
   let courseText = courseSectionCell.innerText.trim();
   const courseCode = courseText
     .substring(0, courseText.indexOf("-"))
     .replace(/\s/g, "");
   const department = courseText.substring(0, courseText.indexOf(/\d/));
 
-  if (evalsData[prof]?.[courseCode]?.difficultyAvg) {
-    courseEvalQuality = evalsData[prof][courseCode].qualityAvg;
-    courseEvalDifficulty = evalsData[prof][courseCode].difficultyAvg;
-    courseEvalWorkload = evalsData[prof][courseCode].workloadAvg;
-  } else if (evalsData[prof]?.[department]?.difficultyAvg) {
-    courseEvalQuality = evalsData[prof][department].qualityAvg;
-    courseEvalDifficulty = evalsData[prof][department].difficultyAvg;
-    courseEvalWorkload = evalsData[prof][department].workloadAvg;
-  } else if (evalsData[prof]?.overall?.difficultyAvg) {
-    courseEvalQuality = evalsData[prof].overall.qualityAvg;
-    courseEvalDifficulty = evalsData[prof].overall.difficultyAvg;
-    courseEvalWorkload = evalsData[prof].overall.workloadAvg;
-  } else if (evalsData.data?.[courseCode]?.difficultyAvg) {
-    courseEvalQuality = evalsData.data[courseCode].qualityAvg;
-    courseEvalDifficulty = evalsData.data[courseCode].difficultyAvg;
-    courseEvalWorkload = evalsData.data[courseCode].workload;
+  if (evalsData[prof]?.[courseCode]) {
+    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
+      getCourseEvalAvgMetric(evalsData[prof][courseCode]));
+  } else if (evalsData[prof]?.[department]) {
+    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
+      getCourseEvalAvgMetric(evalsData[prof][department]));
+  } else if (evalsData[prof]?.overall) {
+    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
+      getCourseEvalAvgMetric(evalsData[prof].overall));
+  } else if (evalsData[courseCode]) {
+    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
+      getCourseEvalAvgMetric(evalsData[courseCode]));
   }
 
   const meetingPattern = mainSectionRow.cells[7].textContent.trim();
@@ -119,309 +151,120 @@ async function displayProfessorDifficulty(
     }
   }
 
+  const qualityAvgs = evalsData.departmentStatistics[department]?.qualityAvgs;
+  const difficultyAvgs =
+    evalsData.departmentStatistics[department]?.difficultyAvgs;
+  const workloadAvgs = evalsData.departmentStatistics[department]?.workloadAvgs;
+
   appendRatingInfoToCell(courseSectionCell, {
     rmpLink,
     rmpQuality: rmpResponse?.avgRating,
     rmpDifficulty: rmpResponse?.avgDifficulty,
-    scuDifficulty: courseEvalDifficulty,
-    scuQuality: courseEvalQuality,
-    scuWorkload: courseEvalWorkload,
+    scuEvalsQuality: courseEvalQuality,
+    scuEvalsDifficulty: courseEvalDifficulty,
+    scuEvalsWorkload: courseEvalWorkload,
+    scuEvalsQualityPercentile: getPercentile(courseEvalQuality, qualityAvgs),
+    scuEvalsDifficultyPercentile: getPercentile(
+      courseEvalDifficulty,
+      difficultyAvgs,
+    ),
+    scuEvalsWorkloadPercentile: getPercentile(courseEvalWorkload, workloadAvgs),
     matchesTimePreference: timeWithinPreference,
     friendsTaken,
     friendsInterested,
   });
 }
 
+const getCourseEvalAvgMetric = (rating) => {
+  if (
+    !rating ||
+    !rating.qualityTotal ||
+    !rating.qualityCount ||
+    !rating.difficultyTotal ||
+    !rating.difficultyCount ||
+    !rating.workloadTotal ||
+    !rating.workloadCount
+  )
+    return null;
+  return {
+    courseEvalQuality: rating.qualityTotal / rating.qualityCount,
+    courseEvalDifficulty: rating.difficultyTotal / rating.difficultyCount,
+    courseEvalWorkload: rating.workloadTotal / rating.workloadCount,
+  };
+};
+
 function calcOverallScore(scores) {
   let { scuEvals = 50, rmp = 50 } = userInfo.preferences.scoreWeighting || {};
-  let { rmpQuality, rmpDifficulty, scuQuality, scuDifficulty, scuWorkload } =
-    scores;
+  let {
+    rmpQuality,
+    rmpDifficulty,
+    scuEvalsQualityPercentile,
+    scuEvalsDifficultyPercentile,
+    scuEvalsWorkloadPercentile,
+  } = scores;
   if (
     !rmpQuality &&
     !rmpDifficulty &&
-    !scuQuality &&
-    !scuDifficulty &&
-    !scuWorkload
+    !scuEvalsQualityPercentile &&
+    !scuEvalsDifficultyPercentile &&
+    !scuEvalsWorkloadPercentile
   )
     return null;
 
-  scuDifficulty = scuDifficulty ? Math.max(scuDifficulty - 1.5, 0) : undefined;
-  rmpDifficulty = rmpDifficulty ? Math.max(rmpDifficulty - 1.5, 0) : undefined;
   if (nullOrUndefined(rmpQuality) || nullOrUndefined(rmpDifficulty)) {
-    return ((scuQuality + (5 - scuDifficulty) + (11 - scuWorkload)) / 21) * 10;
+    return scuEvalsScore(
+      scuEvalsQualityPercentile,
+      scuEvalsDifficultyPercentile,
+      scuEvalsWorkloadPercentile,
+    );
   }
   if (
-    nullOrUndefined(scuQuality) ||
-    nullOrUndefined(scuDifficulty) ||
-    nullOrUndefined(scuWorkload)
+    nullOrUndefined(scuEvalsQualityPercentile) ||
+    nullOrUndefined(scuEvalsDifficultyPercentile) ||
+    nullOrUndefined(scuEvalsWorkloadPercentile)
   ) {
-    return rmpQuality + (5 - rmpDifficulty);
+    return rmpScore(rmpQuality, rmpDifficulty);
   }
-  const qualityScore = (rmpQuality * rmp + scuQuality * scuEvals) / 100;
-  const difficultyScore =
-    5 - (rmpDifficulty * rmp + scuDifficulty * scuEvals) / 100;
-  const workloadScore = (11 - scuWorkload) * (scuEvals / 100);
-  const denominator = 10 + (scuEvals / 100) * 11;
-  return Math.min(
-    ((qualityScore + difficultyScore + workloadScore) / denominator) * 10,
-    10,
+  return (
+    scuEvalsScore(
+      scuEvalsQualityPercentile,
+      scuEvalsDifficultyPercentile,
+      scuEvalsWorkloadPercentile,
+    ) *
+      (scuEvals / 100) +
+    rmpScore(rmpQuality, rmpDifficulty) * (rmp / 100)
   );
 }
 
-function nullOrUndefined(object) {
-  return object === null || object === undefined;
-}
-
-function getRealProfName(profName) {
-  if (profName.includes("|")) {
-    return profName.split("|")[0].trim();
-  }
-  return profName;
-}
-
-function getProfPreferredName(profName) {
-  if (profName.includes("|")) {
-    return profName.split("|")[1].trim();
-  }
-  return profName;
-}
-
-async function handleGrid() {
-  const courseSectionRows = document.querySelectorAll(
-    "table.lockedTable tbody tr",
-  );
-  const mainSectionRows = document.querySelectorAll("table.mainTable tbody tr");
-
-  for (let i = 0; i < courseSectionRows.length; i++) {
-    const subjectSectionSectionNumber = `{${mainSectionRows[i].cells[0].textContent}}{${mainSectionRows[i].cells[1].textContent}}{${mainSectionRows[i].cells[2].textContent}}`;
-    if (processedSections.has(subjectSectionSectionNumber)) continue;
-    processedSections.add(subjectSectionSectionNumber);
-    const row = courseSectionRows[i];
-    const courseSectionCell = row.cells[0];
-    const mainRow = mainSectionRows[i];
-    if (
-      !courseSectionCell ||
-      courseSectionCell.querySelector("[data-from-scu-schedule-helper]")
-    ) {
-      continue; // Skip if already processed
-    }
-    let courseText = courseSectionCell.innerText.trim();
-    if (courseText === "") continue;
-    const instructorCell = mainRow.cells[5];
-
-    let professorName = instructorCell.innerText.trim().split("\n")[0];
-
-    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName);
-    mainRow.cells[0].appendChild(document.createElement("br"));
-    mainRow.cells[0].appendChild(document.createElement("br"));
-    mainRow.cells[0].appendChild(document.createElement("br"));
-  }
-}
-
-chrome.storage.local.get(
-  [
-    "evals",
-    "userInfo",
-    "friendInterestedSections",
-    "friendCoursesTaken",
-    "friends",
-  ],
-  async (data) => {
-    userInfo = data.userInfo || {};
-    evalsData = data.evals || {};
-    friendInterestedSections = data.friendInterestedSections || {};
-    friendCoursesTaken = data.friendCoursesTaken || {};
-    friends = data.friends || {};
-    await checkForGrid();
-
-    const observer = new MutationObserver(checkForGrid);
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-  },
-);
-
-async function checkForGrid() {
-  const visibleGrid = document.querySelector(
-    '[data-automation-id="VisibleGrid"]',
-  );
-  if (visibleGrid) {
-    const rowCountLabel = document.querySelector(
-      '[data-automation-id="rowCountLabel"]',
-    );
-    if (rowCountLabel) {
-      const newRowCount = parseInt(rowCountLabel.innerText.split(" ")[0]);
-      if (newRowCount !== tableRowCount) {
-        tableRowCount = newRowCount;
-        processedSections.clear();
-      }
-    }
-    await handleGrid();
-  }
-}
-
-function createToolTip(
-  rmpLink,
-  rmpQuality,
-  rmpDifficulty,
-  scuQuality,
-  scuDifficulty,
-  scuWorkload,
+function scuEvalsScore(
+  qualityPercentile,
+  difficultyPercentile,
+  workloadPercentile,
 ) {
-  const ratingDiv = document.createElement("div");
-  ratingDiv.innerHTML = `
-        <div style="
-          position: absolute;
-          background-color: #f0f0f0;
-          padding: 16px 16px;
-          border-radius: 10px;
-          font-family: Arial, sans-serif;
-          max-width: 250px;
-          margin: 5px;
-          transform: translateX(-50%);
-          pointer-events: auto;
-          bottom: 0px;
-        ">
-          <!-- Add invisible padding wrapper that maintains absolute positioning -->
-          <div style="
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background-color: transparent;
-            pointer-events: auto;
-          "></div>
-          <div style="position: relative; pointer-events: auto;">
-            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
-              Section Ratings
-            </div>
-            
-            <div>
-              <a href="${rmpLink}" target="_blank" style="color: blue; text-decoration: none; font-weight: 450;">RateMyProfessor</a>
-            </div>
-            
-            <div style="display: flex; gap: 20px; margin: 8px 0;">
-              <div>
-                <span style="color: ${getRatingColor(rmpQuality, 0, 5, true)}; font-size: 16px; font-weight: bold;">${rmpQuality?.toFixed(2) || "N/A"}</span>
-                <span style="color: #666;"> / 5</span>
-                <div style="color: #666; font-size: 12px;">quality</div>
-              </div>
-              <div>
-                <span style="color: ${getRatingColor(rmpDifficulty, 1.5, 5, false)};font-size: 16px; font-weight: bold;">${rmpDifficulty?.toFixed(2) || "N/A"}</span>
-                <span style="color: #666;"> / 5</span>
-                <div style="color: #666; font-size: 12px;">difficulty</div>
-              </div>
-            </div>
-      
-            <div style="font-weight: 450; margin: 12px 0 8px 0;">
-              SCU Course Evaluations
-            </div>
-            
-            <div style="display: flex; gap: 20px; margin: 8px 0;">
-              <div>
-                <span style="color: ${getRatingColor(scuQuality, 1, 5, true)}; font-size: 16px; font-weight: bold;">${scuQuality?.toFixed(2) || "N/A"}</span>
-                <span style="color: #666;"> / 5</span>
-                <div style="color: #666; font-size: 12px;">quality</div>
-              </div>
-              <div>
-                <span style="color: ${getRatingColor(scuDifficulty, 1.5, 5, false)}; font-size: 16px; font-weight: bold;">${scuDifficulty?.toFixed(2) || "N/A"}</span>
-                <span style="color: #666;"> / 5</span>
-                <div style="color: #666; font-size: 12px;">difficulty</div>
-              </div>
-              <div>
-                <span style="color: ${getRatingColor(scuWorkload, 0, 11, false)}; font-size: 16px; font-weight: bold;">${scuWorkload?.toFixed(2) || "N/A"}</span>
-                <div style="color: #666; font-size: 12px;">hrs / wk</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-  return ratingDiv;
+  const qualityScore = qualityPercentile * 100;
+  const difficultyScore =
+    100 - Math.abs(preferredDifficultyPercentile - difficultyPercentile) * 100;
+  const workloadScore =
+    100 - Math.abs(preferredDifficultyPercentile - workloadPercentile) * 100;
+  console.log(qualityScore, difficultyScore, workloadScore);
+  console.log(((qualityScore + difficultyScore + workloadScore) / 300) * 10);
+  return ((qualityScore + difficultyScore + workloadScore) / 300) * 10;
 }
 
-function createFriendsToolTip(friendsTaken) {
-  const friendsTakenDiv = document.createElement("div");
-  friendsTakenDiv.innerHTML = `
-        <div style="
-          position: absolute;
-          background-color: #f0f0f0;
-          padding: 8px 8px;
-          border-radius: 10px;
-          font-family: Arial, sans-serif;
-          max-width: 250px;
-          margin: 5px;
-          transform: translateX(-50%);
-          pointer-events: auto;
-          bottom: 0px;
-        ">
-          <!-- Add invisible padding wrapper that maintains absolute positioning -->
-          <div style="
-
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background-color: transparent;
-            pointer-events: auto;
-          "></div>
-          <div style="position: relative; pointer-events: auto; width:max-content">
-            <div style="font-size: 14px; color: #666;">
-              ${friendsTaken.join("\n")}
-            </div>
-          </div>
-        </div>
-      `;
-  return friendsTakenDiv;
-}
-
-function getRatingColor(rating, ratingMin, ratingMax, goodValuesAreHigher) {
-  if (!rating) return "rgba(0, 0, 0, 0.5)";
-  if (rating < ratingMin) rating = ratingMin;
-  if (rating > ratingMax) rating = ratingMax;
-  const greenShade = [66, 134, 67];
-  const yellowShade = [255, 234, 0];
-  const redShade = [194, 59, 34];
-  const ratingMid = ratingMin + (ratingMax - ratingMin) / 2;
-  if (rating <= ratingMid && goodValuesAreHigher) {
-    return interpolateColor(
-      redShade,
-      yellowShade,
-      (rating - ratingMin) / (ratingMid - ratingMin),
-    );
-  }
-  if (rating <= ratingMid && !goodValuesAreHigher) {
-    return interpolateColor(
-      greenShade,
-      yellowShade,
-      (rating - ratingMin) / (ratingMid - ratingMin),
-    );
-  }
-  if (goodValuesAreHigher) {
-    return interpolateColor(
-      yellowShade,
-      greenShade,
-      (rating - ratingMid) / (ratingMax - ratingMid),
-    );
-  }
-  return interpolateColor(
-    yellowShade,
-    redShade,
-    (rating - ratingMid) / (ratingMax - ratingMid),
-  );
-}
-
-function interpolateColor(color1, color2, ratio) {
-  const r = Math.round(color1[0] + ratio * (color2[0] - color1[0]));
-  const g = Math.round(color1[1] + ratio * (color2[1] - color1[1]));
-  const b = Math.round(color1[2] + ratio * (color2[2] - color1[2]));
-  return `rgba(${r}, ${g}, ${b}, 1)`;
+function rmpScore(quality, difficulty) {
+  // Ranges go from 1 to 5, so we normalize them to 0 to 4.
+  quality -= 1;
+  difficulty -= 1;
+  // Percentiles would be better, but we don't have that data.
+  const difficultyScore = 4 - Math.abs(prefferedDifficulty - difficulty);
+  console.log("RMP SCORE");
+  console.log(((quality + difficultyScore) / 8) * 10);
+  console.log(quality, difficultyScore);
+  return ((quality + difficultyScore) / 8) * 10;
 }
 
 function appendRatingInfoToCell(tdElement, ratingInfo) {
+  console.log(ratingInfo);
   const overallScore = calcOverallScore(ratingInfo);
   const scoreContainer = document.createElement("div");
   scoreContainer.style.display = "flex";
@@ -448,14 +291,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
 
   // Create tooltip
   const tooltip = document.createElement("div");
-  tooltip.innerHTML = createToolTip(
-    ratingInfo.rmpLink,
-    ratingInfo.rmpQuality,
-    ratingInfo.rmpDifficulty,
-    ratingInfo.scuQuality,
-    ratingInfo.scuDifficulty,
-    ratingInfo.scuWorkload,
-  ).innerHTML;
+  tooltip.innerHTML = createRatingToolTip(ratingInfo).innerHTML;
   tooltip.style.cssText = `
         transform: translateX(-50%);
         color: black;
@@ -591,4 +427,252 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
   tdElement.appendChild(sectionTimeMatch);
   tdElement.appendChild(friendsTaken);
   tdElement.appendChild(friendsInterested);
+}
+
+function createRatingToolTip(ratingInfo) {
+  let {
+    rmpLink,
+    rmpQuality,
+    rmpDifficulty,
+    scuEvalsQuality,
+    scuEvalsDifficulty,
+    scuEvalsWorkload,
+    scuEvalsQualityPercentile,
+    scuEvalsDifficultyPercentile,
+    scuEvalsWorkloadPercentile,
+  } = ratingInfo;
+  const ratingDiv = document.createElement("div");
+  const scuEvalsQualityScore = scuEvalsQualityPercentile
+    ? scuEvalsQualityPercentile * 100
+    : undefined;
+  const scuEvalsQualityColor = getRatingColor(
+    scuEvalsQualityScore,
+    0,
+    100,
+    true,
+  );
+  const scuEvalsDifficultyScore = scuEvalsDifficultyPercentile
+    ? Math.abs(preferredDifficultyPercentile - scuEvalsDifficultyPercentile) *
+      100
+    : undefined;
+  const scuEvalsDifficultyColor = getRatingColor(
+    scuEvalsDifficultyScore,
+    0,
+    100,
+    false,
+  );
+  const scuEvalsWorkloadScore = scuEvalsWorkloadPercentile
+    ? Math.abs(preferredDifficultyPercentile - scuEvalsWorkloadPercentile) * 100
+    : undefined;
+  const scuEvalsWorkloadColor = getRatingColor(
+    scuEvalsWorkloadScore,
+    0,
+    100,
+    false,
+  );
+  ratingDiv.innerHTML = `
+        <div style="
+          position: absolute;
+          background-color: #f0f0f0;
+          padding: 16px 16px;
+          border-radius: 10px;
+          font-family: Arial, sans-serif;
+          max-width: 250px;
+          margin: 5px;
+          transform: translateX(-50%);
+          pointer-events: auto;
+          bottom: 0px;
+        ">
+          <!-- Add invisible padding wrapper that maintains absolute positioning -->
+          <div style="
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background-color: transparent;
+            pointer-events: auto;
+          "></div>
+          <div style="position: relative; pointer-events: auto;">
+            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+              Section Ratings
+            </div>
+            
+            <div>
+              <a href="${rmpLink}" target="_blank" style="color: blue; text-decoration: none; font-weight: 450;">RateMyProfessor</a>
+            </div>
+            
+            <div style="display: flex; gap: 20px; margin: 8px 0;">
+              <div>
+                <span style="color: ${getRatingColor(rmpQuality, 1, 5, true)}; font-size: 16px; font-weight: bold;">${rmpQuality?.toFixed(2) || "N/A"}</span>
+                <span style="color: #666;"> / 5</span>
+                <div style="color: #666; font-size: 12px;">quality</div>
+              </div>
+              <div>
+                <span style="color: ${getRatingColor(rmpDifficulty, 1, 5, false)};font-size: 16px; font-weight: bold;">${rmpDifficulty?.toFixed(2) || "N/A"}</span>
+                <span style="color: #666;"> / 5</span>
+                <div style="color: #666; font-size: 12px;">difficulty</div>
+              </div>
+            </div>
+      
+            <div style="font-weight: 450; margin: 12px 0 8px 0;">
+              SCU Course Evaluations
+            </div>
+            
+            <div style="display: flex; gap: 20px; margin: 8px 0;">
+              <div>
+                <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${scuEvalsQuality?.toFixed(2) || "N/A"}</span>
+                <span style="color: #666;"> / 5</span>
+                <div style="color: #666; font-size: 12px;">quality</div>
+              </div>
+              <div>
+                <span style="color: ${scuEvalsDifficultyColor}; font-size: 16px; font-weight: bold;">${scuEvalsDifficulty?.toFixed(2) || "N/A"}</span>
+                <span style="color: #666;"> / 5</span>
+                <div style="color: #666; font-size: 12px;">difficulty</div>
+              </div>
+              <div>
+                <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${scuEvalsWorkload?.toFixed(2) || "N/A"}</span>
+                <div style="color: #666; font-size: 12px;">hrs / wk</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+  return ratingDiv;
+}
+
+function createFriendsToolTip(friendsTakenOrInterested) {
+  const friendsTooltipDiv = document.createElement("div");
+  friendsTooltipDiv.innerHTML = `
+        <div style="
+          position: absolute;
+          background-color: #f0f0f0;
+          padding: 8px 8px;
+          border-radius: 10px;
+          font-family: Arial, sans-serif;
+          max-width: 250px;
+          margin: 5px;
+          transform: translateX(-50%);
+          pointer-events: auto;
+          bottom: 0px;
+        ">
+          <div style="
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background-color: transparent;
+            pointer-events: auto;
+          "></div>
+          <div style="position: relative; pointer-events: auto; width:max-content">
+            <div style="font-size: 14px; color: #666;">
+              ${friendsTakenOrInterested.join("\n")}
+            </div>
+          </div>
+        </div>
+      `;
+  return friendsTooltipDiv;
+}
+
+function getProfName(profName, usePreferred = false) {
+  if (profName.includes("|")) {
+    return profName.split("|")[+usePreferred].trim();
+  }
+  return profName;
+}
+
+function getRatingColor(rating, ratingMin, ratingMax, goodValuesAreHigher) {
+  if (nullOrUndefined(rating)) return "rgba(0, 0, 0, 0.5)";
+  if (rating < ratingMin) rating = ratingMin;
+  if (rating > ratingMax) rating = ratingMax;
+  const greenShade = [66, 134, 67];
+  const yellowShade = [255, 234, 0];
+  const redShade = [194, 59, 34];
+  const ratingMid = ratingMin + (ratingMax - ratingMin) / 2;
+  if (rating <= ratingMid && goodValuesAreHigher) {
+    return interpolateColor(
+      redShade,
+      yellowShade,
+      (rating - ratingMin) / (ratingMid - ratingMin),
+    );
+  }
+  if (rating <= ratingMid && !goodValuesAreHigher) {
+    return interpolateColor(
+      greenShade,
+      yellowShade,
+      (rating - ratingMin) / (ratingMid - ratingMin),
+    );
+  }
+  if (goodValuesAreHigher) {
+    return interpolateColor(
+      yellowShade,
+      greenShade,
+      (rating - ratingMid) / (ratingMax - ratingMid),
+    );
+  }
+  return interpolateColor(
+    yellowShade,
+    redShade,
+    (rating - ratingMid) / (ratingMax - ratingMid),
+  );
+}
+
+function interpolateColor(color1, color2, ratio) {
+  const r = Math.round(color1[0] + ratio * (color2[0] - color1[0]));
+  const g = Math.round(color1[1] + ratio * (color2[1] - color1[1]));
+  const b = Math.round(color1[2] + ratio * (color2[2] - color1[2]));
+  return `rgba(${r}, ${g}, ${b}, 1)`;
+}
+
+function isTimeWithinPreference(meetingTime) {
+  if (!meetingTime || !userInfo?.preferences) return false;
+
+  const { startHour, startMinute, endHour, endMinute } =
+    userInfo.preferences.preferredSectionTimeRange;
+
+  const [startTimeStr, endTimeStr] = meetingTime
+    .split("-")
+    .map((t) => t.trim());
+  const startTime = parseTime(startTimeStr);
+  const endTime = parseTime(endTimeStr);
+
+  return (
+    (startTime.hours > startHour ||
+      (startTime.hours === startHour && startTime.minutes >= startMinute)) &&
+    (endTime.hours < endHour ||
+      (endTime.hours === endHour && endTime.minutes <= endMinute))
+  );
+}
+
+function parseTime(timeString) {
+  const [time, period] = timeString.trim().split(/\s+/);
+  let [hours, minutes] = time.split(":").map(Number);
+
+  if (period.toUpperCase() === "PM" && hours !== 12) hours += 12;
+  if (period.toUpperCase() === "AM" && hours === 12) hours = 0;
+
+  return { hours, minutes };
+}
+
+function getPercentile(value, array) {
+  if (!value || !array || array.length === 0) return null;
+  return bsFind(array, value) / array.length;
+}
+
+function bsFind(sortedArray, target) {
+  let left = 0;
+  let right = sortedArray.length - 1;
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    if (sortedArray[mid] === target) return mid;
+    if (sortedArray[mid] < target) left = mid + 1;
+    else right = mid - 1;
+  }
+  return left;
+}
+
+function nullOrUndefined(object) {
+  return object === null || object === undefined;
 }

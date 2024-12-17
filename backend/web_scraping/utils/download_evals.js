@@ -5,7 +5,7 @@ import {
   REQUEST_INTERVAL_MS,
   REQUEST_MAX_RETRIES,
   existingEvaluations,
-} from "../main.js";
+} from "../index.js";
 import jsdom from "jsdom";
 
 export async function processEvalLinks(evalLinks, term) {

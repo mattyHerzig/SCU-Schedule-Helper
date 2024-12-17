@@ -1,4 +1,4 @@
-import { evalsAndTerms, existingEvaluations } from "../main.js";
+import { evalsAndTerms, existingEvaluations } from "../index.js";
 import PDFParser from "pdf2json";
 
 // If a course code is changed over time, we can map it here.

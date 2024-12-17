@@ -1,7 +1,12 @@
-import { evalsAndTerms, aggregateEvals, writeAggregateEvals } from "../main.js";
+import {
+  evalsAndTerms,
+  aggregateEvals,
+  writeAggregateEvals,
+} from "../index.js";
 
 export default async function generateAggregateEvalsFile() {
   console.log("Generating aggregate evals...");
+  aggregateEvals.departmentStatistics = {};
   for (const evaluation of evalsAndTerms.evals) {
     // Generate an aggregate rating for the professor, and also with granularity at department and course level.
     const profAggregateRatings = aggregateEvals[evaluation.profName] ?? {
@@ -39,6 +44,34 @@ export default async function generateAggregateEvalsFile() {
       ...aggregateEvals[evaluation.courseCode],
       ...courseAggregateRating,
     };
+    if (!aggregateEvals.departmentStatistics[evaluation.deptName]) {
+      aggregateEvals.departmentStatistics[evaluation.deptName] = {
+        qualityAvgs: [],
+        difficultyAvgs: [],
+        workloadAvgs: [],
+      };
+    }
+    if (evaluation.qualityRating)
+      aggregateEvals.departmentStatistics[evaluation.deptName].qualityAvgs.push(
+        toFixedNumber(evaluation.qualityRating, 4),
+      );
+    if (evaluation.difficultyRating)
+      aggregateEvals.departmentStatistics[
+        evaluation.deptName
+      ].difficultyAvgs.push(evaluation.difficultyRating);
+    if (evaluation.workloadRating)
+      aggregateEvals.departmentStatistics[
+        evaluation.deptName
+      ].workloadAvgs.push(toFixedNumber(evaluation.workloadRating, 4));
+  }
+  for (const deptName in aggregateEvals.departmentStatistics) {
+    const deptStats = aggregateEvals.departmentStatistics[deptName];
+    deptStats.qualityAvgs.sort();
+    deptStats.difficultyAvgs.sort();
+    deptStats.workloadAvgs.sort();
+    aggregateEvals.departmentStatistics[deptName] = {
+      ...deptStats,
+    };
   }
   console.log("Finished generating aggregate evals.");
   await writeAggregateEvals();
@@ -61,10 +94,6 @@ function generateNewAggregateRating(
     workloadCount:
       currentRating.workloadCount + (evaluation.workloadRating ? 1 : 0),
   };
-  newRating.qualityAvg = newRating.qualityTotal / newRating.qualityCount;
-  newRating.difficultyAvg =
-    newRating.difficultyTotal / newRating.difficultyCount;
-  newRating.workloadAvg = newRating.workloadTotal / newRating.workloadCount;
   if (includeRecentTerms) {
     const recentTermsSet = new Set(currentRating.recentTerms);
     recentTermsSet.add(evalsAndTerms.termIdsToTermNames[evaluation.term]);
@@ -90,13 +119,10 @@ function getDefaultRating() {
   return {
     qualityTotal: 0,
     qualityCount: 0,
-    qualityAvg: 0, // qualityTotal / qualityCount
     difficultyTotal: 0,
     difficultyCount: 0,
-    difficultyAvg: 0, // difficultyTotal / difficultyCount
     workloadTotal: 0,
     workloadCount: 0,
-    workloadAvg: 0, // workloadTotal / workloadCount
   };
 }
 
@@ -113,4 +139,9 @@ function mostRecentTermFirst(termA, termB) {
 function quarterCompareDescending(quarterA, quarterB) {
   const quarters = ["Fall", "Summer", "Spring", "Winter"];
   return quarters.indexOf(quarterA) - quarters.indexOf(quarterB);
+}
+
+function toFixedNumber(num, digits) {
+  const pow = Math.pow(10, digits);
+  return Math.round(num * pow) / pow;
 }
