@@ -46,9 +46,12 @@ export async function signIn() {
         method: "POST",
       },
     );
-    return `Authorization failed. ${data.message}`;
+    return `${data.message}`;
   }
 
+  await chrome.storage.local.set({
+    isDownloadingEvals: true,
+  });
   await chrome.storage.sync.set({
     accessToken: data.accessToken,
     accessTokenExpirationDate: data.accessTokenExpirationDate,

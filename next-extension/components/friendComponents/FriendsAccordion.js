@@ -23,7 +23,10 @@ import {
   transformTakenCourses,
 } from "../utils/user.js";
 
-export default function FriendsAccordion({ friends = [], onError = () => {} }) {
+export default function FriendsAccordion({
+  friends = [],
+  handleActionCompleted,
+}) {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null);
   const [transformedFriends, setTransformedFriends] = useState([]);
@@ -53,7 +56,7 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
   const handleConfirmRemoveFriend = async () => {
     if (friendToRemove) {
       try {
-        const updateError = await chrome.runtime.sendMessage({
+        const updateResponse = await chrome.runtime.sendMessage({
           type: "updateUser",
           updateItems: {
             friends: {
@@ -61,8 +64,8 @@ export default function FriendsAccordion({ friends = [], onError = () => {} }) {
             },
           },
         });
-        if (updateError) {
-          onError(updateError);
+        if (updateResponse && !updateResponse.ok) {
+          handleActionCompleted(updateResponse.message, "error");
         }
         setOpenConfirmDialog(false);
         setFriendToRemove(null);

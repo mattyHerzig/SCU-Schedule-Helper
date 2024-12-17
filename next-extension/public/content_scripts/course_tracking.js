@@ -63,10 +63,10 @@ const checkForInterestedSections = function (mutationsList) {
               },
             },
           };
-          chrome.runtime.sendMessage(message).then((errorMessage) => {
-            if (errorMessage)
+          chrome.runtime.sendMessage(message).then((response) => {
+            if (response && !response.ok)
               console.error(
-                `Error updating interested sections: ${errorMessage}`,
+                `Error updating interested sections: ${response.message}`,
               );
           });
         }

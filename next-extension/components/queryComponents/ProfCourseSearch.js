@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import {
+  Alert,
   Autocomplete,
   TextField,
   Box,
   Typography,
   Button,
+  Snackbar,
 } from "@mui/material";
 import ProfCourseCard from "./ProfCourseCard";
 
@@ -13,54 +15,70 @@ export default function ProfCourseSearch() {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     checkEvals();
 
     chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === "local" && changes.evals) {
-        checkEvals();
+      if (
+        namespace === "local" &&
+        (changes.evals || changes.isDownloadingEvals)
+      ) {
+        if (
+          changes.isDownloadingEvals &&
+          changes.isDownloadingEvals.newValue === true
+        )
+          setIsLoading(true);
+        else checkEvals();
       }
     });
   }, []);
 
   const checkEvals = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const evalsDataFromStorage = (await chrome.storage.local.get("evals"))
-      .evals;
-    if (evalsDataFromStorage) {
-      if (typeof evalsDataFromStorage === "object") {
-        setEvalsData(evalsDataFromStorage);
-      } else {
-        console.error(
-          `Invalid data type ${typeof evalsDataFromStorage} for evals`,
-        );
-        setError(`You must be signed in to view course evaluations data.`);
+    try {
+      setIsLoading(true);
+      const data = await chrome.storage.local.get([
+        "evals",
+        "isDownloadingEvals",
+      ]);
+      if (data.evals) {
+        setEvalsData(data.evals);
       }
-    } else {
-      console.error("No evals data found");
-      setError(`You must be signed in to view course evaluations data.`);
-      chrome.runtime.sendMessage("downloadEvals");
+      setIsLoading(data.isDownloadingEvals || false);
+    } catch (ignore) {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+  };
+
+  const retryDownload = async () => {
+    try {
+      const errorMessage = await chrome.runtime.sendMessage("downloadEvals");
+      if (errorMessage) onError(errorMessage);
+    } catch (error) {
+      console.error("Error retrying download:", error);
+      onError("An unknown error occurred while retrying download.");
+    }
+  };
+
+  const onError = (message) => {
+    setError(message);
+    setShowActionCompletedMessage(true);
   };
 
   const searchOptions = useMemo(() => {
     if (!evalsData || searchQuery.length < 1) return [];
-
     const options = [];
-
     try {
-      const dataToProcess = evalsData;
-      if (typeof dataToProcess !== "object" || dataToProcess === null) {
-        console.error("Stored data is not a valid object", dataToProcess);
+      const evalsData = evalsData;
+      if (evalsData === null) {
+        console.error("Stored data is not a valid object", evalsData);
         return [];
       }
 
-      Object.entries(dataToProcess).forEach(([key, value]) => {
+      Object.entries(evalsData).forEach(([key, value]) => {
         if (value?.type === "course") {
           options.push({
             id: key,
@@ -96,6 +114,10 @@ export default function ProfCourseSearch() {
     );
   }
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
   if (!evalsData || Object.keys(evalsData).length === 0) {
     return (
       <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
@@ -105,19 +127,28 @@ export default function ProfCourseSearch() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => chrome.runtime.sendMessage("downloadEvals")}
+          onClick={retryDownload}
           sx={{ mt: 2 }}
         >
-          Download Evaluations
+          Retry Data Download
         </Button>
+        <Snackbar
+          open={showActionCompletedMessage}
+          autoHideDuration={3000}
+          onClose={() => setShowActionCompletedMessage(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setShowActionCompletedMessage(false)}
+            severity={"error"}
+            sx={{ width: "100%" }}
+          >
+            {error}
+          </Alert>
+        </Snackbar>
       </Box>
     );
   }
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ mb: 2 }}>

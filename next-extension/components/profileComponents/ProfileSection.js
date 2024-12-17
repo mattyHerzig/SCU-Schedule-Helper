@@ -1,26 +1,15 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Stack,
-  TextField,
-  Snackbar,
-  Alert,
-} from "@mui/material";
+import { Box, Typography, Button, Stack, TextField } from "@mui/material";
 import { Edit } from "@mui/icons-material";
 import { compress } from "compress.js/src/compress.js";
 
-export default function ProfileSection({ userInfo }) {
+export default function ProfileSection({ userInfo, handleActionCompleted }) {
   const [name, setName] = useState(userInfo.name || "");
   const [photoUrl, setPhotoUrl] = useState(
     getUniquePhotoUrl(userInfo.photoUrl) ||
       "https://scu-schedule-helper.s3.amazonaws.com/default-avatar.png",
   );
   const [isEditingName, setIsEditingName] = useState(false);
-  const [error, setError] = useState(null);
-  const [showActionCompletedMessage, setShowActionCompletedMessage] =
-    useState(false);
 
   function getUniquePhotoUrl(url) {
     if (!url) return null;
@@ -40,8 +29,7 @@ export default function ProfileSection({ userInfo }) {
       !file.type.startsWith("image/png") &&
       !file.type.startsWith("image/jpeg")
     ) {
-      setError("File must be a png/jpg image.");
-      setShowActionCompletedMessage(true);
+      handleActionCompleted("File must be a png/jpg image.", "error");
       return;
     }
     const compressedFile = await compress(file, {
@@ -69,11 +57,10 @@ export default function ProfileSection({ userInfo }) {
     if (!photoFile) delete message.updateItems.personal.photo;
     if (!newName) delete message.updateItems.personal.newName;
     const response = await chrome.runtime.sendMessage(message);
-    if (response && response.message && !response.message.includes("success")) {
-      setError(response.message);
+    if (response && !response.ok) {
+      setName(userInfo.name || "");
+      handleActionCompleted(response.message, "error");
     } else {
-      setError(null);
-      setIsEditingName(false);
       if (response && response.presignedUploadUrl) {
         const uploadResponse = await fetch(response.presignedUploadUrl, {
           method: "PUT",
@@ -83,22 +70,20 @@ export default function ProfileSection({ userInfo }) {
             "Content-Length": photoFile.size,
           },
         });
-        if (!uploadResponse.ok)
-          setError(
+        if (!uploadResponse.ok) {
+          handleActionCompleted(
             "Failed to upload photo. Contact stephenwdean@gmail.com if this issue persists.",
+            "error",
           );
-        else setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
+          return;
+        } else setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
       }
+      handleActionCompleted("Profile updated successfully.", "success");
     }
-    setShowActionCompletedMessage(true);
+    setIsEditingName(false);
   };
 
   const handleNameChange = () => {
-    if (name.trim() === "") {
-      alert("Name cannot be empty!");
-      return;
-    }
-
     submitPersonal(null, name);
   };
 
@@ -241,21 +226,6 @@ export default function ProfileSection({ userInfo }) {
           </Box>
         </Stack>
       </Stack>
-
-      <Snackbar
-        open={showActionCompletedMessage}
-        autoHideDuration={3000}
-        onClose={() => setShowActionCompletedMessage(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setShowActionCompletedMessage(false)}
-          severity={error ? "error" : "success"}
-          sx={{ width: "100%" }}
-        >
-          {error || "Updated successfully."}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

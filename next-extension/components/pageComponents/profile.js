@@ -1,23 +1,26 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  Alert,
   Box,
-  Typography,
   Button,
-  Stack,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Snackbar,
+  Stack,
+  Typography,
 } from "@mui/material";
 import AuthWrapper from "./authWrapper.js";
 import UserCourseDetails from "../profileComponents/UserCourseDetails.js";
-import { clearCourseHistory } from "../../public/utils/user.js";
 import ProfileSection from "../profileComponents/ProfileSection.js";
 
 export default function Profile() {
   const [userInfo, setUserInfo] = useState(null);
-  const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
+  const [currentAction, setCurrentAction] = useState(null);
 
   useEffect(() => {
     const storageListener = (changes, namespace) => {
@@ -45,31 +48,43 @@ export default function Profile() {
   const signOut = async () => {
     try {
       await chrome.runtime.sendMessage("signOut");
-      setError(null);
     } catch (error) {
       console.error("Error signing out:", error);
+      handleActionCompleted(
+        "An unknown error occurred while signing out.",
+        "error",
+      );
     }
   };
 
   const deleteAccount = async () => {
     try {
       const errorMessage = await chrome.runtime.sendMessage("deleteAccount");
-      setError(errorMessage || null);
+      if (errorMessage) {
+        handleActionCompleted(errorMessage, "error");
+      }
     } catch (error) {
-      setError(
-        "Unknown error occurred while deleting account. Please try again.",
+      handleActionCompleted(
+        "An unknown error occurred while deleting account. Please try again.",
+        "error",
       );
     }
   };
 
   const importCurrentCourses = async () => {
     try {
-      const errorMessage =
-        await chrome.runtime.sendMessage("importCurrentCourses");
-      setError(errorMessage || null);
+      const errorMessage = await chrome.runtime.sendMessage(
+        "importCurrentCourses",
+      );
+      if (errorMessage) {
+        handleActionCompleted(errorMessage, "error");
+      }
     } catch (error) {
       console.error("Error adding current courses:", error);
-      setError("An unknown error occurred while adding current courses.");
+      handleActionCompleted(
+        "An unknown error occurred while adding current courses.",
+        "error",
+      );
     }
   };
 
@@ -78,24 +93,35 @@ export default function Profile() {
       const errorMessage = await chrome.runtime.sendMessage(
         "importCourseHistory",
       );
-      setError(errorMessage || null);
+      if (errorMessage) {
+        handleActionCompleted(errorMessage, "error");
+      }
     } catch (error) {
       console.error("Error importing course history:", error);
-      setError("Unknown error occurred while importing course history.");
+      handleActionCompleted(
+        "An unknown error occurred while importing course history.",
+        "error",
+      );
     }
   };
 
   const deleteCourseHistory = async () => {
     try {
-      const error = await clearCourseHistory();
-      if (error) {
-        setError(error);
+      const errorMessage = await chrome.runtime.sendMessage("clearCourseHistory");
+      if (errorMessage) {
+        handleActionCompleted(errorMessage, "error");
       } else {
-        setError(null);
+        handleActionCompleted(
+          "Course history cleared successfully.",
+          "success",
+        );
       }
     } catch (error) {
       console.error("Error clearing course history:", error);
-      setError("An unknown error occurred while clearing course history.");
+      handleActionCompleted(
+        "An unknown error occurred while clearing course history.",
+        "error",
+      );
     }
   };
 
@@ -112,12 +138,13 @@ export default function Profile() {
     setOpenDialog(false);
   };
 
-  if (!userInfo) {
-    return (
-      <AuthWrapper>
-      </AuthWrapper>
-    );
-  }
+  const handleActionCompleted = (message, type) => {
+    setCurrentAction({
+      message,
+      type,
+    });
+    setShowActionCompletedMessage(true);
+  };
 
   return (
     <AuthWrapper>
@@ -126,8 +153,9 @@ export default function Profile() {
           Your Profile
         </Typography>
 
-        <ProfileSection 
+        <ProfileSection
           userInfo={userInfo}
+          handleActionCompleted={handleActionCompleted}
         />
 
         <Box sx={{ mb: 3 }}>
@@ -217,6 +245,20 @@ export default function Profile() {
             </Button>
           </DialogActions>
         </Dialog>
+        <Snackbar
+          open={showActionCompletedMessage}
+          autoHideDuration={3000}
+          onClose={() => setShowActionCompletedMessage(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setShowActionCompletedMessage(false)}
+            severity={currentAction?.type || "success"}
+            sx={{ width: "100%" }}
+          >
+            {currentAction?.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </AuthWrapper>
   );

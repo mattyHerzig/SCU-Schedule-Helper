@@ -32,7 +32,7 @@ export const unauthorizedError = (message) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: `Could not verify user authorization due to an error: ${message}`,
+      message: `Authorization failed: ${message}`,
     }),
   };
 };

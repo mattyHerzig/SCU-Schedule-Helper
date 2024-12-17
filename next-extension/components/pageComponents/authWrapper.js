@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Alert, Box, Button, Snackbar, Typography } from "@mui/material";
 
 const AuthWrapper = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -14,7 +16,6 @@ const AuthWrapper = ({ children }) => {
         checkAuthStatus();
       }
     };
-
     chrome.storage.onChanged.addListener(authListener);
     return () => {
       chrome.storage.onChanged.removeListener(authListener);
@@ -24,13 +25,14 @@ const AuthWrapper = ({ children }) => {
   const checkAuthStatus = async () => {
     setIsCheckingAuth(true);
     try {
-      // Retrieve user info from chrome storage
       const accessToken = (await chrome.storage.sync.get("accessToken"))
         .accessToken;
-      // Set logged-in state based on whether user info exists
       setIsLoggedIn(accessToken);
     } catch (error) {
       console.error("Error checking auth status:", error);
+      onError(
+        "An unknown error occurred while checking authentication status.",
+      );
     }
     setIsCheckingAuth(false);
   };
@@ -39,16 +41,19 @@ const AuthWrapper = ({ children }) => {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
-      // Use service worker's sign-in function
       const errorMessage = await chrome.runtime.sendMessage("signIn");
-      if (errorMessage) setError(errorMessage);
-      else setError(null);
+      if (errorMessage) onError(errorMessage);
     } catch (error) {
       console.error("Unknown auth error:", error);
-      setError("Unknown error occurred while signing in. Please try again.");
+      onError("Unknown error occurred while signing in. Please try again.");
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  const onError = (message) => {
+    setError(message);
+    setShowActionCompletedMessage(true);
   };
 
   if (isCheckingAuth) {
@@ -85,9 +90,20 @@ const AuthWrapper = ({ children }) => {
         >
           {isLoggingIn ? "Logging in..." : "Sign In with Google"}
         </Button>
-        {error && (
-          <Typography sx={{ color: "error.main", mt: 2 }}>{error}</Typography>
-        )}
+        <Snackbar
+          open={showActionCompletedMessage}
+          autoHideDuration={5000}
+          onClose={() => setShowActionCompletedMessage(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setShowActionCompletedMessage(false)}
+            severity={"error"}
+            sx={{ width: "100%" }}
+          >
+            {error}
+          </Alert>
+        </Snackbar>
       </Box>
     );
   }

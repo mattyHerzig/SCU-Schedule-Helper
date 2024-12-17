@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 import {
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Typography,
-  Button
+  Button,
 } from "@mui/material";
 
 export default function PreferencesDialog({ open, onClose }) {
@@ -14,27 +14,30 @@ export default function PreferencesDialog({ open, onClose }) {
       <DialogTitle>More Information</DialogTitle>
       <DialogContent dividers>
         <Typography variant="subtitle1" gutterBottom>
-          Preferred Course Times:
+          Preferred Course Times
         </Typography>
-        <Typography variant="body2" paragraph>
+        <Typography variant="body2" component={"p"}>
           Use the slider to select your preferred time range for classes.
           Courses outside your time range will be marked in Workday.
         </Typography>
 
         <Typography variant="subtitle1" gutterBottom>
-          RateMyProfessor vs SCU Course Evaluations:
+          RateMyProfessor vs SCU Course Evaluations
         </Typography>
-        <Typography variant="body2" paragraph>
-          Adjust the slider to weigh how much each rating source influences
-          your preference. Courses will be color coded according to the
-          course statistics adjusted with your weight
+        <Typography variant="body2" component={"p"}>
+          We use RateMyProfessor and SCU Course Evaluations data to calculate
+          and display overall section scores inside Workday. Adjust the slider
+          to change the weight of each data source in the overall score
+          calculation.
         </Typography>
-
         <Typography variant="subtitle1" gutterBottom>
-          Automatic Course Tracking:
+          Automatic Course Tracking
         </Typography>
         <Typography variant="body2">
-          Enable this to allow others to see what courses you are taking
+          Enable this to automatically add courses that you register for to your
+          profile, as well as interested sections (i.e. when you add a course to
+          a saved schedule). When disabled, you can still import your courses
+          manually from the profile page. Your sensitive data is never stored.
         </Typography>
       </DialogContent>
       <DialogActions>

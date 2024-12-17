@@ -46,7 +46,7 @@ const transformUserToCourses = (user) => {
 export default function RequestsAccordion({
   requestsIn = [],
   requestsOut = [],
-  onError = () => {},
+  handleActionCompleted = (action, type) => {},
 }) {
   const [transformedRequestsIn, setTransformedRequestsIn] =
     useState(requestsIn);
@@ -96,7 +96,7 @@ export default function RequestsAccordion({
   const handleAcceptRequest = async (event, request) => {
     event.stopPropagation();
     try {
-      const updateError = await chrome.runtime.sendMessage({
+      const updateResponse = await chrome.runtime.sendMessage({
         type: "updateUser",
         updateItems: {
           friends: {
@@ -104,9 +104,9 @@ export default function RequestsAccordion({
           },
         },
       });
-      if (updateError) {
-        onError(updateError);
-      }
+      if (updateResponse && !updateResponse.ok)
+        handleActionCompleted(updateResponse.message, "error");
+      else handleActionCompleted("Friend request accepted.", "success");
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
@@ -117,7 +117,7 @@ export default function RequestsAccordion({
     const key =
       request.type == "incoming" ? "removeIncoming" : "removeOutgoing";
     try {
-      const updateError = await chrome.runtime.sendMessage({
+      const updateResponse = await chrome.runtime.sendMessage({
         type: "updateUser",
         updateItems: {
           friendRequests: {
@@ -125,9 +125,9 @@ export default function RequestsAccordion({
           },
         },
       });
-      if (updateError) {
-        onError(updateError);
-      }
+      if (updateResponse && !updateResponse.ok)
+        handleActionCompleted(updateResponse.message, "error");
+      else handleActionCompleted("Friend request removed.", "success");
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
@@ -140,7 +140,7 @@ export default function RequestsAccordion({
       </Typography>
 
       <Accordion
-        defaultExpanded
+        defaultExpanded={requestsIn.length > 0}
         disableGutters
         square
         sx={{

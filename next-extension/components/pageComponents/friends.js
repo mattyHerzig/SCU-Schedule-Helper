@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef } from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
+import { useState, useEffect } from "react";
+import { Alert, Box, Snackbar } from "@mui/material";
 import AuthWrapper from "./authWrapper";
 import FriendsAccordion from "../friendComponents/FriendsAccordion";
 import RequestsAccordion from "../friendComponents/RequestsAccordion";
-import UserSearch from "../friendComponents/UserSearch"
+import UserSearch from "../friendComponents/UserSearch";
 
 export default function Friends() {
   const [friends, setFriends] = useState([]);
   const [requestsIn, setRequestsIn] = useState([]);
   const [requestsOut, setRequestsOut] = useState([]);
-  const [error, setError] = useState(null);
-  const errorTimeout = useRef(null);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
+  const [currentAction, setCurrentAction] = useState(null);
 
   useEffect(() => {
     const fetchFriendData = async () => {
@@ -47,12 +47,12 @@ export default function Friends() {
     });
   }, []);
 
-  const onError = (message) => {
-    setError(message);
-    if (errorTimeout.current) clearTimeout(errorTimeout.current);
-    errorTimeout.current = setTimeout(() => {
-      setError(null);
-    }, 5000);
+  const handleActionCompleted = (action, type) => {
+    setCurrentAction({
+      message: action,
+      type,
+    });
+    setShowActionCompletedMessage(true);
   };
 
   return (
@@ -66,11 +66,14 @@ export default function Friends() {
           flexDirection: "column",
         }}
       >
-        <FriendsAccordion friends={friends} onError={onError} />
+        <FriendsAccordion
+          friends={friends}
+          handleActionCompleted={handleActionCompleted}
+        />
         <RequestsAccordion
           requestsIn={requestsIn}
           requestsOut={requestsOut}
-          onError={onError}
+          handleActionCompleted={handleActionCompleted}
         />
         <Box
           sx={{
@@ -78,9 +81,21 @@ export default function Friends() {
             display: "flex",
           }}
         ></Box>
-        {error && <Typography color="error">{error}</Typography>}
-
-        <UserSearch></UserSearch>
+        <UserSearch handleActionCompleted={handleActionCompleted}></UserSearch>
+        <Snackbar
+          open={showActionCompletedMessage}
+          autoHideDuration={3000}
+          onClose={() => setShowActionCompletedMessage(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setShowActionCompletedMessage(false)}
+            severity={currentAction?.type || "success"}
+            sx={{ width: "100%" }}
+          >
+            {currentAction?.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </AuthWrapper>
   );

@@ -70,7 +70,7 @@ export async function updateUserCourseData(results: CourseData[]) {
     };
 
     const putResponse = await chrome.runtime.sendMessage(message);
-    if (putResponse && !putResponse.message.includes("success")) {
+    if (putResponse && !putResponse.ok) {
       return putResponse.message;
     }
     return null;

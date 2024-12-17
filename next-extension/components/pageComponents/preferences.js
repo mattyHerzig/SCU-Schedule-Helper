@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import {
+  Alert,
   Box,
   Typography,
   FormControlLabel,
   Switch,
   IconButton,
-  Stack
+  Stack,
+  Snackbar,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import AuthWrapper from "./authWrapper";
@@ -23,9 +25,11 @@ export default function Preferences() {
   });
   const [scuEvalsPercentage, setScuEvalsPercentage] = useState([50]);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const debounceTimerRef = useRef(null);
   const shouldSendUpdate = useRef(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleDialogOpen = () => {
     setDialogOpen(true);
@@ -114,24 +118,23 @@ export default function Preferences() {
         },
         allowLocalOnly: true,
       };
-      chrome.runtime.sendMessage(message).then((errorMessage) => {
-        if (errorMessage) setErrorMessage(errorMessage);
-        else setErrorMessage(null);
+      chrome.runtime.sendMessage(message).then((response) => {
+        if (response && !response.ok) {
+          setErrorMessage(response.message);
+          setShowActionCompletedMessage(true);
+        } else setErrorMessage(null);
       });
-    }, 300);
+    }, 500);
   };
 
   return (
     <AuthWrapper>
-      <Box sx={{ padding: 2}}>
+      <Box sx={{ padding: 2 }}>
         <Stack direction="row" alignItems="center">
-          <Typography variant="h6" sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ textAlign: "center" }}>
             Course Preferences
           </Typography>
-          <IconButton
-            onClick={handleDialogOpen}
-            aria-label="info"
-          >
+          <IconButton onClick={handleDialogOpen} aria-label="info">
             <InfoIcon fontSize="small" />
           </IconButton>
         </Stack>
@@ -139,43 +142,45 @@ export default function Preferences() {
 
       <Box
         sx={{
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',  
-          justifyContent: 'center', 
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           gap: 2,
-          padding: 0, 
+          padding: 0,
         }}
       >
-        <Typography textAlign="center">What are your preferred course times?</Typography>
+        <Typography textAlign="center">
+          What are your preferred course times?
+        </Typography>
 
-        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
           <RangeSliderTime
             initValue={timePreference}
             onChangeCommitted={handleTimePreferenceChange}
-            sx={{ width: '90%' }}
+            sx={{ width: "90%" }}
           />
         </Box>
 
-        <Box 
-          sx={{ 
-            width: '100%', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            textAlign: 'center', 
-            gap: 2 
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: 2,
           }}
         >
           <Typography>
-            How would you like SCU Course Evaluations and RateMyProfessor data to be weighed in the Workday course section scores?
+            How should we balance RateMyProfessor and SCU Evaluations data?
           </Typography>
 
           <PercentSlider
             initValue={scuEvalsPercentage}
             onChangeCommitted={handlePercentagePreferenceChange}
-            sx={{ width: '90%' }}
+            sx={{ width: "90%" }}
           />
 
           <FormControlLabel
@@ -201,25 +206,29 @@ export default function Preferences() {
             }
             label="Automatically keep track of my courses"
             sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '100%',
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
             }}
           />
-
-          {errorMessage && (
-            <Typography sx={{ color: "error.main", textAlign: 'center' }}>
+          <Snackbar
+            open={showActionCompletedMessage}
+            autoHideDuration={3000}
+            onClose={() => setShowActionCompletedMessage(false)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          >
+            <Alert
+              onClose={() => setShowActionCompletedMessage(false)}
+              severity={"error"}
+              sx={{ width: "100%" }}
+            >
               {errorMessage}
-            </Typography>
-          )}
+            </Alert>
+          </Snackbar>
         </Box>
       </Box>
-
-      <PreferencesDialog 
-        open={dialogOpen} 
-        onClose={handleDialogClose} 
-      />
+      <PreferencesDialog open={dialogOpen} onClose={handleDialogClose} />
     </AuthWrapper>
   );
 }

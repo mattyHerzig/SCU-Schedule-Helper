@@ -83,17 +83,29 @@ export async function updateUser(updateItems) {
     body: JSON.stringify(updateItems),
   });
   if (!response) {
-    return "Error updating user data (are you signed in?)";
+    return {
+      message: "Error updating user data (are you signed in?)",
+      ok: false,
+    };
   }
   const data = await response.json();
   if (!response.ok) {
-    return `Error updating user data: ${data.message}`;
+    return {
+      message: `${data.message || "Unknown error updating user data."}`,
+      ok: false,
+    };
   }
   const errorUpdatingLocalCache = await updateLocalCache(updateItems);
   if (errorUpdatingLocalCache) {
-    return errorUpdatingLocalCache;
+    return {
+      message: errorUpdatingLocalCache,
+      ok: false,
+    };
   }
-  return data;
+  return {
+    ...data,
+    ok: true,
+  };
 }
 
 async function updateLocalCache(updateItems) {
@@ -395,7 +407,7 @@ export async function queryUserByName(name) {
   }
   const data = await response.json();
   if (!response.ok) {
-    return `Error querying users: ${data.message}`;
+    return `Error searching users: ${data.message}`;
   }
   return data;
 }
@@ -432,13 +444,12 @@ async function openTabAndSendMessage(url, message) {
 export async function clearCourseHistory() {
   const currentCoursesTaken =
     (await chrome.storage.local.get("userInfo")).userInfo.coursesTaken || [];
-  const errorUpdatingUser = await updateUser({
+  const updateResponse = await updateUser({
     coursesTaken: { remove: currentCoursesTaken },
   });
-  if (errorUpdatingUser) {
-    return errorUpdatingUser;
+  if (updateResponse && !updateResponse.ok) {
+    return updateResponse.message;
   }
-  await chrome.storage.local.set({ coursesTaken: [] });
   return null;
 }
 

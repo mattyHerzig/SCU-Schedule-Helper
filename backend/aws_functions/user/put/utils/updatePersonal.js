@@ -12,7 +12,9 @@ export async function updatePersonal(userId, updateData) {
     "info#personal",
     "subscriptions",
   );
-
+  if (updateData.name === "") {
+    throw new Error("name cannot be empty.", { cause: 400 });
+  }
   if (updateData.photo) {
     if (!updateData.photo.size) {
       throw new Error("photo size is required.", { cause: 400 });

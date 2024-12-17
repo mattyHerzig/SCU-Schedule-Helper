@@ -7,7 +7,7 @@ import {
   Typography,
 } from "@mui/material";
 
-export default function UserSearch({ onError = () => {} }) {
+export default function UserSearch({ handleActionCompleted }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -17,18 +17,23 @@ export default function UserSearch({ onError = () => {} }) {
       setUsers([]);
       return;
     }
-
     setSearchLoading(true);
     try {
       const foundUsers = await chrome.runtime.sendMessage({
         type: "queryUserByName",
         name: name,
       });
-
-      setUsers(foundUsers || []);
+      if (typeof foundUsers === "string") {
+        handleActionCompleted(foundUsers, "error");
+        setUsers([]);
+      } else setUsers(foundUsers || []);
     } catch (error) {
-      console.error("Error searching users:", error);
       setUsers([]);
+      console.error("Error searching users:", error);
+      handleActionCompleted(
+        "An unknown error occurred while searching users.",
+        "error",
+      );
     } finally {
       setSearchLoading(false);
     }
@@ -47,13 +52,18 @@ export default function UserSearch({ onError = () => {} }) {
     };
 
     try {
-      const updateError = await chrome.runtime.sendMessage(message);
-      if (updateError) {
-        onError(updateError);
-      }
+      const updateResponse = await chrome.runtime.sendMessage(message);
+      if (updateResponse && !updateResponse.ok)
+        handleActionCompleted(updateResponse.message, "error");
+      else
+        handleActionCompleted(`Friend request sent successfully!`, "success");
       setSelectedUser(null);
     } catch (error) {
       console.error("Error sending friend request:", error);
+      handleActionCompleted(
+        "An unknown error occurred while sending friend request.",
+        "error",
+      );
     }
   };
 

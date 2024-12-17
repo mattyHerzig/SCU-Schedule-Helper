@@ -10,16 +10,26 @@ export async function downloadEvals() {
     await chrome.storage.local.get("evalsExpirationDate")
   ).evalsExpirationDate;
   if (currentExpirationDate && new Date() < new Date(currentExpirationDate)) {
+    await chrome.storage.local.set({
+      isDownloadingEvals: false,
+    });
     return;
   }
   const evalsResponse = await fetchWithAuth(prodEvalsEndpoint);
   if (!evalsResponse || !evalsResponse.ok) {
+    await chrome.storage.local.set({
+      isDownloadingEvals: false,
+    });
     return;
   }
   const evalsObject = await evalsResponse.json();
   const evalsExpirationDate = evalsObject.dataExpirationDate;
   const evals = await decodeAndDecompress(evalsObject.data);
-  await chrome.storage.local.set({ evals, evalsExpirationDate });
+  await chrome.storage.local.set({
+    evals,
+    evalsExpirationDate,
+    isDownloadingEvals: false,
+  });
 }
 
 async function decodeAndDecompress(base64EncodedGzippedData) {

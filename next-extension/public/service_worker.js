@@ -1,9 +1,6 @@
 import { signIn, signOut } from "./utils/authorization.js";
 import { downloadEvals } from "./utils/evals.js";
-import {
-  handleNotification,
-  subscribe,
-} from "./utils/notifications.js";
+import { handleNotification, subscribe } from "./utils/notifications.js";
 import { getRmpRatings } from "./utils/rmp.js";
 import {
   importCurrentCourses,
@@ -15,17 +12,6 @@ import {
   refreshUserData,
   updateUser,
 } from "./utils/user.js";
-
-const defaults = {
-  extendColorHorizontally: false,
-  individualDifficultyColor: true,
-  includeColor2: true,
-  color1: "#00FF00",
-  color2: "#FFFF00",
-  color3: "#FF0000",
-  opacity: 50, // 0-100
-  useEvals: false,
-};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
@@ -58,42 +44,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
   }
 
-  if (request.type === "replacePhoto") {
-    const { photoUrl, isDefault } = request; 
-    const updateItems = {
-      personal: {
-        photoUrl: isDefault
-          ? "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png"
-          : photoUrl,
-      },
-    };
-
-    updateUser(updateItems)
-      .then((response) => {
-        if (response) {
-          sendResponse(response);
-        } else {
-          refreshUserData(["personal"]).then(() => {
-            sendResponse({ success: true });
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Error replacing photo:", error);
-        sendResponse({ success: false, error: error.message });
-      });
-
-    return true; 
-  }
-
   switch (request) {
-    case "clearCourseHistory":
-      clearCourseHistory().then((response) => {
-        sendResponse(response);
-      });
-    case "getDefaults":
-      sendResponse(defaults);
-      break;
     case "signIn":
       signIn().then((response) => {
         sendResponse(response);
@@ -121,6 +72,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "importCourseHistory":
       importCourseHistory().then((response) => {
+        sendResponse(response);
+      });
+      break;
+    case "clearCourseHistory":
+      clearCourseHistory().then((response) => {
         sendResponse(response);
       });
       break;
