@@ -103,8 +103,7 @@ async function displayProfessorDifficulty(
   const courseCode = courseText
     .substring(0, courseText.indexOf("-"))
     .replace(/\s/g, "");
-  const department = courseText.substring(0, courseText.indexOf(/\d/));
-
+  const department = courseText.substring(0, courseText.indexOf(" "));
   if (evalsData[prof]?.[courseCode]) {
     ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
       getCourseEvalAvgMetric(evalsData[prof][courseCode]));
@@ -134,7 +133,11 @@ async function displayProfessorDifficulty(
     const match =
       friendCoursesTaken[courseCode][friend].match(courseTakenPattern);
     if (!match) continue;
-    if (match[1].includes(prof) || !match[1]) {
+    if (
+      !match[1] ||
+      match[1].includes(prof) ||
+      match[1] === "Not taken at SCU"
+    ) {
       friendsTaken.push(friends[friend].name);
     }
   }
@@ -567,9 +570,11 @@ function createFriendsToolTip(friendsTakenOrInterested) {
             pointer-events: auto;
           "></div>
           <div style="position: relative; pointer-events: auto; width:max-content">
-            <div style="font-size: 14px; color: #666;">
-              ${friendsTakenOrInterested.join("\n")}
-            </div>
+          ${friendsTakenOrInterested.reduce((acc, friend) => {
+            return (
+              acc + `<div style="color: #666; font-size:14px">${friend}</div>`
+            );
+          }, "")}
           </div>
         </div>
       `;
