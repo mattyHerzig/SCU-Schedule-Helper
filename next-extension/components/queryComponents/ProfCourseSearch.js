@@ -104,6 +104,7 @@ export default function ProfCourseSearch() {
   }, [evalsData]);
 
   const searchOptions = useMemo(() => {
+    if (searchQuery.trim() === "") return [];
     return allOptions.filter((option) =>
       option.label.toLowerCase().includes(searchQuery.toLowerCase()),
     );

@@ -34,7 +34,8 @@ export default function CourseAccordion() {
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [courseToRemove, setCourseToRemove] = useState(null);
   const [courseRemoveType, setCourseRemoveType] = useState(null);
-  const [showActionCompletedMessage, setShowActionCompletedMessage] = useState(false);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] =
+    useState(false);
   const [message, setMessage] = useState("");
   const [messageSeverity, setMessageSeverity] = useState("success");
 
@@ -47,8 +48,10 @@ export default function CourseAccordion() {
         if (userInfo) {
           userInfo.coursesTaken = userInfo.coursesTaken || [];
           userInfo.interestedSections = userInfo.interestedSections || {};
-          userInfo.coursesTaken = userInfo.coursesTaken.filter((course) => course);
-          
+          userInfo.coursesTaken = userInfo.coursesTaken.filter(
+            (course) => course,
+          );
+
           setUserCourses({
             interested: userInfo.interestedSections,
             taken: userInfo.coursesTaken,
@@ -98,7 +101,9 @@ export default function CourseAccordion() {
         } else {
           setUserCourses((prevState) => {
             const updatedTakenCourses = prevState.taken.filter(
-              (course) => `P{${course.professor}}C{${course.courseCode}}T{${course.quarter}}` !== courseIdentifier
+              (course) =>
+                `P{${course.professor}}C{${course.courseCode}}T{${course.quarter}}` !==
+                courseIdentifier,
             );
             return {
               ...prevState,
@@ -126,57 +131,64 @@ export default function CourseAccordion() {
     setCourseRemoveType(null);
   };
 
-  const handleAddCourse = async (courseType, selectedCourse, selectedProfessor, quarter) => {
-  if (!selectedCourse || !selectedProfessor || !quarter) {
-    setMessage("Please select a course, professor, and specify the quarter.");
-    setMessageSeverity("error");
-    setShowActionCompletedMessage(true);
-    return;
-  }
-
-  console.log('selectedCourse:', selectedCourse);
-  console.log('selectedProfessor:', selectedProfessor);
-  console.log('quarter:', quarter);
-
-  const courseIdentifier = `P{${selectedProfessor.label}}C{${selectedCourse.label}}T{${quarter}}`;
-
-  try {
-    const updatePayload = {
-      type: "updateUser",
-      updateItems: {
-        [courseType]: {
-          add: [courseIdentifier],
-        },
-      },
-    };
-
-    console.log("updatePayload:", updatePayload);
-
-    const response = await chrome.runtime.sendMessage(updatePayload);
-
-    if (response && !response.ok) {
-      setMessage(response.message || "Failed to add course.");
+  const handleAddCourse = async (
+    courseType,
+    selectedCourse,
+    selectedProfessor,
+    quarter,
+  ) => {
+    if (!selectedCourse || !selectedProfessor || !quarter) {
+      setMessage("Please select a course, professor, and specify the quarter.");
       setMessageSeverity("error");
-    } else {
-      setUserCourses(prev => ({
-        ...prev,
-        [courseType]: [...prev[courseType], courseIdentifier],
-      }));
-      setMessage("Course successfully added!");
-      setMessageSeverity("success");
+      setShowActionCompletedMessage(true);
+      return;
     }
-  } catch (error) {
-    console.error("Error adding course:", error);
-    setMessage("An error occurred while adding the course.");
-    setMessageSeverity("error");
-  }
 
-  setShowActionCompletedMessage(true);
-};
+    console.log("selectedCourse:", selectedCourse);
+    console.log("selectedProfessor:", selectedProfessor);
+    console.log("quarter:", quarter);
+
+    const courseIdentifier = `P{${selectedProfessor.label}}C{${selectedCourse.label}}T{${quarter}}`;
+    
+    try {
+      const updatePayload = {
+        type: "updateUser",
+        updateItems: {
+          [courseType]: {
+            add: [courseIdentifier],
+          },
+        },
+      };
+
+      console.log("updatePayload:", updatePayload);
+
+      const response = await chrome.runtime.sendMessage(updatePayload);
+
+      if (response && !response.ok) {
+        setMessage(response.message || "Failed to add course.");
+        setMessageSeverity("error");
+      } else {
+        if (courseType === "interestedSections") courseType = "interested";
+        else courseType = "taken";
+        setUserCourses((prev) => ({
+          ...prev,
+          [courseType]: [...prev[courseType], courseIdentifier],
+        }));
+        setMessage("Course successfully added!");
+        setMessageSeverity("success");
+      }
+    } catch (error) {
+      console.error("Error adding course:", error);
+      setMessage("An error occurred while adding the course.");
+      setMessageSeverity("error");
+    }
+
+    setShowActionCompletedMessage(true);
+  };
 
   const courseOptions = useMemo(() => {
     if (!evalsData) return [];
-    
+
     try {
       return Object.entries(evalsData || {})
         .filter(([key, value]) => value && value.type === "course")
@@ -192,7 +204,7 @@ export default function CourseAccordion() {
 
   const professorOptions = useMemo(() => {
     if (!evalsData) return [];
-    
+
     try {
       return Object.entries(evalsData || {})
         .filter(([key, value]) => value && value.type === "prof")
@@ -215,14 +227,14 @@ export default function CourseAccordion() {
         setShowActionCompletedMessage(true);
         return;
       }
-      
+
       handleAddCourse(
-        type === 'interested' ? 'interestedSections' : 'coursesTaken', 
-        selectedCourse, 
-        selectedProfessor, 
-        quarter
+        type === "interested" ? "interestedSections" : "coursesTaken",
+        selectedCourse,
+        selectedProfessor,
+        quarter,
       );
-      
+
       setSelectedCourse(null);
       setSelectedProfessor(null);
       setQuarter("");
@@ -234,16 +246,20 @@ export default function CourseAccordion() {
           <Typography>{title}</Typography>
         </AccordionSummary>
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Add {title}</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Add {title}
+          </Typography>
 
           <Autocomplete
             options={courseOptions}
-            getOptionLabel={option => option.label}
-            filterOptions={(options, { inputValue }) => 
-              inputValue.length >= 2 
-                ? options.filter(option => 
-                    option.label.toLowerCase().includes(inputValue.toLowerCase())
-                  ) 
+            getOptionLabel={(option) => option.label}
+            filterOptions={(options, { inputValue }) =>
+              inputValue.length >= 2
+                ? options.filter((option) =>
+                    option.label
+                      .toLowerCase()
+                      .includes(inputValue.toLowerCase()),
+                  )
                 : []
             }
             value={selectedCourse}
@@ -261,12 +277,14 @@ export default function CourseAccordion() {
 
           <Autocomplete
             options={professorOptions}
-            getOptionLabel={option => option.label}
-            filterOptions={(options, { inputValue }) => 
-              inputValue.length >= 2 
-                ? options.filter(option => 
-                    option.label.toLowerCase().includes(inputValue.toLowerCase())
-                  ) 
+            getOptionLabel={(option) => option.label}
+            filterOptions={(options, { inputValue }) =>
+              inputValue.length >= 2
+                ? options.filter((option) =>
+                    option.label
+                      .toLowerCase()
+                      .includes(inputValue.toLowerCase()),
+                  )
                 : []
             }
             value={selectedProfessor}
@@ -311,19 +329,19 @@ export default function CourseAccordion() {
         <AccordionDetails>
           {courses.length > 0 ? (
             courses.map((course, index) => (
-              <Box 
-                key={`${type}-${index}`} 
-                sx={{ 
-                  mb: 2, 
-                  p: 2, 
-                  borderRadius: 1, 
-                  backgroundColor: "background.paper", 
-                  boxShadow: 1 
+              <Box
+                key={`${type}-${index}`}
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  borderRadius: 1,
+                  backgroundColor: "background.paper",
+                  boxShadow: 1,
                 }}
               >
-                <Stack 
-                  direction="row" 
-                  justifyContent="space-between" 
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
                   alignItems="center"
                 >
                   <Typography variant="body1">
@@ -366,16 +384,16 @@ export default function CourseAccordion() {
         </AccordionSummary>
         <AccordionDetails>
           {/* Interested Courses Section */}
-          <CourseSection 
-            title="Interested Courses" 
-            courses={transformedCourses.interested} 
+          <CourseSection
+            title="Interested Courses"
+            courses={transformedCourses.interested}
             type="interested"
           />
 
           {/* Taken Courses Section */}
-          <CourseSection 
-            title="Taken Courses" 
-            courses={transformedCourses.taken} 
+          <CourseSection
+            title="Taken Courses"
+            courses={transformedCourses.taken}
             type="taken"
           />
         </AccordionDetails>
@@ -427,4 +445,3 @@ export default function CourseAccordion() {
     </Box>
   );
 }
-

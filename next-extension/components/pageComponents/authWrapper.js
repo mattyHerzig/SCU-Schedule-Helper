@@ -74,6 +74,8 @@ const AuthWrapper = ({ children }) => {
       >
         <Typography variant="body1" sx={{ mb: 3 }}>
           You must be signed in to access this feature.
+          <br />
+          Please use your SCU email.
         </Typography>
         <Button
           variant="contained"

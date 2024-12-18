@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Divider,
 } from "@mui/material";
+import "@fontsource/roboto/400.css";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
@@ -17,6 +18,7 @@ export default function ProfCourseCard({ selected, data }) {
   const [rmpData, setRmpData] = useState(null);
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
   const [friendData, setFriendData] = useState(null);
+  const [profDepts, setProfDepts] = useState([]);
   const [profDeptAvgs, setProfDeptAvgs] = useState({
     quality: [],
     difficulty: [],
@@ -56,6 +58,7 @@ export default function ProfCourseCard({ selected, data }) {
       const profDepts = Object.keys(data[selected.id]).filter(
         (key) => key !== "type" && key.length === 4,
       );
+      setProfDepts(profDepts);
       setProfDeptAvgs({
         quality: getDeptAvgs(profDepts, "quality"),
         difficulty: getDeptAvgs(profDepts, "difficulty"),
@@ -285,9 +288,9 @@ export default function ProfCourseCard({ selected, data }) {
         <>
           <Typography
             variant="h6"
-            fontWeight={"bold"}
+            fontSize={"1.15rem"}
             gutterBottom
-            sx={{ mt: 3 }}
+            sx={{ mt: 2 }}
           >
             RateMyProfessor Statistics
           </Typography>
@@ -319,7 +322,7 @@ export default function ProfCourseCard({ selected, data }) {
       <>
         <Typography
           variant="h6"
-          fontWeight={"bold"}
+          fontSize={"1.15rem"}
           gutterBottom
           sx={{ mt: 3 }}
         >
@@ -372,11 +375,38 @@ export default function ProfCourseCard({ selected, data }) {
     return (
       <Card sx={{ backgroundColor: "#f0f0f0" }}>
         <CardContent>
-          <Typography variant="h6">{selected.id}</Typography>
+          <Typography fontWeight="bold" display="inline" variant="h6">
+            {selected.id}
+          </Typography>
+          {profDepts.map((dept) => (
+            <Typography
+              key={dept}
+              display={"inline-block"}
+              component={"span"}
+              variant="body2"
+              fontWeight={"400"}
+              position={"relative"}
+              bottom={3}
+              borderRadius={5}
+              bgcolor={"#b3b9be"}
+              paddingY={0.25}
+              paddingX={1}
+              marginLeft={1.25}
+              sx={{ verticalAlign: "middle" }}
+            >
+              {dept}
+            </Typography>
+          ))}
+
           <FriendCoursesTooltip friendData={friendData} />
           {selected.overall && (
             <>
-              <Typography variant="h6" fontWeight={"bold"} gutterBottom>
+              <Typography
+                variant="h6"
+                fontSize={"1.15rem"}
+                fontWeight={"500"}
+                gutterBottom
+              >
                 Overall Course Evaluation Statistics
               </Typography>
               {renderEvalStats(selected.overall, "n/a", "profOverall")}
@@ -386,7 +416,7 @@ export default function ProfCourseCard({ selected, data }) {
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
-            fontWeight={"bold"}
+            fontWeight={"500"}
             marginTop={2}
             gutterBottom
           >
@@ -429,7 +459,6 @@ export default function ProfCourseCard({ selected, data }) {
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
-            fontWeight={"bold"}
             marginTop={2}
             gutterBottom
           >
@@ -464,7 +493,7 @@ export default function ProfCourseCard({ selected, data }) {
     return (
       <Card sx={{ backgroundColor: "#f0f0f0" }}>
         <CardContent>
-          <Typography variant="h6">
+          <Typography variant="h6" fontWeight="bold">
             {selected.courseName} ({selected.id})
           </Typography>
 
@@ -477,8 +506,8 @@ export default function ProfCourseCard({ selected, data }) {
           <Typography
             variant="h6"
             gutterBottom
+            fontSize={"1.15rem"}
             marginTop={2}
-            fontWeight={"bold"}
           >
             Overall Statistics
           </Typography>
@@ -486,7 +515,6 @@ export default function ProfCourseCard({ selected, data }) {
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
-            fontWeight={"bold"}
             marginTop={2}
             gutterBottom
           >
