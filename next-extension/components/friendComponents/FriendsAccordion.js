@@ -66,6 +66,8 @@ export default function FriendsAccordion({
         });
         if (updateResponse && !updateResponse.ok) {
           handleActionCompleted(updateResponse.message, "error");
+        } else {
+          handleActionCompleted("Friend removed.", "success");
         }
         setOpenConfirmDialog(false);
         setFriendToRemove(null);
