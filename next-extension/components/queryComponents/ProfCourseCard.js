@@ -195,7 +195,11 @@ export default function ProfCourseCard({ selected, data }) {
 
   const getColor = (value, valueType, dept, ratingType) => {
     if (ratingType === "rmp") {
-      return getRatingColor(value, 1, 5, valueType === "quality");
+      if (valueType === "quality") return getRatingColor(value, 1, 5, true);
+      const diffScore = Math.abs(
+        preferredPercentiles.difficulty * 4 - value + 1,
+      );
+      return getRatingColor(diffScore, 0, 4, false);
     }
     let percentile;
     if (ratingType === "profOverall") {
