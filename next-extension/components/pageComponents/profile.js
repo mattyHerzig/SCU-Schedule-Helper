@@ -14,6 +14,7 @@ import {
 import AuthWrapper from "./authWrapper.js";
 import UserCourseDetails from "../profileComponents/UserCourseDetails.js";
 import ProfileSection from "../profileComponents/ProfileSection.js";
+import CourseAccordion from "../profileComponents/CourseAccordion.js";
 
 export default function Profile() {
   const [userInfo, setUserInfo] = useState(null);
@@ -161,6 +162,9 @@ export default function Profile() {
         <Box sx={{ mb: 3 }}>
           <UserCourseDetails />
         </Box>
+        <Box sx={{ mb: 3 }}>
+          <CourseAccordion />
+        </Box>
 
         <Stack spacing={2} sx={{ width: "100%" }}>
           <Button
@@ -263,3 +267,5 @@ export default function Profile() {
     </AuthWrapper>
   );
 }
+
+
