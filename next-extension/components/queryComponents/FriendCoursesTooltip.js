@@ -9,7 +9,7 @@ export default function FriendCoursesTooltip({ friendData }) {
             placement="right"
             title={
               friendData.friendInterestedInfos.length > 0 && (
-                <Box maxWidth="15.8rem">
+                <Box maxWidth="16rem">
                   {friendData.friendInterestedInfos.map((info) => (
                     <Typography key={info} variant="body2">
                       {info}
