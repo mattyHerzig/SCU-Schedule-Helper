@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, Slider, createTheme, ThemeProvider } from "@mui/material";
 
-function getValueText(value) {
-  return `${100 - value}% RMP | ${value}% SCU Evals`;
-}
-
 const theme = createTheme({
   components: {
     MuiSlider: {
@@ -30,7 +26,7 @@ const theme = createTheme({
   },
 });
 
-export default function PercentSlider({ initValue, onChangeCommitted }) {
+export default function DifficultySlider({ initValue, onChangeCommitted }) {
   const [sliderValue, setSliderValue] = useState(initValue);
 
   useEffect(() => {
@@ -54,17 +50,19 @@ export default function PercentSlider({ initValue, onChangeCommitted }) {
           value={sliderValue}
           onChange={handleChange}
           onChangeCommitted={handleChangeCommitted}
-          getAriaValueText={getValueText}
-          valueLabelFormat={getValueText}
+          getAriaValueText={(val) => ""}
           step={1}
           marks={[
-            { value: 0, label: "Only RMP" },
-            { value: 50, label: "Use both equally" },
-            { value: 100, label: "Only SCU evals" },
+            { value: 0, label: "Very easy" },
+            { value: 1, label: "Easy" },
+            { value: 2, label: "Average" },
+            { value: 3, label: "Hard" },
+            { value: 4, label: "Very hard" },
           ]}
           min={0}
-          max={100}
-          valueLabelDisplay="auto"
+          max={4}
+          track={false}
+          valueLabelDisplay="off"
         />
       </Box>
     </ThemeProvider>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Slider, createTheme, ThemeProvider } from "@mui/material";
 
 const generateMarks = (startHour, endHour) => {
@@ -72,6 +72,10 @@ export default function RangeSliderTime({ initValue, onChangeCommitted }) {
   const minHour = 6;
   const maxHour = 22;
   const [value, setValue] = useState(getValuesFromTimeRange(initValue));
+
+  useEffect(() => {
+    setValue(getValuesFromTimeRange(initValue));
+  }, [initValue]);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);

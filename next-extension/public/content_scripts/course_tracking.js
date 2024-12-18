@@ -78,6 +78,7 @@ const checkForInterestedSections = function (mutationsList) {
 chrome.storage.local.get("userInfo", (data) => {
   if (
     data.userInfo &&
+    data.userInfo.id && // User must be logged in
     data.userInfo.preferences &&
     data.userInfo.preferences.courseTracking
   ) {

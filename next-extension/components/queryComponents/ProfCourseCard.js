@@ -24,11 +24,32 @@ export default function ProfCourseCard({ selected, data }) {
     difficulty: [],
     workload: [],
   });
-  let preferredPercentiles = {
+  const [preferredPercentiles, setPreferredPercentiles] = useState({
     quality: 1,
     difficulty: 0,
     workload: 0,
-  };
+  });
+
+  useEffect(() => {
+    const getPrefferedPercentiles = async () => {
+      const userInfo = (await chrome.storage.local.get("userInfo")).userInfo;
+      if (userInfo.preferences && userInfo.preferences.difficulty) {
+        setPreferredPercentiles({
+          quality: 1,
+          difficulty: userInfo.preferences.difficulty / 4,
+          workload: userInfo.preferences.difficulty / 4,
+        });
+      }
+    };
+    getPrefferedPercentiles();
+
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === "local" && changes.userInfo) {
+        getPrefferedPercentiles();
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const getRMPrating = async () => {
       setIsLoadingRmp(true);

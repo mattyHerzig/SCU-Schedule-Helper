@@ -10,8 +10,13 @@ function getScoreWeighting(scuEvals, rmp) {
 }
 
 export async function updatePreferences(userId, updateData) {
-  let { preferredSectionTimeRange, scoreWeighting, courseTracking } =
-    updateData;
+  let {
+    preferredSectionTimeRange,
+    scoreWeighting,
+    courseTracking,
+    difficulty,
+    showRatings,
+  } = updateData;
 
   const updateExpressionParts = [];
   const expressionAttributeNames = {};
@@ -61,7 +66,6 @@ export async function updatePreferences(userId, updateData) {
       throw new Error("invalid score weighting.", { cause: 400 });
     }
     const { scuEvals, rmp } = scoreWeighting;
-
     const scoreWeightingValue = getScoreWeighting(scuEvals, rmp);
     updateExpressionParts.push("#scoreWeighting = :scoreWeighting");
     expressionAttributeNames["#scoreWeighting"] = "scoreWeighting";
@@ -73,13 +77,33 @@ export async function updatePreferences(userId, updateData) {
   if (courseTracking !== undefined && courseTracking !== null) {
     if (typeof courseTracking === "boolean")
       courseTracking = courseTracking.toString();
-    if (courseTracking !== "true" && courseTracking !== "false") {
+    if (courseTracking !== "true" && courseTracking !== "false")
       throw new Error("invalid course tracking value.", { cause: 400 });
-    }
     updateExpressionParts.push("#courseTracking = :courseTracking");
     expressionAttributeNames["#courseTracking"] = "courseTracking";
     expressionAttributeValues[":courseTracking"] = {
       BOOL: courseTracking,
+    };
+  }
+
+  if (difficulty !== undefined && difficulty !== null) {
+    if (typeof difficulty !== "number" || difficulty < 0 || difficulty > 4)
+      throw new Error("invalid difficulty value.", { cause: 400 });
+    updateExpressionParts.push("#difficulty = :difficulty");
+    expressionAttributeNames["#difficulty"] = "difficulty";
+    expressionAttributeValues[":difficulty"] = {
+      N: `${difficulty}`,
+    };
+  }
+
+  if (showRatings !== undefined && showRatings !== null) {
+    if (typeof showRatings === "boolean") showRatings = showRatings.toString();
+    if (showRatings !== "true" && showRatings !== "false")
+      throw new Error("invalid show ratings value.", { cause: 400 });
+    updateExpressionParts.push("#showRatings = :showRatings");
+    expressionAttributeNames["#showRatings"] = "showRatings";
+    expressionAttributeValues[":showRatings"] = {
+      BOOL: showRatings,
     };
   }
 

@@ -14,16 +14,11 @@ import AuthWrapper from "./authWrapper";
 import RangeSliderTime from "../prefComponents/RangeSliderTime";
 import PercentSlider from "../prefComponents/PercentSlider";
 import PreferencesDialog from "../prefComponents/PreferencesDialog";
+import DifficultySlider from "../prefComponents/DifficultySlider";
 
 export default function Preferences() {
-  const [courseTracking, setCourseTracking] = useState(true);
-  const [timePreference, setTimePreference] = useState({
-    startHour: 8,
-    startMinute: 0,
-    endHour: 20,
-    endMinute: 0,
-  });
-  const [scuEvalsPercentage, setScuEvalsPercentage] = useState([50]);
+  const [userPrefs, setUserPrefs] = useState(null);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [showActionCompletedMessage, setShowActionCompletedMessage] =
     useState(false);
@@ -59,40 +54,79 @@ export default function Preferences() {
       return;
     }
     submitPreferences();
-  }, [courseTracking, timePreference, scuEvalsPercentage]);
+  }, [userPrefs]);
 
   const checkUserPreferences = async () => {
     try {
-      const userInfo = await chrome.storage.local.get("userInfo");
-      if (userInfo.userInfo?.preferences) {
-        const prefs = userInfo.userInfo.preferences;
+      const userInfo = (await chrome.storage.local.get("userInfo")).userInfo;
+      setLoggedIn(!!userInfo.id);
+      if (userInfo.preferences) {
+        setUserPrefs(userInfo.preferences);
         shouldSendUpdate.current = false;
-
-        if (prefs.courseTracking != courseTracking)
-          setCourseTracking(prefs.courseTracking);
-        if (prefs.preferredSectionTimeRange != timePreference)
-          setTimePreference(prefs.preferredSectionTimeRange);
-        if (prefs.scoreWeighting.scuEvals != scuEvalsPercentage[0]) {
-          setScuEvalsPercentage([prefs.scoreWeighting.scuEvals]);
-        }
+      } else {
+        setUserPrefs({
+          difficulty: 0,
+          preferredSectionTimeRange: {
+            startHour: 8,
+            startMinute: 0,
+            endHour: 20,
+            endMinute: 0,
+          },
+          scoreWeighting: {
+            scuEvals: 50,
+            rmp: 50,
+          },
+          courseTracking: true,
+          showRatings: true,
+        });
       }
     } catch (error) {
       console.error("Error checking user preferences:", error);
     }
   };
 
-  const handleSwitchChange = (event) => {
-    setCourseTracking(event.target.checked);
+  const toggleCourseTracking = (event) => {
+    setUserPrefs((prev) => ({
+      ...prev,
+      courseTracking: event.target.checked,
+    }));
+    shouldSendUpdate.current = true;
+  };
+
+  const toggleShowRatings = (event) => {
+    setUserPrefs((prev) => ({
+      ...prev,
+      showRatings: event.target.checked,
+    }));
+    shouldSendUpdate.current = true;
+  };
+
+  const handleDifficultyPreferenceChange = (newValue) => {
+    setUserPrefs((prev) => ({
+      ...prev,
+      difficulty: newValue,
+    }));
     shouldSendUpdate.current = true;
   };
 
   const handleTimePreferenceChange = (newValue) => {
-    setTimePreference(newValue);
+    setUserPrefs((prev) => ({
+      ...prev,
+      preferredSectionTimeRange: {
+        ...newValue,
+      },
+    }));
     shouldSendUpdate.current = true;
   };
 
   const handlePercentagePreferenceChange = (newValue) => {
-    setScuEvalsPercentage(newValue);
+    setUserPrefs((prev) => ({
+      ...prev,
+      scoreWeighting: {
+        scuEvals: newValue[0],
+        rmp: 100 - newValue[0],
+      },
+    }));
     shouldSendUpdate.current = true;
   };
 
@@ -106,14 +140,7 @@ export default function Preferences() {
         type: "updateUser",
         updateItems: {
           preferences: {
-            courseTracking,
-            preferredSectionTimeRange: {
-              ...timePreference,
-            },
-            scoreWeighting: {
-              scuEvals: scuEvalsPercentage[0],
-              rmp: 100 - scuEvalsPercentage[0],
-            },
+            ...userPrefs,
           },
         },
         allowLocalOnly: true,
@@ -128,39 +155,17 @@ export default function Preferences() {
   };
 
   return (
-    <AuthWrapper>
-      <Box sx={{ padding: 2 }}>
-        <Stack direction="row" alignItems="center">
-          <Typography variant="h6" sx={{ textAlign: "center" }}>
-            Course Preferences
-          </Typography>
-          <IconButton onClick={handleDialogOpen} aria-label="info">
-            <InfoIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      </Box>
-
-      <Box
-        sx={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 2,
-          padding: 0,
-        }}
-      >
-        <Typography textAlign="center">
-          What are your preferred course times?
-        </Typography>
-
-        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
-          <RangeSliderTime
-            initValue={timePreference}
-            onChangeCommitted={handleTimePreferenceChange}
-            sx={{ width: "90%" }}
-          />
+    userPrefs && (
+      <>
+        <Box sx={{ padding: 2 }}>
+          <Stack direction="row" alignItems="center">
+            <Typography variant="h6" sx={{ textAlign: "center" }}>
+              Course Preferences
+            </Typography>
+            <IconButton onClick={handleDialogOpen} aria-label="info">
+              <InfoIcon fontSize="small" />
+            </IconButton>
+          </Stack>
         </Box>
 
         <Box
@@ -169,49 +174,100 @@ export default function Preferences() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            textAlign: "center",
+            justifyContent: "center",
             gap: 2,
+            padding: 0,
           }}
         >
-          <Typography>
-            How should we balance RateMyProfessor and SCU Evaluations data?
-          </Typography>
-
-          <PercentSlider
-            initValue={scuEvalsPercentage}
-            onChangeCommitted={handlePercentagePreferenceChange}
-            sx={{ width: "90%" }}
+          <Typography textAlign="center">I want my classes to be...</Typography>
+          <DifficultySlider
+            initValue={userPrefs.difficulty}
+            onChangeCommitted={handleDifficultyPreferenceChange}
           />
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={courseTracking}
-                onChange={handleSwitchChange}
+          <Typography textAlign="center">
+            What are your preferred course times?
+          </Typography>
+          <RangeSliderTime
+            initValue={userPrefs.preferredSectionTimeRange}
+            onChangeCommitted={handleTimePreferenceChange}
+          />
+
+          {loggedIn && (
+            <>
+              <Typography textAlign="center">
+                How should we balance RateMyProfessor and SCU Evaluations data?
+              </Typography>
+              <PercentSlider
+                initValue={[userPrefs.scoreWeighting.scuEvals]}
+                onChangeCommitted={handlePercentagePreferenceChange}
+                sx={{ width: "90%" }}
+              />
+            </>
+          )}
+          <Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={userPrefs.showRatings}
+                  onChange={toggleShowRatings}
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#802a25",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#802a25",
+                    },
+                    "& .MuiSwitch-switchBase": {
+                      color: "#703331",
+                    },
+                    "& .MuiSwitch-track": {
+                      backgroundColor: "#ccc",
+                    },
+                  }}
+                />
+              }
+              label="Show ratings in Workday"
+              sx={{
+                display: "flex",
+                justifyContent: "left",
+                alignItems: "center",
+                width: "100%",
+              }}
+            />
+            {loggedIn && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={userPrefs.courseTracking}
+                    onChange={toggleCourseTracking}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#802a25",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          backgroundColor: "#802a25",
+                        },
+                      "& .MuiSwitch-switchBase": {
+                        color: "#703331",
+                      },
+                      "& .MuiSwitch-track": {
+                        backgroundColor: "#ccc",
+                      },
+                    }}
+                  />
+                }
+                label="Automatically keep track of my courses"
                 sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#802a25",
-                  },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#802a25",
-                  },
-                  "& .MuiSwitch-switchBase": {
-                    color: "#703331",
-                  },
-                  "& .MuiSwitch-track": {
-                    backgroundColor: "#ccc",
-                  },
+                  display: "flex",
+                  justifyContent: "left",
+                  alignItems: "center",
+                  width: "100%",
                 }}
               />
-            }
-            label="Automatically keep track of my courses"
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-            }}
-          />
+            )}
+          </Box>
           <Snackbar
             open={showActionCompletedMessage}
             autoHideDuration={3000}
@@ -227,8 +283,8 @@ export default function Preferences() {
             </Alert>
           </Snackbar>
         </Box>
-      </Box>
-      <PreferencesDialog open={dialogOpen} onClose={handleDialogClose} />
-    </AuthWrapper>
+        <PreferencesDialog open={dialogOpen} onClose={handleDialogClose} />
+      </>
+    )
   );
 }

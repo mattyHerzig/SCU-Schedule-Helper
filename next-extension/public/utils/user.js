@@ -77,19 +77,19 @@ export async function refreshUserData(items = []) {
   return null;
 }
 
-export async function updateUser(updateItems) {
+export async function updateUser(updateItems, allowLocalOnly = false) {
   const response = await fetchWithAuth(prodUserEndpoint, {
     method: "PUT",
     body: JSON.stringify(updateItems),
   });
-  if (!response) {
+  if (!response && !allowLocalOnly) {
     return {
       message: "Error updating user data (are you signed in?)",
       ok: false,
     };
   }
-  const data = await response.json();
-  if (!response.ok) {
+  const data = (await response?.json()) || {};
+  if (response && !response.ok) {
     return {
       message: `${data.message || "Unknown error updating user data."}`,
       ok: false,
@@ -103,6 +103,7 @@ export async function updateUser(updateItems) {
     };
   }
   return {
+    message: "",
     ...data,
     ok: true,
   };
@@ -120,18 +121,10 @@ async function updateLocalCache(updateItems) {
     }
   }
   if (updateItems.preferences) {
-    if (updateItems.preferences.scoreWeighting) {
-      userInfo.preferences.scoreWeighting =
-        updateItems.preferences.scoreWeighting;
-    }
-    if (updateItems.preferences.preferredSectionTimeRange) {
-      userInfo.preferences.preferredSectionTimeRange =
-        updateItems.preferences.preferredSectionTimeRange;
-    }
-    if (updateItems.preferences.courseTracking) {
-      userInfo.preferences.courseTracking =
-        updateItems.preferences.courseTracking;
-    }
+    userInfo.preferences = {
+      ...(userInfo.preferences || {}),
+      ...updateItems.preferences,
+    };
   }
   if (updateItems.coursesTaken) {
     userInfo.coursesTaken = userInfo.coursesTaken.concat(

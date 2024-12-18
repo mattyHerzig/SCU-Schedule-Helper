@@ -153,6 +153,7 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
     case `info#preferences`:
       if (scope !== "full" || !itemsToGet.has("preferences")) break;
       const preferences = new UserPreferences();
+      preferences.difficulty = parseInt(item.difficulty.N);
       const swBits = parseInt(item.scoreWeighting.N);
       const pstrBits = parseInt(item.preferredSectionTimeRange.N);
       preferences.scoreWeighting.scuEvals = swBits >> 7;
@@ -163,6 +164,7 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
       preferences.preferredSectionTimeRange.endHour = (pstrBits >> 6) & 0b11111;
       preferences.preferredSectionTimeRange.endMinute = pstrBits & 0b111111;
       preferences.courseTracking = item.courseTracking.BOOL;
+      preferences.showRatings = item.showRatings.BOOL;
       userProfile.preferences = preferences;
       break;
     default:

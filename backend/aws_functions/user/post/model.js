@@ -6,6 +6,7 @@ export class CreatedUserResponse {
     this.email = email;
     this.subscriptions = [subscription];
     this.preferences = {
+      difficulty: 0,
       preferredSectionTimeRange: {
         startHour: 8,
         startMinute: 0,
@@ -17,6 +18,7 @@ export class CreatedUserResponse {
         rmp: 50,
       },
       courseTracking: true,
+      showRatings: true,
     };
     this.coursesTaken = [];
     this.interestedSections = {};

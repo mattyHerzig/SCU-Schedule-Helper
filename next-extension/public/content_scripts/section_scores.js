@@ -14,8 +14,8 @@ const Difficulty = Object.freeze({
   VeryHard: 4,
 });
 
-const prefferedDifficulty = Difficulty.VeryEasy; // Eventually this will be a user preference
-const preferredDifficultyPercentile = prefferedDifficulty / 4;
+let prefferedDifficulty = Difficulty.VeryEasy;
+let preferredDifficultyPercentile = prefferedDifficulty / 4;
 
 const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
@@ -30,6 +30,16 @@ chrome.storage.local.get(
   ],
   async (data) => {
     userInfo = data.userInfo || {};
+    if (userInfo.preferences && userInfo.preferences.difficulty) {
+      prefferedDifficulty = userInfo.preferences.difficulty;
+      preferredDifficultyPercentile = prefferedDifficulty / 4;
+    }
+    if (
+      userInfo.preferences &&
+      !nullOrUndefined(userInfo.preferences.showRatings)
+    ) {
+      if (!userInfo.preferences.showRatings) return;
+    }
     evalsData = data.evals || {};
     friendInterestedSections = data.friendInterestedSections || {};
     friendCoursesTaken = data.friendCoursesTaken || {};
@@ -154,10 +164,11 @@ async function displayProfessorDifficulty(
     }
   }
 
-  const qualityAvgs = evalsData.departmentStatistics[department]?.qualityAvgs;
+  const qualityAvgs = evalsData.departmentStatistics?.[department]?.qualityAvgs;
   const difficultyAvgs =
-    evalsData.departmentStatistics[department]?.difficultyAvgs;
-  const workloadAvgs = evalsData.departmentStatistics[department]?.workloadAvgs;
+    evalsData.departmentStatistics?.[department]?.difficultyAvgs;
+  const workloadAvgs =
+    evalsData.departmentStatistics?.[department]?.workloadAvgs;
 
   appendRatingInfoToCell(courseSectionCell, {
     rmpLink,
@@ -249,8 +260,6 @@ function scuEvalsScore(
     100 - Math.abs(preferredDifficultyPercentile - difficultyPercentile) * 100;
   const workloadScore =
     100 - Math.abs(preferredDifficultyPercentile - workloadPercentile) * 100;
-  console.log(qualityScore, difficultyScore, workloadScore);
-  console.log(((qualityScore + difficultyScore + workloadScore) / 300) * 10);
   return ((qualityScore + difficultyScore + workloadScore) / 300) * 10;
 }
 
@@ -260,14 +269,10 @@ function rmpScore(quality, difficulty) {
   difficulty -= 1;
   // Percentiles would be better, but we don't have that data.
   const difficultyScore = 4 - Math.abs(prefferedDifficulty - difficulty);
-  console.log("RMP SCORE");
-  console.log(((quality + difficultyScore) / 8) * 10);
-  console.log(quality, difficultyScore);
   return ((quality + difficultyScore) / 8) * 10;
 }
 
 function appendRatingInfoToCell(tdElement, ratingInfo) {
-  console.log(ratingInfo);
   const overallScore = calcOverallScore(ratingInfo);
   const scoreContainer = document.createElement("div");
   scoreContainer.style.display = "flex";
@@ -445,6 +450,13 @@ function createRatingToolTip(ratingInfo) {
     scuEvalsWorkloadPercentile,
   } = ratingInfo;
   const ratingDiv = document.createElement("div");
+
+  const rmpDifficultyColor = getRatingColor(
+    Math.abs(prefferedDifficulty - rmpDifficulty + 1),
+    0,
+    4,
+    false,
+  );
   const scuEvalsQualityScore = scuEvalsQualityPercentile
     ? scuEvalsQualityPercentile * 100
     : undefined;
@@ -512,7 +524,7 @@ function createRatingToolTip(ratingInfo) {
                 <div style="color: #666; font-size: 12px;">quality</div>
               </div>
               <div>
-                <span style="color: ${getRatingColor(rmpDifficulty, 1, 5, false)};font-size: 16px; font-weight: bold;">${rmpDifficulty?.toFixed(2) || "N/A"}</span>
+                <span style="color: ${rmpDifficultyColor};font-size: 16px; font-weight: bold;">${rmpDifficulty?.toFixed(2) || "N/A"}</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">difficulty</div>
               </div>

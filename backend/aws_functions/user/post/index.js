@@ -134,9 +134,11 @@ async function addUserToDatabase(userId, name, subscription, photoUrl) {
   const preferencesItem = {
     pk: { S: `u#${userId}` },
     sk: { S: "info#preferences" },
+    difficulty: { N: "0" },
     preferredSectionTimeRange: { N: getTimeRange(8, 0, 20, 0) },
     scoreWeighting: { N: getScoreWeighting(50, 50) },
     courseTracking: { BOOL: true },
+    showRatings: { BOOL: true },
   };
   const coursesTakenItem = {
     pk: { S: `u#${userId}` },

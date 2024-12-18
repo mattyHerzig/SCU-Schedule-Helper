@@ -39,6 +39,7 @@ export class FriendRequestProfile extends UserLimitedProfile {
 
 export class UserPreferences {
   constructor() {
+    this.difficulty = 0;
     this.scoreWeighting = {
       scuEvals: 0,
       rmp: 0,
@@ -50,6 +51,7 @@ export class UserPreferences {
       endMinute: 0,
     };
     this.courseTracking = true;
+    this.showRatings = true;
   }
 }
 

@@ -22,9 +22,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.type === "updateUser") {
-    updateUser(request.updateItems).then((response) => {
-      sendResponse(response);
-    });
+    updateUser(request.updateItems, request.allowLocalOnly || false).then(
+      (response) => {
+        sendResponse(response);
+      },
+    );
   }
 
   if (request.type === "getRmpRatings") {
