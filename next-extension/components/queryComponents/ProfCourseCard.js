@@ -53,7 +53,6 @@ export default function ProfCourseCard({ selected, data }) {
     };
 
     if (selected.type === "prof") {
-      getRMPrating();
       const profDepts = Object.keys(data[selected.id]).filter(
         (key) => key !== "type" && key.length === 4,
       );
@@ -62,6 +61,7 @@ export default function ProfCourseCard({ selected, data }) {
         difficulty: getDeptAvgs(profDepts, "difficulty"),
         workload: getDeptAvgs(profDepts, "workload"),
       });
+      getRMPrating();
     } else {
       setIsLoadingRmp(false);
     }
@@ -70,7 +70,6 @@ export default function ProfCourseCard({ selected, data }) {
   const getDeptAvgs = (profDepts, type) => {
     const aggregatedAvgs = [];
     for (const dept of profDepts) {
-      console.log(dept);
       if (data.departmentStatistics[dept][`${type}Avgs`].length > 0) {
         aggregatedAvgs.push(...data.departmentStatistics[dept][`${type}Avgs`]);
       }
@@ -171,7 +170,6 @@ export default function ProfCourseCard({ selected, data }) {
   }, [selected]);
 
   const getColor = (value, valueType, dept, ratingType) => {
-    console.log(value, valueType, dept, ratingType);
     if (ratingType === "rmp") {
       return getRatingColor(value, 1, 5, valueType === "quality");
     }
@@ -184,11 +182,8 @@ export default function ProfCourseCard({ selected, data }) {
         data.departmentStatistics[dept][`${valueType}Avgs`],
       );
     }
-    console.log(percentile);
     let score =
       100 - Math.abs(preferredPercentiles[valueType] - percentile) * 100;
-
-    console.log(score, value, valueType, dept, ratingType);
     return getRatingColor(score, 0, 100, true);
   };
 

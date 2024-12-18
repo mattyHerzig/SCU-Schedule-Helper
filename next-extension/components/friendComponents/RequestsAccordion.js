@@ -53,6 +53,11 @@ export default function RequestsAccordion({
   const [transformedRequestsOut, setTransformedRequestsOut] =
     useState(requestsOut);
 
+  const [requestsInExpanded, setRequestsInExpanded] = useState(
+    requestsIn.length > 0,
+  );
+  const [requestsOutExpanded, setRequestsOutExpanded] = useState(false);
+
   useEffect(() => {
     setTransformedRequestsIn(
       requestsIn.map((request) => ({
@@ -70,6 +75,9 @@ export default function RequestsAccordion({
         courses: transformUserToCourses(request),
       })),
     );
+    if (requestsIn.length > 0) setRequestsInExpanded(true);
+    if (requestsIn.length === 0) setRequestsInExpanded(false);
+    if (requestsOut.length === 0) setRequestsOutExpanded(false);
   }, [requestsIn, requestsOut]);
 
   const handleAccordionChange = (curReq, expanded) => {
@@ -141,6 +149,8 @@ export default function RequestsAccordion({
 
       <Accordion
         defaultExpanded={requestsIn.length > 0}
+        expanded={requestsInExpanded}
+        onChange={(event, expanded) => setRequestsInExpanded(expanded)}
         disableGutters
         square
         sx={{
@@ -164,7 +174,7 @@ export default function RequestsAccordion({
           }}
         >
           <Typography variant="h6" sx={{ fontSize: "1rem" }}>
-            Received
+            Received {`(${requestsIn.length})`}
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -259,6 +269,8 @@ export default function RequestsAccordion({
 
       <Accordion
         disableGutters
+        expanded={requestsOutExpanded}
+        onChange={(event, expanded) => setRequestsOutExpanded(expanded)}
         sx={{
           mb: 2,
           "&:before": {
@@ -278,7 +290,7 @@ export default function RequestsAccordion({
           }}
         >
           <Typography variant="h6" sx={{ fontSize: "1rem" }}>
-            Sent
+            Sent {`(${requestsOut.length})`}
           </Typography>
         </AccordionSummary>
         <AccordionDetails>

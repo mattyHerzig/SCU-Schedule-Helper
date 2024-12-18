@@ -68,8 +68,8 @@ export default function ProfCourseSearch() {
     setShowActionCompletedMessage(true);
   };
 
-  const searchOptions = useMemo(() => {
-    if (!evalsData || searchQuery.length < 1) return [];
+  const allOptions = useMemo(() => {
+    if (!evalsData) return [];
     const options = [];
     try {
       if (evalsData === null) {
@@ -100,10 +100,14 @@ export default function ProfCourseSearch() {
       console.error("Error processing search options:", err);
     }
 
-    return options.filter((option) =>
+    return options;
+  }, [evalsData]);
+
+  const searchOptions = useMemo(() => {
+    return allOptions.filter((option) =>
       option.label.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-  }, [evalsData, searchQuery]);
+  }, [allOptions, searchQuery]);
 
   if (isLoading) {
     return (

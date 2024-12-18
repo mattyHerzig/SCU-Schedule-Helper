@@ -3,6 +3,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -22,6 +23,7 @@ export default function Profile() {
   const [showActionCompletedMessage, setShowActionCompletedMessage] =
     useState(false);
   const [currentAction, setCurrentAction] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storageListener = (changes, namespace) => {
@@ -40,6 +42,9 @@ export default function Profile() {
     try {
       const data = await chrome.storage.local.get("userInfo");
       setUserInfo(data.userInfo || null);
+      if (data.userInfo.id) {
+        setIsLoading(false);
+      } else setIsLoading(true);
     } catch (error) {
       console.error("Error checking user info:", error);
       setUserInfo(null);
@@ -108,7 +113,8 @@ export default function Profile() {
 
   const deleteCourseHistory = async () => {
     try {
-      const errorMessage = await chrome.runtime.sendMessage("clearCourseHistory");
+      const errorMessage =
+        await chrome.runtime.sendMessage("clearCourseHistory");
       if (errorMessage) {
         handleActionCompleted(errorMessage, "error");
       } else {
@@ -149,121 +155,134 @@ export default function Profile() {
 
   return (
     <AuthWrapper>
-      <Box sx={{ padding: 2, boxSizing: "border-box" }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Your Profile
-        </Typography>
-
-        <ProfileSection
-          userInfo={userInfo}
-          handleActionCompleted={handleActionCompleted}
-        />
-
-        <Box sx={{ mb: 3 }}>
-          <UserCourseDetails />
+      {(isLoading && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          <CircularProgress />
         </Box>
-        <Box sx={{ mb: 3 }}>
-          <CourseAccordion />
-        </Box>
+      )) || (
+        <Box sx={{ padding: 2, boxSizing: "border-box" }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Your Profile
+          </Typography>
 
-        <Stack spacing={2} sx={{ width: "100%" }}>
-          <Button
-            sx={{
-              backgroundColor: "#802a25",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#671f1a",
-              },
-            }}
-            onClick={importCurrentCourses}
-          >
-            Import Current Courses
-          </Button>
-          <Button
-            sx={{
-              backgroundColor: "#802a25",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#671f1a",
-              },
-            }}
-            onClick={importCourseHistory}
-          >
-            Import Course History
-          </Button>
-          <Button
-            sx={{
-              backgroundColor: "#802a25",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#671f1a",
-              },
-            }}
-            onClick={deleteCourseHistory}
-          >
-            Delete Course History
-          </Button>
-          <Button
-            sx={{
-              backgroundColor: "#802a25",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#671f1a",
-              },
-            }}
-            onClick={signOut}
-          >
-            Sign Out
-          </Button>
-          <Button
-            sx={{
-              backgroundColor: "red",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#ff4d4d",
-              },
-            }}
-            onClick={handleOpenDialog}
-          >
-            Delete Account
-          </Button>
-        </Stack>
+          <ProfileSection
+            userInfo={userInfo}
+            handleActionCompleted={handleActionCompleted}
+          />
+          
+          <Box sx={{ mb: 3 }}>
+            <CourseAccordion />
+          </Box>
+          <Box sx={{ mb: 3 }}>
+            <UserCourseDetails />
+          </Box>
 
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>Confirm Deletion</DialogTitle>
-          <DialogContent>
-            <Typography variant="body1">
-              Are you sure you want to delete your account?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog} color="primary">
-              Cancel
+          <Stack spacing={2} sx={{ width: "100%" }}>
+            <Button
+              sx={{
+                backgroundColor: "#802a25",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#671f1a",
+                },
+              }}
+              onClick={importCurrentCourses}
+            >
+              Import Current Courses
             </Button>
             <Button
-              onClick={handleConfirmDeleteAccount}
-              color="secondary"
-              autoFocus
+              sx={{
+                backgroundColor: "#802a25",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#671f1a",
+                },
+              }}
+              onClick={importCourseHistory}
+            >
+              Import Course History
+            </Button>
+            <Button
+              sx={{
+                backgroundColor: "#802a25",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#671f1a",
+                },
+              }}
+              onClick={deleteCourseHistory}
+            >
+              Delete Course History
+            </Button>
+            <Button
+              sx={{
+                backgroundColor: "#802a25",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#671f1a",
+                },
+              }}
+              onClick={signOut}
+            >
+              Sign Out
+            </Button>
+            <Button
+              sx={{
+                backgroundColor: "red",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#ff4d4d",
+                },
+              }}
+              onClick={handleOpenDialog}
             >
               Delete Account
             </Button>
-          </DialogActions>
-        </Dialog>
-        <Snackbar
-          open={showActionCompletedMessage}
-          autoHideDuration={3000}
-          onClose={() => setShowActionCompletedMessage(false)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert
+          </Stack>
+
+          <Dialog open={openDialog} onClose={handleCloseDialog}>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogContent>
+              <Typography variant="body1">
+                Are you sure you want to delete your account?
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog} color="primary">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDeleteAccount}
+                color="secondary"
+                autoFocus
+              >
+                Delete Account
+              </Button>
+            </DialogActions>
+          </Dialog>
+          <Snackbar
+            open={showActionCompletedMessage}
+            autoHideDuration={3000}
             onClose={() => setShowActionCompletedMessage(false)}
-            severity={currentAction?.type || "success"}
-            sx={{ width: "100%" }}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
           >
-            {currentAction?.message}
-          </Alert>
-        </Snackbar>
-      </Box>
+            <Alert
+              onClose={() => setShowActionCompletedMessage(false)}
+              severity={currentAction?.type || "success"}
+              sx={{ width: "100%" }}
+            >
+              {currentAction?.message}
+            </Alert>
+          </Snackbar>
+        </Box>
+      )}
     </AuthWrapper>
   );
 }
