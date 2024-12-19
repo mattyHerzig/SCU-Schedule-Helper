@@ -1,4 +1,5 @@
 import {
+  BatchGetItemCommand,
   DynamoDBClient,
   GetItemCommand,
   QueryCommand,
@@ -62,20 +63,23 @@ async function getProfileResponse(userId, scope, itemsToInclude) {
   try {
     return validResponse(await getProfileObject(userId, scope, itemsToInclude));
   } catch (error) {
-    console.error("Error getting user profile: ", error);
     if (error.cause === 404) {
-      return notFoundError(error.message);
+      console.error("Error getting user profile: ", error);
+      return notFoundError("The requested user was not found.");
     }
-    return internalServerError(error.message);
+    console.error("INTERNAL: Error getting user profile: ", error);
+    return internalServerError;
   }
 }
 
 async function getProfileObject(userId, scope, itemsToInclude) {
   let userItems;
   try {
-    userItems = await dynamoDBClient.send(makeUserQuery(userId));
+    if (scope === "full")
+      userItems = await dynamoDBClient.send(makeUserQuery(userId));
+    else userItems = await batchGetProfileItems(userId, scope);
   } catch (error) {
-    console.error("Error getting user items: ", error);
+    console.error("INTERNAL: Error getting user items: ", error);
     throw new Error("could not fetch user profile from database.", {
       cause: 500,
     });
@@ -87,12 +91,9 @@ async function getProfileObject(userId, scope, itemsToInclude) {
         ? new UserFullProfile()
         : new UserLimitedProfile();
   if (userItems.Count === 0) {
-    throw new Error(
-      `The requested user (or their friend) with id ${userId} was not found.`,
-      {
-        cause: 404,
-      },
-    );
+    throw new Error(`The requested user was not found.`, {
+      cause: 404,
+    });
   }
   userProfile.id = userId;
   const itemPromises = [];
@@ -102,7 +103,10 @@ async function getProfileObject(userId, scope, itemsToInclude) {
   try {
     await Promise.all(itemPromises);
   } catch (error) {
-    console.error("Error getting parsing item in user's profile: ", error);
+    console.error(
+      "INTERNAL: Error getting parsing item in user's profile: ",
+      error,
+    );
     throw new Error(`could not get a part of a user's (${userId}) profile.`, {
       cause: 500,
     });
@@ -214,8 +218,8 @@ async function usersAreFriends(userId, friendId) {
     const getFriend = await dynamoDBClient.send(getItemCommand);
     return getFriend.Item;
   } catch (error) {
-    console.error("Error getting friend item: ", error);
-    return internalServerError("could not check if users are friends.");
+    console.error("INTERNAL: Error getting friend item: ", error);
+    return internalServerError;
   }
 }
 
@@ -227,4 +231,38 @@ function makeUserQuery(userId) {
       ":pk": { S: `u#${userId}` },
     },
   });
+}
+
+const ITEMS_FOR_SCOPE = Object.freeze({
+  friend: ["info#personal", "info#coursesTaken", "info#interestedSections"],
+  limited: ["info#personal"],
+});
+
+async function batchGetProfileItems(userId, scope) {
+  const keys = ITEMS_FOR_SCOPE[scope].map((item) => ({
+    pk: { S: `u#${userId}` },
+    sk: { S: `${item}` },
+  }));
+
+  const batchGetCommand = {
+    RequestItems: {
+      [tableName]: {
+        Keys: keys,
+      },
+    },
+  };
+
+  try {
+    const response = await dynamoDBClient.send(
+      new BatchGetItemCommand(batchGetCommand),
+    );
+    return {
+      Items: response.Responses[tableName],
+    };
+  } catch (error) {
+    console.error("INTERNAL: Error getting user items: ", error);
+    throw new Error("could not fetch user profile from database.", {
+      cause: 500,
+    });
+  }
 }

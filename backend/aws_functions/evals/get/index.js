@@ -26,9 +26,7 @@ async function handleGetEvalsRequest(event, context, userId) {
       ),
     });
   } catch (error) {
-    console.error(`could not fetch evals JSON due to error ${error}`);
-    return internalServerError(
-      `could not fetch evals JSON due to error ${error}`,
-    );
+    console.error(`INTERNAL: could not fetch evals JSON due to error ${error}`);
+    return internalServerError;
   }
 }

@@ -37,8 +37,11 @@ export async function updateInterestedSections(userId, updateData) {
   );
   if (result.$metadata.httpStatusCode !== 200) {
     console.error(`Error updating interested sections for user ${userId}`);
-    throw new Error(`Error updating interested sections for user ${userId}`, {
-      cause: 500,
-    });
+    throw new Error(
+      `INTERNAL: Error updating interested sections for user ${userId}`,
+      {
+        cause: 500,
+      },
+    );
   }
 }

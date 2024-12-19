@@ -5,7 +5,11 @@ import { updatePreferences } from "./utils/updatePreferences.js";
 import { updateFriends } from "./utils/updateFriends.js";
 import { updateFriendRequests } from "./utils/updateFriendRequests.js";
 import { handleWithAuthorization } from "./utils/authorization.js";
-import { internalServerError, validResponse, validResponseWithBody } from "./model.js";
+import {
+  internalServerError,
+  validResponse,
+  validResponseWithBody,
+} from "./model.js";
 import { badRequestResponse } from "./model.js";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { LambdaClient } from "@aws-sdk/client-lambda";
@@ -92,10 +96,8 @@ async function putUser(event, context, userId) {
       return badRequestResponse(error.message);
     }
     if (error.cause === 500) {
-      return internalServerError(error.message);
+      return internalServerError;
     }
-    return internalServerError(
-      "an unknown error occurred while processing the request. Please contact support at swdean@scu.edu.",
-    );
+    return internalServerError;
   }
 }

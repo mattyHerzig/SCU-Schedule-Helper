@@ -37,7 +37,10 @@ async function handleGetUserByNameRequest(event, context, userId) {
     }),
   );
   if (nameIndexQuery.$metadata.httpStatusCode !== 200) {
-    return internalServerError(`error querying name index.`);
+    console.error(
+      `INTERNAL: could not query name index due to error ${nameIndexQuery.$metadata.httpStatusCode}`,
+    );
+    return internalServerError;
   }
   const userItems = nameIndexQuery.Items || [];
   const responseItems = [];

@@ -13,15 +13,15 @@ export async function updatePersonal(userId, updateData) {
     "subscriptions",
   );
   if (updateData.name === "") {
-    throw new Error("name cannot be empty.", { cause: 400 });
+    throw new Error("Name cannot be empty.", { cause: 400 });
   }
   if (updateData.photo) {
     if (!updateData.photo.size) {
-      throw new Error("photo size is required.", { cause: 400 });
+      throw new Error("Photo size is required.", { cause: 400 });
     }
     updateData.photoUrl = getUserPhotoUrl(userId);
     if (updateData.photo.size > 10 * 1024 * 1024) {
-      throw new Error("photo must be less than 10MB.", { cause: 400 });
+      throw new Error("Photo must be less than 10MB.", { cause: 400 });
     }
     presignedUploadUrl = await createPresignedUrlWithClient(
       `u#${userId}/photo`,
@@ -60,7 +60,7 @@ export async function updatePersonal(userId, updateData) {
   });
 
   if (updateExpression === "SET ") {
-    throw new Error("no valid fields to update.", { cause: 400 });
+    throw new Error("No valid fields to update.", { cause: 400 });
   }
 
   updateExpression = updateExpression.slice(0, -2); // Remove trailing comma and space.
@@ -81,9 +81,12 @@ export async function updatePersonal(userId, updateData) {
     new UpdateItemCommand(updatePersonalInfo),
   );
   if (result.$metadata.httpStatusCode !== 200) {
-    throw new Error(`error updating personal info for user ${userId}`, {
-      cause: 500,
-    });
+    throw new Error(
+      `INTERNAL: Error updating personal info for user ${userId}`,
+      {
+        cause: 500,
+      },
+    );
   }
   if (presignedUploadUrl) {
     return { presignedUploadUrl };
@@ -102,12 +105,15 @@ async function updateNameIndex(userId, newName, photoUrl) {
     new GetItemCommand(getCurrentUser),
   );
   if (currentUser.$metadata.httpStatusCode !== 200) {
-    throw new Error(`error getting current user info for user ${userId}`, {
-      cause: 500,
-    });
+    throw new Error(
+      `INTERNAL: Error getting current user info for user ${userId}`,
+      {
+        cause: 500,
+      },
+    );
   }
   if (!currentUser.Item || !currentUser.Item.name || !currentUser.Item.name.S) {
-    throw new Error(`user ${userId} not found`, { cause: 404 });
+    throw new Error(`Your account could not be found.`, { cause: 404 });
   }
   const currentName = currentUser.Item.name.S;
   const invokeNameIndexUpdater = {
@@ -124,7 +130,7 @@ async function updateNameIndex(userId, newName, photoUrl) {
     new InvokeCommand(invokeNameIndexUpdater),
   );
   if (response.$metadata.httpStatusCode !== 202) {
-    throw new Error(`error updating name index for user ${userId}`, {
+    throw new Error(`INTERNAL: Error updating name index for user ${userId}`, {
       cause: 500,
     });
   }

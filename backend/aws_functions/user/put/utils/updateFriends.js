@@ -26,7 +26,7 @@ async function addFriend(userId, friendId) {
       `Error adding friend ${friendId} to user ${userId}: user ${userId} has not received friend request from (or is already friends with) ${friendId}`,
     );
     throw new Error(
-      `user ${userId} has not received friend request from ${friendId}, or is already friends with ${friendId}`,
+      `You have not received a friend request from this user, or are already friends with them`,
       { cause: 400 },
     );
   }
@@ -62,7 +62,7 @@ async function addFriend(userId, friendId) {
     console.error(
       `Error adding friend ${friendId} to user ${userId}: received HTTP status code ${putResponse.$metadata.httpStatusCode} from DDB`,
     );
-    throw new Error(`error adding friend ${friendId} to user ${userId}`, {
+    throw new Error(`INTERNAL: Error adding friend ${friendId} to user ${userId}`, {
       cause: 500,
     });
   }
@@ -101,13 +101,16 @@ async function removeFriend(userId, friendId) {
     console.error(
       `Error removing friend ${friendId} from user ${userId}: received HTTP status code ${deleteResponse.$metadata.httpStatusCode} from DDB`,
     );
-    throw new Error(`error removing friend ${friendId} from user ${userId}`, {
+    throw new Error(`INTERNAL: Error removing friend ${friendId} from user ${userId}`, {
       cause: 500,
     });
   }
 }
 
-export async function receivedIncomingFriendRequest(userIdReceiving, userIdSending) {
+export async function receivedIncomingFriendRequest(
+  userIdReceiving,
+  userIdSending,
+) {
   const input = {
     Key: {
       pk: {
@@ -126,7 +129,7 @@ export async function receivedIncomingFriendRequest(userIdReceiving, userIdSendi
       `Error checking if friend request exists (received HTTP status code from DynamoDB: ${response.$metadata.httpStatusCode}).`,
     );
     throw new Error(
-      `error checking if friend request exists for user ${userIdReceiving} from user ${userIdSending}`,
+      `INTERNAL: Error checking if friend request exists for user ${userIdReceiving} from user ${userIdSending}`,
       { cause: 500 },
     );
   }

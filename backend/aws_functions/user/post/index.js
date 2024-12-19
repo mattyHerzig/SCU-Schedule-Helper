@@ -41,18 +41,18 @@ async function handlePostUserRequest(event, context, userId) {
     if (!request.name) missingFields.push("name");
     if (!request.subscription) missingFields.push("subscription");
     return badRequestResponse(
-      `missing required fields. Required fields: ${missingFields.join(", ")}.`,
+      `Missing required fields: ${missingFields.join(", ")}.`,
     );
   }
 
   // Check if the user already exists;
   try {
     if (await userAlreadyExists(userId)) {
-      return badRequestResponse(`user already exists.`);
+      return badRequestResponse(`You already have an account.`);
     }
   } catch (error) {
-    console.error(error);
-    return internalServerError(`error checking if user already exists.`);
+    console.error(`INTERNAL: Error checking if user already exists: ${error}`);
+    return internalServerError;
   }
 
   // Upload the user's photo to S3, if they uploaded a photo.
@@ -61,8 +61,8 @@ async function handlePostUserRequest(event, context, userId) {
     try {
       photoUrl = await uploadUserPhotoToS3(userId, request.photo);
     } catch (error) {
-      console.error(error);
-      return internalServerError(`error uploading profile photo to S3.`);
+      console.error(`INTERNAL: Error uploading user photo to S3: ${error}`);
+      return internalServerError;
     }
   } else if (!photoUrl) photoUrl = DEFAULT_PHOTO_URL;
 
@@ -75,8 +75,8 @@ async function handlePostUserRequest(event, context, userId) {
       photoUrl,
     );
   } catch (error) {
-    console.error(error);
-    return internalServerError(`error adding user to database.`);
+    console.error(`INTERNAL: Error adding user to database: ${error}`);
+    return internalServerError;
   }
 }
 

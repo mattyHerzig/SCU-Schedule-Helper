@@ -36,7 +36,7 @@ async function sendFriendRequest(userId, friendId) {
     console.error(
       `Error sending friend request to ${friendId} from ${userId}: user cannot send friend request to themselves`,
     );
-    throw new Error(`user cannot send friend request to themselves`, {
+    throw new Error(`You cannot send a friend request to yourself.`, {
       cause: 400,
     });
   }
@@ -44,14 +44,17 @@ async function sendFriendRequest(userId, friendId) {
     console.error(
       `Error sending friend request to ${friendId} from ${userId}: user ${friendId} does not exist`,
     );
-    throw new Error(`user ${friendId} does not exist`, { cause: 400 });
+    throw new Error(
+      `Cannot send friend request to a user who does not exist.`,
+      { cause: 400 },
+    );
   }
   if (await receivedIncomingFriendRequest(userId, friendId)) {
     console.error(
       `Error sending friend request to ${friendId} from ${userId}: user ${userId} has already received friend request from ${friendId}`,
     );
     throw new Error(
-      `user ${userId} has already received friend request from ${friendId}`,
+      `You've currently have a pending friend request from this user.`,
       { cause: 400 },
     );
   }
@@ -59,7 +62,7 @@ async function sendFriendRequest(userId, friendId) {
     console.error(
       `Error sending friend request to ${friendId} from ${userId}: user ${userId} is already friends with ${friendId}`,
     );
-    throw new Error(`user ${userId} is already friends with ${friendId}`, {
+    throw new Error(`You are already friends with this user.`, {
       cause: 400,
     });
   }
@@ -95,7 +98,7 @@ async function sendFriendRequest(userId, friendId) {
     console.error(`Batch write failed for friend request from ${userId} to ${friendId},
          received HTTP status code from DynamoDB: ${batchWriteResponse.$metadata.httpStatusCode}
          and unprocessed items: ${batchWriteResponse.UnprocessedItems}`);
-    throw new Error(`failed to send friend request to ${friendId}`, {
+    throw new Error(`INTERNAL: Failed to send friend request to ${friendId}`, {
       cause: 500,
     });
   }
@@ -134,7 +137,7 @@ export async function removeFriendRequest(userIdReceiving, userIdSending) {
     console.error(`Batch delete failed for friend request from ${userIdReceiving} to ${userIdSending},
          received HTTP status code from DynamoDB: ${batchWriteResponse.$metadata.httpStatusCode}
          and unprocessed items: ${batchWriteResponse.UnprocessedItems}`);
-    throw new Error(`failed to remove friend request from ${userIdSending}`, {
+    throw new Error(`INTERNAL: Failed to remove friend request from ${userIdSending}`, {
       cause: 500,
     });
   }

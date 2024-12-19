@@ -32,11 +32,11 @@ async function deleteUser(event, context, userId) {
   try {
     ({ userInfo, keys } = await getSubsAndKeysForDeletion(`u#${userId}`));
   } catch (error) {
-    console.error("Error getting sort keys:", error);
-    return internalServerError("Could not get the user's entries.");
+    console.error("INTERNAL: Error getting sort keys:", error);
+    return internalServerError;
   }
   if (keys.length === 0) {
-    return notFoundError(`No sort keys for primary key u#${userId}`);
+    return notFoundError(`Account could not be found.`);
   }
   const batches = [];
   while (keys.length > 0) {
@@ -61,8 +61,8 @@ async function deleteUser(event, context, userId) {
     try {
       await dynamoDBClient.send(new BatchWriteItemCommand(params));
     } catch (error) {
-      console.error("Error deleting items:", error);
-      return internalServerError("Error deleting items.");
+      console.error("INTERNAL: Error deleting items:", error);
+      return internalServerError;
     }
   }
   try {
@@ -76,12 +76,12 @@ async function deleteUser(event, context, userId) {
       new DeleteObjectCommand(photoParams),
     );
     if (s3Response.$metadata.httpStatusCode !== 204) {
-      console.error(`Error deleting profile photo from S3: ${s3Response}`);
-      return internalServerError("Error deleting user's profile picture.");
+      console.error(`INTERNAL: Error deleting profile photo from S3: ${s3Response}`);
+      return internalServerError;
     }
   } catch (error) {
-    console.error("Error deleting user's profile picture:", error);
-    return internalServerError("Error deleting user's profile picture.");
+    console.error("INTERNAL: Error deleting user's profile picture:", error);
+    return internalServerError;
   }
   await Promise.all([
     tryNotifyClients(userId, userInfo),

@@ -32,7 +32,7 @@ export async function updateCourses(userId, updateData) {
     new PutItemCommand(updatedCoursesItem),
   );
   if (result.$metadata.httpStatusCode !== 200) {
-    console.error(`Error updating courses for user ${userId}`);
+    console.error(`INTERNAL: Error updating courses for user ${userId}`);
     throw new Error(`error updating courses for user ${userId}`, {
       cause: 500,
     });

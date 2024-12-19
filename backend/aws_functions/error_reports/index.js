@@ -5,42 +5,44 @@ import {
 } from "@aws-sdk/client-cloudwatch-logs";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 
-const cwlClient = new CloudWatchLogsClient({ region: "us-west-1" });
-const snsClient = new SNSClient({ region: "us-west-1" });
+const region = process.env.SNS_CWL_REGION;
+const periodLengthMs = process.env.PERIOD_LENGTH_MS;
+const periodTimezone = process.env.PERIOD_TIMEZONE;
+const snsReceiverTopicArn = process.env.SNS_RECEIVER_TOPIC_ARN;
+const metricName = process.env.METRIC_NAME;
+const metricReadableName = process.env.METRIC_READABLE_NAME;
+const metricNamespace = process.env.METRIC_NAMESPACE;
+const reportSubject = process.env.REPORT_SUBJECT;
+
+const cwlClient = new CloudWatchLogsClient({ region });
+const snsClient = new SNSClient({ region });
 
 export const handler = async (event) => {
-  const message = JSON.parse(event.Records[0].Sns.Message);
-
   const requestParams = {
-    metricName: message.Trigger.MetricName,
-    metricNamespace: message.Trigger.Namespace,
+    metricName,
+    metricNamespace,
   };
 
   try {
     const metricFiltersData = await cwlClient.send(
       new DescribeMetricFiltersCommand(requestParams),
     );
-    console.log("Metric Filter data is:", metricFiltersData);
 
-    await getLogsAndPublishToSNS(message, metricFiltersData);
+    await getLogsAndPublishToSNS(metricFiltersData);
   } catch (err) {
     console.error("Error fetching metric filters:", err);
   }
 };
 
-async function getLogsAndPublishToSNS(message, metricFilterData) {
-  const timestamp = Date.parse(message.StateChangeTime);
-  const offset =
-    message.Trigger.Period * message.Trigger.EvaluationPeriods * 1000;
-
+async function getLogsAndPublishToSNS(metricFilterData) {
   try {
     let logEvents = [];
     for (const metricFilter of metricFilterData.metricFilters) {
       const parameters = {
         logGroupName: metricFilter.logGroupName,
         filterPattern: metricFilter.filterPattern || "",
-        startTime: timestamp - offset,
-        endTime: timestamp,
+        startTime: Date.now() - periodLengthMs,
+        endTime: Date.now(),
       };
       const logData = await cwlClient.send(
         new FilterLogEventsCommand(parameters),
@@ -53,22 +55,16 @@ async function getLogsAndPublishToSNS(message, metricFilterData) {
       }
     }
 
-    console.log("===PUBLISHING TO SNS===");
-
-    const snsParams = generateSNSContent(logEvents, message);
-    if(logEvents.length === 0) {
-      throw new Error("No logs found for the given metric filters.");
+    if (logEvents.length === 0) {
+      return;
     }
-    const snsResponse = await snsClient.send(new PublishCommand(snsParams));
-
-    console.log("===SNS MESSAGE SENT===");
-    console.log(snsResponse);
+    await snsClient.send(new PublishCommand(generateSNSContent(logEvents)));
   } catch (err) {
     console.error("Error filtering logs or publishing to SNS:", err);
   }
 }
 
-function generateSNSContent(events, message) {
+function generateSNSContent(events) {
   let logData = "Logs:\n\n";
   events.forEach((event) => {
     logData += `Function: ${event.logGroupName}\n`;
@@ -76,15 +72,28 @@ function generateSNSContent(events, message) {
     logData += `Message: ${event.message}\n\n`;
   });
 
-  const date = new Date(message.StateChangeTime);
+  const date = new Date();
   const text = `
-Region: ${message.Region}
-Alarm Time: ${date.toString()}
+Region: ${region}
+Period (${periodTimezone}): ${new Date(
+    date.getTime() - periodLengthMs,
+  ).toLocaleString(
+    {},
+    {
+      timeZone: periodTimezone,
+    },
+  )} to ${date.toLocaleString(
+    {},
+    {
+      timeZone: periodTimezone,
+    },
+  )} 
+Total ${metricReadableName}: ${events.length}
 ${logData}`;
 
   return {
     Message: text,
-    Subject: `New Error - ${message.AlarmName}`,
-    TopicArn: "arn:aws:sns:us-west-1:100329216735:CloudWatch_Alarm_Emails",
+    Subject: reportSubject,
+    TopicArn: snsReceiverTopicArn,
   };
 }
