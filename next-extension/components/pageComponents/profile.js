@@ -42,12 +42,15 @@ export default function Profile() {
     try {
       const data = await chrome.storage.local.get("userInfo");
       setUserInfo(data.userInfo || null);
-      if (data.userInfo.id) {
+      if (data.userInfo && data.userInfo.id) {
         setIsLoading(false);
-      } else setIsLoading(true);
+      } else {
+        setIsLoading(true);
+      }
     } catch (error) {
       console.error("Error checking user info:", error);
       setUserInfo(null);
+      setIsLoading(false);
     }
   };
 
