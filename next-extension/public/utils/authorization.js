@@ -1,6 +1,9 @@
 import { subscribe } from "./notifications.js";
 import { prodAuthTokenEndpoint, prodUserEndpoint } from "./constants.js";
-import { downloadEvals } from "./evals.js";
+import {
+  downloadEvals,
+  downloadProfessorNameMappings,
+} from "./evalsAndMappings.js";
 import { refreshUserData } from "./user.js";
 
 /**
@@ -60,6 +63,7 @@ export async function signIn() {
 
   // Start eval download in background.
   downloadEvals();
+  downloadProfessorNameMappings();
 
   const createdUser = await fetch(prodUserEndpoint, {
     method: "POST",

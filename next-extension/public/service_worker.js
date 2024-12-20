@@ -1,5 +1,6 @@
 import { signIn, signOut } from "./utils/authorization.js";
 import { downloadEvals } from "./utils/evals.js";
+import { downloadProfessorNameMappings } from "./utils/evalsAndMappings.js";
 import { handleNotification, subscribe } from "./utils/notifications.js";
 import { getRmpRatings } from "./utils/rmp.js";
 import {
@@ -127,6 +128,7 @@ async function runStartupChecks() {
   }
   // Check if the evals need to be redownloaded.
   await downloadEvals();
+  await downloadProfessorNameMappings();
   // Check if we need to expire any interestedSections.
   await refreshInterestedSections();
 }

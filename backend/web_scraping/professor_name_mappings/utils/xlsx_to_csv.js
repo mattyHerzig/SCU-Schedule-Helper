@@ -19,10 +19,13 @@ export function parseCourseSectionsXlsx(sourceFile) {
     console.error("Couldn't find professor name column");
   }
   for (const row of rows.slice(1)) {
-    const profName = row[profIndex]?.trim() || "";
-    const indexOfPipe = profName.indexOf("|");
-    if (!profName.trim() || indexOfPipe === -1) continue;
-    const realName = profName.substring(0, indexOfPipe).trim();
-    professorNameMappings[realName] = profName;
+    const profNames = row[profIndex]?.split("\n\n") || [];
+    for (let profName of profNames) {
+      profName = profName.trim();
+      const indexOfPipe = profName.indexOf("|");
+      if (!profName || indexOfPipe === -1) continue;
+      const realName = profName.substring(0, indexOfPipe).trim();
+      professorNameMappings[realName] = profName;
+    }
   }
 }

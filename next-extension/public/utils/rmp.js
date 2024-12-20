@@ -121,6 +121,11 @@ export async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   let profName = rawProfName.trim();
   // Empirical testing showed that including middle names in the query does not improve accuracy.
   // Therefore, we only query by the first first name and the last last name.
+  let nameMappings = (await chrome.storage.local.get("professorNameMappings"))
+    .professorNameMappings;
+  if (nameMappings[profName]) {
+    profName = nameMappings[profName];
+  }
   let realFirstName = profName
     .substring(0, profName.indexOf(" "))
     .trim()
@@ -132,8 +137,8 @@ export async function getRmpRatings(rawProfName, debuggingEnabled = false) {
 
   // If realFirst + lastName is a key in cached_ids, return the cached data.
   let key = realFirstName + lastName;
-  let cachedId = await chrome.storage.local.get([key]);
-  if (cachedId[key]) {
+  let cachedId = (await chrome.storage.local.get(key))[key];
+  if (cachedId) {
     return scrapeProfessorPage(cachedId[key], debuggingEnabled);
   }
   // Find preferred first name, if it exists.
