@@ -49,7 +49,7 @@ export default function PercentSlider({ initValue, onChangeCommitted }) {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ width: 300 }}>
+      <Box sx={{ width: 232 }}>
         <Slider
           value={sliderValue}
           onChange={handleChange}

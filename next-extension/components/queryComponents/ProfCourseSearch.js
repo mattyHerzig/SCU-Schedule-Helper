@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import ProfCourseCard from "./ProfCourseCard";
 
-export default function ProfCourseSearch() {
+export default function ProfCourseSearch({ scrollToTop }) {
   const [selected, setSelected] = useState(null);
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,6 +110,30 @@ export default function ProfCourseSearch() {
     );
   }, [allOptions, searchQuery]);
 
+  const onPageNavigation = (newPageKey) => {
+    setSelected((prev) => {
+      const newPageData = evalsData[newPageKey];
+      if (newPageData.type === "prof") {
+        return {
+          id: newPageKey,
+          label: newPageKey,
+          groupLabel: "Professors",
+          type: "prof",
+          ...newPageData,
+        };
+      } else {
+        return {
+          id: newPageKey,
+          label: `${newPageKey} - ${newPageData.courseName || "Unnamed Course"}`,
+          groupLabel: "Courses",
+          type: "course",
+          ...newPageData,
+        };
+      }
+    });
+    scrollToTop();
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
@@ -200,7 +224,11 @@ export default function ProfCourseSearch() {
         />
       </Box>
 
-      <ProfCourseCard selected={selected} data={evalsData} />
+      <ProfCourseCard
+        selected={selected}
+        data={evalsData}
+        onPageNavigation={onPageNavigation}
+      />
     </Box>
   );
 }

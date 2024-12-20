@@ -13,7 +13,7 @@ import FriendCoursesTooltip from "./FriendCoursesTooltip";
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 export const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 
-export default function ProfCourseCard({ selected, data }) {
+export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   if (!selected) return null;
   const [rmpData, setRmpData] = useState(null);
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
@@ -459,6 +459,16 @@ export default function ProfCourseCard({ selected, data }) {
               <Box key={courseCode} sx={{ mt: 2 }}>
                 <Typography variant="body1" gutterBottom>
                   {courseCode}
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    onClick={() => {
+                      onPageNavigation(courseCode);
+                    }}
+                    sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
+                  >
+                    Go to course page
+                  </Typography>
                 </Typography>
                 {courseStats.recentTerms && (
                   <Typography
@@ -576,6 +586,16 @@ export default function ProfCourseCard({ selected, data }) {
                 <Box key={profName} sx={{ mt: 2 }}>
                   <Typography variant="body1" gutterBottom>
                     {profName}
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      onClick={() => {
+                        onPageNavigation(profName);
+                      }}
+                      sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
+                    >
+                      Go to prof. page
+                    </Typography>
                   </Typography>
                   <Typography
                     variant="body2"

@@ -1,11 +1,20 @@
+import { useRef } from "react";
 import { Box, Typography } from "@mui/material";
 import ProfCourseSearch from "../queryComponents/ProfCourseSearch";
 import AuthWrapper from "./authWrapper";
 
 export default function Main({ navigateToPage }) {
+  const boxRef = useRef(null);
+
+  const scrollToTop = () => {
+    if (boxRef.current) {
+      boxRef.current.parentElement.scrollTo(0, 0);
+    }
+  };
+
   return (
     <AuthWrapper>
-      <Box sx={{ overflow: "auto" }}>
+      <Box ref={boxRef} sx={{ overflow: "auto" }}>
         <Box
           sx={{
             mb: 3,
@@ -20,7 +29,7 @@ export default function Main({ navigateToPage }) {
           </Typography>
 
           <Box sx={{ width: "100%", maxWidth: "420px" }}>
-            <ProfCourseSearch />
+            <ProfCourseSearch scrollToTop={scrollToTop} />
           </Box>
         </Box>
       </Box>
