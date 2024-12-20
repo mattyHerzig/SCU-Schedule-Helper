@@ -126,7 +126,7 @@ export default function ProfCourseSearch() {
     return (
       <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
         <Typography variant="h6" color="text.secondary">
-          No course evaluation data available
+          No course evaluation data available.
         </Typography>
         <Button
           variant="contained"

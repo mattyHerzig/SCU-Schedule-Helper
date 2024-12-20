@@ -79,7 +79,7 @@ export async function signIn() {
   const createdUserData = await createdUser.json();
   if (
     createdUser.status === 400 &&
-    createdUserData.message.includes("user already exists")
+    createdUserData.message === "You already have an account."
   ) {
     const updateError = await updateSubscriptionAndRefreshUserData(
       JSON.stringify(subscription),

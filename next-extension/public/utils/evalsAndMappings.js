@@ -44,8 +44,6 @@ export async function downloadProfessorNameMappings() {
     return;
   }
   const mappingsResponse = await response.json();
-  console.log("Setting professor name mappings...");
-  console.log(mappingsResponse);
   await chrome.storage.local.set({
     professorNameMappings: mappingsResponse.data,
     mappingsExpirationDate: mappingsResponse.dataExpirationDate,

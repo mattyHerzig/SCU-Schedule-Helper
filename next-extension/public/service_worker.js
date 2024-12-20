@@ -1,6 +1,8 @@
 import { signIn, signOut } from "./utils/authorization.js";
-import { downloadEvals } from "./utils/evals.js";
-import { downloadProfessorNameMappings } from "./utils/evalsAndMappings.js";
+import {
+  downloadEvals,
+  downloadProfessorNameMappings,
+} from "./utils/evalsAndMappings.js";
 import { handleNotification, subscribe } from "./utils/notifications.js";
 import { getRmpRatings } from "./utils/rmp.js";
 import {
