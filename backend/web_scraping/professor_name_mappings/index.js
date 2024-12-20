@@ -35,9 +35,9 @@ export default async function main() {
     await authenticate(process.env.SCU_USERNAME, process.env.SCU_PASSWORD);
     await getAndProcessNameMappings();
     await writeMappings();
-    browser.close();
   } catch (e) {
     console.error("Encountered error:", e);
+  } finally {
     browser.close();
   }
 }

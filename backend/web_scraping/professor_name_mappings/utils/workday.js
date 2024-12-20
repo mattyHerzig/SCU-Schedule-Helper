@@ -18,7 +18,7 @@ export async function getAndProcessNameMappings() {
   await page.waitForSelector('[data-automation-label="Future Periods"]');
 
   // Select the academic period.
-  await searchBox[0].type(process.env.INPUT_ACADEMIC_PERIOD);
+  await searchBox[0].type(process.env.ACADEMIC_PERIOD);
   await searchBox[0].press("Enter");
   await page.waitForSelector('input[type="checkbox"]');
   (await page.$('input[type="checkbox"]')).click();
