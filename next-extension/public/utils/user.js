@@ -115,7 +115,7 @@ async function updateLocalCache(updateItems) {
     if (updateItems.personal.name) userInfo.name = updateItems.personal.name;
     if (updateItems.personal.photoUrl === "default")
       userInfo.photoUrl =
-        "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
+        "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.jpg";
     if (updateItems.personal.photo) {
       userInfo.photoUrl = getS3PhotoUrl(userInfo.id);
     }

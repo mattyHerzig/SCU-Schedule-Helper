@@ -30,7 +30,7 @@ export async function updatePersonal(userId, updateData) {
   }
   if (updateData.photoUrl == "default") {
     updateData.photoUrl =
-      "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
+      "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.jpg";
   }
   if (updateData.photoUrl || updateData.name) {
     await updateNameIndex(userId, updateData.name, updateData.photoUrl);

@@ -6,13 +6,13 @@ import { compress } from "compress.js/src/compress.js";
 export default function ProfileSection({ userInfo, handleActionCompleted }) {
   const [name, setName] = useState(userInfo.name || "");
   const [photoUrl, setPhotoUrl] = useState(
-    getUniquePhotoUrl(userInfo.photoUrl) ||
-      "https://scu-schedule-helper.s3.amazonaws.com/default-avatar.png",
+    getUniquePhotoUrl(userInfo.photoUrl),
   );
   const [isEditingName, setIsEditingName] = useState(false);
 
   function getUniquePhotoUrl(url) {
-    if (!url) return null;
+    if (!url)
+      return "https://scu-schedule-helper.s3.amazonaws.com/default-avatar.jpg";
     return `${url}?${new Date().getTime()}`;
   }
 
@@ -150,7 +150,6 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
             </Box>
           </Box>
         </label>
-
         <input
           type="file"
           id="profile-picture-upload"
@@ -190,7 +189,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
 
           <Box sx={{ height: "40px", mt: 1 }}>
             {isEditingName && (
-              <Stack direction="row" spacing={2}>
+              <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -202,6 +201,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
                       backgroundColor: "#671f1a",
                     },
                   }}
+                  size="small"
                 >
                   Save
                 </Button>
@@ -217,6 +217,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
                       color: "white",
                     },
                   }}
+                  size="small"
                 >
                   Cancel
                 </Button>

@@ -14,7 +14,7 @@ import {
 import { handleWithAuthorization } from "./utils/authorization.js";
 
 const DEFAULT_PHOTO_URL =
-  "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.png";
+  "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.jpg";
 const maxAttempts = 5;
 const retryMode = "standard";
 const ddbRegion = process.env.AWS_DDB_REGION;
