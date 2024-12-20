@@ -41,7 +41,7 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   const url = `https://www.ratemyprofessors.com/professor/${profId}`;
   if (debuggingEnabled) console.log("Querying " + url + "...");
   const cache = (await chrome.storage.local.get(profId))[profId];
-  if (cache.teacherData && cache.exp > Date.now()) {
+  if (cache?.teacherData && cache?.exp > Date.now()) {
     return cache.teacherData;
   }
 
