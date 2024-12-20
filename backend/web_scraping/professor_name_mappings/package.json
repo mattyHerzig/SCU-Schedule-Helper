@@ -1,0 +1,19 @@
+{
+  "name": "professor_name_mappings",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Stevie Dean",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.665.0",
+    "jsdom": "^25.0.1",
+    "node-xlsx": "^0.24.0",
+    "pdf2json": "^3.1.3",
+    "puppeteer": "^23.7.0"
+  }
+}

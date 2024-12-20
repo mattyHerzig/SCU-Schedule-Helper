@@ -1,0 +1,31 @@
+name: Scrape and update professor name mappings on AWS S3
+
+on:
+  workflow_dispatch: # Manual run.
+    inputs:
+      academic_period:
+        description: "The academic period to use within Workday (e.g. Fall 2024 Quarter)."
+        required: true
+
+jobs:
+  run:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+      - run: npm ci
+        working-directory: backend/web_scraping/professor_name_mappings
+      - name: Run update script
+        run: node index.js
+        env:
+          SCU_USERNAME: ${{ secrets.SCU_USERNAME }}
+          SCU_PASSWORD: ${{ secrets.SCU_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          SCU_SCHEDULE_HELPER_BUCKET_NAME: ${{ vars.SCU_SCHEDULE_HELPER_BUCKET_NAME }}
+          PROFESSOR_NAME_MAPPINGS_JSON_OBJECT_KEY: ${{ vars.PROFESSOR_NAME_MAPPINGS_JSON_OBJECT_KEY }}
+        working-directory: backend/web_scraping/professor_name_mappings
