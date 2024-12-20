@@ -288,7 +288,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
 
   // Create info button with tooltip
   const infoButton = document.createElement("div");
-  infoButton.innerHTML = "ⓘ"; // Unicode info symbol
+  infoButton.innerHTML = `<img src="${chrome.runtime.getURL("images/info_icon.png")}" alt ="info" width="17" height="17"/>`;
   infoButton.style.cssText = `
         cursor: help;
         color: #6c757d;
@@ -488,9 +488,10 @@ function createRatingToolTip(ratingInfo) {
   ratingDiv.innerHTML = `
         <div style="
           position: absolute;
-          background-color: #f0f0f0;
+          background-color:rgb(255, 255, 255);
           padding: 16px 16px;
           border-radius: 10px;
+          border: 1px solid black;
           font-family: Arial, sans-serif;
           max-width: 250px;
           margin: 5px;
@@ -514,7 +515,7 @@ function createRatingToolTip(ratingInfo) {
             </div>
             
             <div>
-              <a href="${rmpLink}" target="_blank" style="color: blue; text-decoration: none; font-weight: 450;">RateMyProfessor</a>
+              <a href="${rmpLink}" target="_blank" style="color: blue; text-decoration: none; font-size: 13px;">RateMyProfessor</a>
             </div>
             
             <div style="display: flex; gap: 20px; margin: 8px 0;">
@@ -530,7 +531,7 @@ function createRatingToolTip(ratingInfo) {
               </div>
             </div>
       
-            <div style="font-weight: 450; margin: 12px 0 8px 0;">
+            <div style="font-size: 13px; margin: 12px 0 8px 0;">
               SCU Course Evaluations
             </div>
             

@@ -37,10 +37,10 @@ async function getHtml(url) {
 }
 
 async function scrapeProfessorPage(profId, debuggingEnabled = false) {
+  if (typeof profId === "number") profId = profId.toString();
   const url = `https://www.ratemyprofessors.com/professor/${profId}`;
   if (debuggingEnabled) console.log("Querying " + url + "...");
-  const cache =
-    (await chrome.storage.local.get(new String(profId)))[profId] || {};
+  const cache = (await chrome.storage.local.get(profId))[profId];
   if (cache.teacherData && cache.exp > Date.now()) {
     return cache.teacherData;
   }
@@ -56,7 +56,7 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
   );
   let teacherData = JSON.parse(teacherInfoString);
   chrome.storage.local.set({
-    [new String(profId)]: { teacherData, exp: Date.now() + 86400000 },
+    [profId]: { teacherData, exp: Date.now() + 86400000 },
   });
   if (debuggingEnabled) console.log(teacherData);
   return teacherData;
@@ -139,7 +139,7 @@ export async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   let key = realFirstName + lastName;
   let cachedId = (await chrome.storage.local.get(key))[key];
   if (cachedId) {
-    return scrapeProfessorPage(cachedId[key], debuggingEnabled);
+    return scrapeProfessorPage(cachedId, debuggingEnabled);
   }
   // Find preferred first name, if it exists.
   let preferredFirstName = "";
