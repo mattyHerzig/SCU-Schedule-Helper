@@ -4,9 +4,9 @@ import { Edit } from "@mui/icons-material";
 import { compress } from "compress.js/src/compress.js";
 
 export default function ProfileSection({ userInfo, handleActionCompleted }) {
-  const [name, setName] = useState(userInfo.name || "");
+  const [name, setName] = useState("");
   const [photoUrl, setPhotoUrl] = useState(
-    getUniquePhotoUrl(userInfo.photoUrl),
+    getUniquePhotoUrl(null) 
   );
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -17,11 +17,15 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
   }
 
   useEffect(() => {
-    setName(userInfo.name || "");
-    setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
+    if (userInfo) {
+      setName(userInfo.name || "");
+      setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
+    }
   }, [userInfo]);
 
   const handlePhotoChange = async (event) => {
+    if (!userInfo) return;
+    
     const file = event.target.files[0];
     if (!file) return;
 
@@ -43,6 +47,8 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
   };
 
   const submitPersonal = async (photoFile, newName) => {
+    if (!userInfo) return;
+
     const message = {
       type: "updateUser",
       updateItems: {
@@ -83,21 +89,32 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
   };
 
   const handleNameChange = () => {
+    if (!userInfo) return; 
     submitPersonal(null, name);
   };
 
   const cancelEditing = () => {
+    if (!userInfo) return; 
     setName(userInfo.name || "");
     setIsEditingName(false);
   };
 
   const handleInputChange = (e) => {
+    if (!userInfo) return;
     const newName = e.target.value;
     setName(newName);
     if (newName !== userInfo.name) {
       setIsEditingName(true);
     }
   };
+
+  if (!userInfo) {
+    return (
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body1">Loading profile...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -166,7 +183,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
             variant="outlined"
             value={name}
             onChange={handleInputChange}
-            placeholder={userInfo.name || "Enter Name"}
+            placeholder="Enter Name"
             sx={{
               width: "250px",
               "& .MuiOutlinedInput-root": {
