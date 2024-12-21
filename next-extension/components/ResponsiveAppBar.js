@@ -19,18 +19,18 @@ const pages = [];
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
 
-  const handleOpenNavMenu = (event) => {
+  function handleOpenNavMenu (event) {
     setAnchorElNav(event.currentTarget);
   };
-  const handleOpenUserMenu = (event) => {
+  function handleOpenUserMenu (event) {
     setAnchorElUser(event.currentTarget);
   };
 
-  const handleCloseNavMenu = () => {
+  function handleCloseNavMenu () {
     setAnchorElNav(null);
   };
 
-  const handleCloseUserMenu = () => {
+  function handleCloseUserMenu () {
     setAnchorElUser(null);
   };
 

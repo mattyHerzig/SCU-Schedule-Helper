@@ -422,7 +422,7 @@ export async function importCourseHistory() {
 async function openTabAndSendMessage(url, message) {
   const createdTab = await chrome.tabs.create({ url });
 
-  const tabListener = async (tabId, changeInfo, tab) => {
+  async function tabListener (tabId, changeInfo, tab) {
     if (tabId === createdTab.id && changeInfo.status === "complete") {
       try {
         const response = await chrome.tabs.sendMessage(createdTab.id, message);

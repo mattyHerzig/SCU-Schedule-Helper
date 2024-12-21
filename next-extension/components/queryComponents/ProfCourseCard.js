@@ -9,6 +9,8 @@ import {
 } from "@mui/material";
 import "@fontsource/roboto/400.css";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
+import EvalStats from "./EvalStats";
+import RmpStats from "./RmpStats";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 export const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
@@ -31,7 +33,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   });
 
   useEffect(() => {
-    const getPrefferedPercentiles = async () => {
+    async function getPrefferedPercentiles() {
       const userInfo = (await chrome.storage.local.get("userInfo")).userInfo;
       if (userInfo.preferences && userInfo.preferences.difficulty) {
         setPreferredPercentiles({
@@ -40,18 +42,27 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           workload: userInfo.preferences.difficulty / 4,
         });
       }
-    };
+    }
+
     getPrefferedPercentiles();
 
     chrome.storage.onChanged.addListener((changes, namespace) => {
       if (namespace === "local" && changes.userInfo) {
         getPrefferedPercentiles();
       }
+      if (
+        namespace === "local" &&
+        (changes.friendCoursesTaken ||
+          changes.friendInterestedSections ||
+          changes.friends)
+      ) {
+        fetchFriendData();
+      }
     });
   }, []);
 
   useEffect(() => {
-    const getRMPrating = async () => {
+    async function getRMPrating() {
       setIsLoadingRmp(true);
       try {
         const rmpRating = await chrome.runtime.sendMessage({
@@ -64,7 +75,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
         setRmpData(null);
       }
       setIsLoadingRmp(false);
-    };
+    }
 
     if (selected.type === "prof") {
       const profDepts = Object.keys(data[selected.id]).filter(
@@ -72,17 +83,19 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       );
       setProfDepts(profDepts);
       setProfDeptAvgs({
-        quality: getDeptAvgs(profDepts, "quality"),
-        difficulty: getDeptAvgs(profDepts, "difficulty"),
-        workload: getDeptAvgs(profDepts, "workload"),
+        qualityAvgs: getDeptAvgs(profDepts, "quality"),
+        difficultyAvgs: getDeptAvgs(profDepts, "difficulty"),
+        workloadAvgs: getDeptAvgs(profDepts, "workload"),
       });
       getRMPrating();
     } else {
       setIsLoadingRmp(false);
     }
+
+    fetchFriendData();
   }, [selected]);
 
-  const getDeptAvgs = (profDepts, type) => {
+  function getDeptAvgs(profDepts, type) {
     const aggregatedAvgs = [];
     for (const dept of profDepts) {
       if (data.departmentStatistics[dept][`${type}Avgs`].length > 0) {
@@ -90,302 +103,86 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       }
     }
     return aggregatedAvgs.sort();
-  };
+  }
 
-  useEffect(() => {
-    const fetchFriendData = async () => {
-      const friendData = await chrome.storage.local.get([
-        "friendCoursesTaken",
-        "friendInterestedSections",
-        "friends",
-      ]);
-      const friendTakenInfos = [];
-      const friendInterestedInfos = [];
-      if (selected.type === "prof") {
-        for (const friendId in friendData.friendCoursesTaken?.[selected.id] ||
-          {}) {
-          const friendName = friendData.friends[friendId].name;
-          const courses = friendData.friendCoursesTaken[selected.id][friendId];
-          const friendInfo = `${friendName} had for `;
-          const courseCodes = [];
-          for (const course of courses) {
-            const match = course.match(courseTakenPattern);
-            if (!match) continue;
-            const courseCode = match[2]
-              .substring(0, match[2].indexOf("-"))
-              .replace(" ", "");
-            courseCodes.push(courseCode);
-          }
-          if (courseCodes.length > 0)
-            friendTakenInfos.push(`${friendInfo}${courseCodes.join(", ")}`);
-        }
-        for (const friendId in friendData.friendInterestedSections?.[
-          selected.id
-        ] || {}) {
-          const friendName = friendData.friends[friendId].name;
-          const sections =
-            friendData.friendInterestedSections[selected.id][friendId];
-          for (const section of sections) {
-            const match = section.match(interestedSectionPattern);
-            if (!match) continue;
-            const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
-            const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
-            const courseCode = match[2]
-              .substring(0, match[2].indexOf("-"))
-              .replace(" ", "");
-            friendInterestedInfos.push(
-              `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
-            );
-          }
-        }
-      } else {
-        for (const friendId in friendData.friendCoursesTaken?.[selected.id] ||
-          {}) {
-          const friendName = friendData.friends[friendId].name;
-          const course = friendData.friendCoursesTaken[selected.id][friendId];
+  async function fetchFriendData() {
+    const friendData = await chrome.storage.local.get([
+      "friendCoursesTaken",
+      "friendInterestedSections",
+      "friends",
+    ]);
+    const friendTakenInfos = [];
+    const friendInterestedInfos = [];
+    if (selected.type === "prof") {
+      for (const friendId in friendData.friendCoursesTaken?.[selected.id] ||
+        {}) {
+        const friendName = friendData.friends[friendId].name;
+        const courses = friendData.friendCoursesTaken[selected.id][friendId];
+        const friendInfo = `${friendName} had for `;
+        const courseCodes = [];
+        for (const course of courses) {
           const match = course.match(courseTakenPattern);
           if (!match) continue;
-          if (match[1] === "Not taken at SCU") {
-            friendTakenInfos.push(`${friendName} took outside of SCU`);
-            continue;
-          }
-          friendTakenInfos.push(
-            `${friendName} took with ${match[1] || "unknown prof"}`,
-          );
+          const courseCode = match[2]
+            .substring(0, match[2].indexOf("-"))
+            .replace(" ", "");
+          courseCodes.push(courseCode);
         }
-        for (const friendId in friendData.friendInterestedSections?.[
-          selected.id
-        ] || {}) {
-          const friendName = friendData.friends[friendId].name;
-          const course =
-            friendData.friendInterestedSections[selected.id][friendId];
-          const match = course.match(interestedSectionPattern);
+        if (courseCodes.length > 0)
+          friendTakenInfos.push(`${friendInfo}${courseCodes.join(", ")}`);
+      }
+      for (const friendId in friendData.friendInterestedSections?.[
+        selected.id
+      ] || {}) {
+        const friendName = friendData.friends[friendId].name;
+        const sections =
+          friendData.friendInterestedSections[selected.id][friendId];
+        for (const section of sections) {
+          const match = section.match(interestedSectionPattern);
           if (!match) continue;
           const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
           const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+          const courseCode = match[2]
+            .substring(0, match[2].indexOf("-"))
+            .replace(" ", "");
           friendInterestedInfos.push(
-            `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
+            `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
           );
         }
       }
-
-      setFriendData({ friendTakenInfos, friendInterestedInfos });
-    };
-    fetchFriendData();
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (
-        namespace === "local" &&
-        (changes.friendCoursesTaken ||
-          changes.friendInterestedSections ||
-          changes.friends)
-      ) {
-        fetchFriendData();
-      }
-    });
-  }, [selected]);
-
-  const getColor = (value, valueType, dept, ratingType) => {
-    if (ratingType === "rmp") {
-      if (valueType === "quality") return getRatingColor(value, 1, 5, true);
-      const diffScore = Math.abs(
-        preferredPercentiles.difficulty * 4 - value + 1,
-      );
-      return getRatingColor(diffScore, 0, 4, false);
-    }
-    let percentile;
-    if (ratingType === "profOverall") {
-      percentile = getPercentile(value, profDeptAvgs[valueType]);
     } else {
-      percentile = getPercentile(
-        value,
-        data.departmentStatistics[dept][`${valueType}Avgs`],
-      );
-    }
-    let score =
-      100 - Math.abs(preferredPercentiles[valueType] - percentile) * 100;
-    return getRatingColor(score, 0, 100, true);
-  };
-
-  const StatBox = ({ label, value, valueType, dept, ratingType }) => (
-    <Box>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Box sx={{ display: "flex", alignItems: "baseline" }}>
-        <Typography
-          variant="h6"
-          sx={{
-            color: getColor(value, valueType, dept, ratingType),
-            fontWeight: "bold",
-          }}
-        >
-          {value.toFixed(1)}
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{
-            color: "text.primary",
-            fontWeight: "bold",
-            ml: 0.5,
-          }}
-        >
-          {valueType === "workload" ? " hrs/week" : "/5"}
-        </Typography>
-      </Box>
-    </Box>
-  );
-
-  const renderEvalStats = (stats, dept, ratingType) => {
-    if (
-      !stats ||
-      stats.qualityTotal === undefined ||
-      stats.difficultyTotal === undefined ||
-      stats.workloadTotal === undefined
-    ) {
-      return (
-        <Typography variant="body2" color="text.secondary">
-          No statistics available
-        </Typography>
-      );
-    }
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          gap: 4,
-          justifyContent: "space-between",
-          px: 2,
-        }}
-      >
-        <StatBox
-          label="Quality"
-          value={stats.qualityTotal / stats.qualityCount}
-          valueType="quality"
-          dept={dept}
-          ratingType={ratingType}
-        />
-        <StatBox
-          label="Difficulty"
-          value={stats.difficultyTotal / stats.difficultyCount}
-          valueType="difficulty"
-          dept={dept}
-          ratingType={ratingType}
-        />
-        <StatBox
-          label="Workload"
-          value={stats.workloadTotal / stats.workloadCount}
-          valueType="workload"
-          dept={dept}
-          ratingType={ratingType}
-        />
-      </Box>
-    );
-  };
-
-  const renderRMPStats = () => {
-    const getRmpLink = () => {
-      if (rmpData && rmpData.legacyId) {
-        return `https://www.ratemyprofessors.com/professor/${rmpData.legacyId}`;
+      for (const friendId in friendData.friendCoursesTaken?.[selected.id] ||
+        {}) {
+        const friendName = friendData.friends[friendId].name;
+        const course = friendData.friendCoursesTaken[selected.id][friendId];
+        const match = course.match(courseTakenPattern);
+        if (!match) continue;
+        if (match[1] === "Not taken at SCU") {
+          friendTakenInfos.push(`${friendName} took outside of SCU`);
+          continue;
+        }
+        friendTakenInfos.push(
+          `${friendName} took with ${match[1] || "unknown prof"}`,
+        );
       }
-      return `https://www.ratemyprofessors.com/search/professors?q=${selected.id}`;
-    };
-
-    if (isLoadingRmp) {
-      return (
-        <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
-          <CircularProgress size={24} />
-        </Box>
-      );
+      for (const friendId in friendData.friendInterestedSections?.[
+        selected.id
+      ] || {}) {
+        const friendName = friendData.friends[friendId].name;
+        const course =
+          friendData.friendInterestedSections[selected.id][friendId];
+        const match = course.match(interestedSectionPattern);
+        if (!match) continue;
+        const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
+        const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+        friendInterestedInfos.push(
+          `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
+        );
+      }
     }
 
-    if (!rmpData) {
-      return (
-        <>
-          <Typography
-            variant="h6"
-            fontSize={"1.15rem"}
-            gutterBottom
-            sx={{ mt: 2 }}
-          >
-            RateMyProfessor Statistics
-          </Typography>
-          <Box sx={{ px: 2 }}>
-            <Typography variant="body2" display="inline" color="text.secondary">
-              No data available
-              <Typography
-                variant="body3"
-                component={"span"}
-                fontSize={"0.72rem"}
-                marginLeft={"7px"}
-                color="text.secondary"
-              >
-                <a
-                  href={getRmpLink()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#802a25" }}
-                >
-                  Search RateMyProfessors
-                </a>
-              </Typography>
-            </Typography>
-          </Box>
-        </>
-      );
-    }
-    return (
-      <>
-        <Typography
-          variant="h6"
-          fontSize={"1.15rem"}
-          gutterBottom
-          sx={{ mt: 3 }}
-        >
-          RateMyProfessor Statistics
-          <Typography
-            variant="body2"
-            component="span"
-            sx={{ ml: 1, color: "text.secondary" }}
-          >
-            <a
-              href={getRmpLink()}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "#802a25" }}
-            >
-              View Profile
-            </a>
-          </Typography>
-        </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 4,
-            justifyContent: "space-between",
-            px: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 8.5 }}>
-            <StatBox
-              label="Quality"
-              value={rmpData.avgRating}
-              valueType="quality"
-              dept={"n/a"}
-              ratingType="rmp"
-            />
-            <StatBox
-              label="Difficulty"
-              value={rmpData.avgDifficulty}
-              valueType="difficulty"
-              dept={"n/a"}
-              ratingType="rmp"
-            />
-          </Box>
-        </Box>
-      </>
-    );
-  };
+    setFriendData({ friendTakenInfos, friendInterestedInfos });
+  }
 
   if (selected.type === "prof") {
     return (
@@ -425,10 +222,19 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
               >
                 Overall Course Evaluation Statistics
               </Typography>
-              {renderEvalStats(selected.overall, "n/a", "profOverall")}
+              <EvalStats
+                stats={selected.overall}
+                deptStats={profDeptAvgs}
+                preferredPercentiles={preferredPercentiles}
+              />
             </>
           )}
-          {renderRMPStats()}
+          <RmpStats
+            rmpData={rmpData}
+            isLoadingRmp={isLoadingRmp}
+            profName={selected.id}
+            preferredPercentiles={preferredPercentiles}
+          />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -470,11 +276,13 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     Quarters Taught: {courseStats.recentTerms.join(", ")}
                   </Typography>
                 )}
-                {renderEvalStats(
-                  courseStats,
-                  courseCode.substring(0, 4),
-                  "course",
-                )}
+                <EvalStats
+                  stats={courseStats}
+                  deptStats={
+                    data.departmentStatistics[courseCode.substring(0, 4)]
+                  }
+                  preferredPercentiles={preferredPercentiles}
+                />
                 {index <
                   Object.keys(selected).filter((key) =>
                     key.match(/[A-Z]{4}\d+/),
@@ -503,7 +311,11 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 <Typography variant="body1" gutterBottom>
                   {dept}
                 </Typography>
-                {renderEvalStats(stats, dept, "course")}
+                <EvalStats
+                  stats={stats}
+                  deptStats={data.departmentStatistics[dept]}
+                  preferredPercentiles={preferredPercentiles}
+                />
                 {index <
                   Object.keys(selected).filter((key) => key.length === 4)
                     .length -
@@ -537,7 +349,11 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Overall Statistics
           </Typography>
-          {renderEvalStats(selected, selected.id.substring(0, 4), "course")}
+          <EvalStats
+            stats={selected}
+            deptStats={data.departmentStatistics[selected.id.substring(0, 4)]}
+            preferredPercentiles={preferredPercentiles}
+          />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -595,11 +411,13 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   >
                     Quarters Taught: {profCourseStats.recentTerms.join(", ")}
                   </Typography>
-                  {renderEvalStats(
-                    profCourseStats,
-                    selected.id.substring(0, 4),
-                    "course",
-                  )}
+                  <EvalStats
+                    stats={profCourseStats}
+                    deptStats={
+                      data.departmentStatistics[selected.id.substring(0, 4)]
+                    }
+                    preferredPercentiles={preferredPercentiles}
+                  />
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}
@@ -611,68 +429,4 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     );
   }
   return null;
-}
-
-function getRatingColor(rating, ratingMin, ratingMax, goodValuesAreHigher) {
-  if (nullOrUndefined(rating)) return "rgba(0, 0, 0, 0.5)";
-  if (rating < ratingMin) rating = ratingMin;
-  if (rating > ratingMax) rating = ratingMax;
-  const greenShade = [66, 134, 67];
-  const yellowShade = [255, 234, 0];
-  const redShade = [194, 59, 34];
-  const ratingMid = ratingMin + (ratingMax - ratingMin) / 2;
-  if (rating <= ratingMid && goodValuesAreHigher) {
-    return interpolateColor(
-      redShade,
-      yellowShade,
-      (rating - ratingMin) / (ratingMid - ratingMin),
-    );
-  }
-  if (rating <= ratingMid && !goodValuesAreHigher) {
-    return interpolateColor(
-      greenShade,
-      yellowShade,
-      (rating - ratingMin) / (ratingMid - ratingMin),
-    );
-  }
-  if (goodValuesAreHigher) {
-    return interpolateColor(
-      yellowShade,
-      greenShade,
-      (rating - ratingMid) / (ratingMax - ratingMid),
-    );
-  }
-  return interpolateColor(
-    yellowShade,
-    redShade,
-    (rating - ratingMid) / (ratingMax - ratingMid),
-  );
-}
-
-function interpolateColor(color1, color2, ratio) {
-  const r = Math.round(color1[0] + ratio * (color2[0] - color1[0]));
-  const g = Math.round(color1[1] + ratio * (color2[1] - color1[1]));
-  const b = Math.round(color1[2] + ratio * (color2[2] - color1[2]));
-  return `rgba(${r}, ${g}, ${b}, 1)`;
-}
-
-function getPercentile(value, array) {
-  if (!value || !array || array.length === 0) return null;
-  return bsFind(array, value) / array.length;
-}
-
-function bsFind(sortedArray, target) {
-  let left = 0;
-  let right = sortedArray.length - 1;
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    if (sortedArray[mid] === target) return mid;
-    if (sortedArray[mid] < target) left = mid + 1;
-    else right = mid - 1;
-  }
-  return left;
-}
-
-function nullOrUndefined(value) {
-  return value === null || value === undefined;
 }

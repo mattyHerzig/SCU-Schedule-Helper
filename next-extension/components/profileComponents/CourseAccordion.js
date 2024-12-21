@@ -21,8 +21,8 @@ import {
 import { ExpandMore, Close } from "@mui/icons-material";
 import {
   mostRecentTermFirst,
-  transformInterestedSections,
-  transformTakenCourses,
+  parseInterestedSections,
+  parseTakenCourses,
 } from "../utils/user.js";
 
 export default function CourseAccordion() {
@@ -40,7 +40,7 @@ export default function CourseAccordion() {
   const [messageSeverity, setMessageSeverity] = useState("success");
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData () {
       try {
         const { userInfo } = await chrome.storage.local.get("userInfo");
         const { evals } = await chrome.storage.local.get("evals");
@@ -70,17 +70,17 @@ export default function CourseAccordion() {
   }, []);
 
   const transformedCourses = {
-    interested: transformInterestedSections(userCourses.interested),
-    taken: transformTakenCourses(userCourses.taken).sort(mostRecentTermFirst),
+    interested: parseInterestedSections(userCourses.interested),
+    taken: parseTakenCourses(userCourses.taken).sort(mostRecentTermFirst),
   };
 
-  const handleRemoveCourseClick = (event, course) => {
+  function handleRemoveCourseClick (event, course) {
     event.stopPropagation();
     setCourseToRemove(course);
     setOpenConfirmDialog(true);
   };
 
-  const handleConfirmRemoveCourse = async () => {
+  async function handleConfirmRemoveCourse () {
     if (courseToRemove) {
       try {
         const courseIdentifier = `P{${courseToRemove.professor}}C{${courseToRemove.courseCode}}T{${courseToRemove.quarter}}`;
@@ -125,7 +125,7 @@ export default function CourseAccordion() {
     }
   };
 
-  const handleCancelRemoveCourse = () => {
+  function handleCancelRemoveCourse () {
     setOpenConfirmDialog(false);
     setCourseToRemove(null);
     setCourseRemoveType(null);
@@ -215,12 +215,12 @@ export default function CourseAccordion() {
     }
   }, [evalsData]);
 
-  const CourseSection = ({ title, courses, type }) => {
+  function CourseSection ({ title, courses, type }) {
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [selectedProfessor, setSelectedProfessor] = useState(null);
     const [quarter, setQuarter] = useState("");
 
-    const handleAddClick = () => {
+    function handleAddClick () {
       if (!selectedCourse || !selectedProfessor || !quarter) {
         setMessage("Please fill in all fields before adding the course.");
         setMessageSeverity("error");

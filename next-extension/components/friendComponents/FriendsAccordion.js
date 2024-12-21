@@ -19,8 +19,8 @@ import { ExpandMore, Close } from "@mui/icons-material";
 import CourseDetailsCard from "../utils/CourseDetailsCard.js";
 import {
   mostRecentTermFirst,
-  transformInterestedSections,
-  transformTakenCourses,
+  parseInterestedSections,
+  parseTakenCourses,
 } from "../utils/user.js";
 
 export default function FriendsAccordion({
@@ -37,8 +37,8 @@ export default function FriendsAccordion({
         ...profile,
         expanded: false,
         courses: {
-          interested: transformInterestedSections(profile.interestedSections),
-          taken: transformTakenCourses(profile.coursesTaken).sort(
+          interested: parseInterestedSections(profile.interestedSections),
+          taken: parseTakenCourses(profile.coursesTaken).sort(
             mostRecentTermFirst,
           ),
         },
@@ -47,13 +47,13 @@ export default function FriendsAccordion({
     setTransformedFriends(transformedFriends);
   }, [friends]);
 
-  const handleRemoveFriendClick = (event, id) => {
+  function handleRemoveFriendClick (event, id) {
     event.stopPropagation();
     setFriendToRemove(id);
     setOpenConfirmDialog(true);
   };
 
-  const handleConfirmRemoveFriend = async () => {
+  async function handleConfirmRemoveFriend () {
     if (friendToRemove) {
       try {
         const updateResponse = await chrome.runtime.sendMessage({
@@ -77,7 +77,7 @@ export default function FriendsAccordion({
     }
   };
 
-  const handleCancelRemoveFriend = () => {
+  function handleCancelRemoveFriend () {
     setOpenConfirmDialog(false);
     setFriendToRemove(null);
   };

@@ -3,12 +3,12 @@ import { Card, CardContent, Typography, Stack, Divider } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
 import BookIcon from "@mui/icons-material/Book";
 
-const CourseDetailsCard = ({
+export default function CourseDetailsCard({
   courses = {
     interested: [],
     taken: [],
   },
-}) => {
+}) {
   return (
     <Card variant="outlined" sx={{ width: "100%", mt: 2 }}>
       <CardContent>
@@ -88,6 +88,4 @@ const CourseDetailsCard = ({
       </CardContent>
     </Card>
   );
-};
-
-export default CourseDetailsCard;
+}

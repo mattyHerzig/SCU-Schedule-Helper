@@ -1,4 +1,4 @@
-export const validResponse = (response) => {
+export function validResponse(response) {
   return {
     statusCode: 200,
     headers: {
@@ -6,9 +6,9 @@ export const validResponse = (response) => {
     },
     body: JSON.stringify({ message: response }),
   };
-};
+}
 
-export const validResponseWithBody = (response) => {
+export function validResponseWithBody(response) {
   return {
     statusCode: 200,
     headers: {
@@ -18,19 +18,19 @@ export const validResponseWithBody = (response) => {
   };
 }
 
-export const badRequestResponse = (message) => {
+export function badRequestResponse(message) {
   return {
     statusCode: 400,
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: `Bad request: ${message}`,
+      message,
     }),
   };
-};
+}
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError(message) {
   return {
     statusCode: 401,
     headers: {
@@ -40,7 +40,7 @@ export const unauthorizedError = (message) => {
       message: `Authorization failed: ${message}`,
     }),
   };
-};
+}
 
 export const internalServerError = {
   statusCode: 500,
@@ -51,4 +51,3 @@ export const internalServerError = {
     message: `Something went wrong on our end. Please try again later or contact stephenwdean@gmail.com.`,
   }),
 };
-

@@ -26,22 +26,14 @@ export default function Preferences() {
   const debounceTimerRef = useRef(null);
   const shouldSendUpdate = useRef(false);
 
-  const handleDialogOpen = () => {
-    setDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
-
   useEffect(() => {
     checkUserPreferences();
 
-    const storageListener = (changes, namespace) => {
+    function storageListener(changes, namespace) {
       if (namespace === "local" && changes.userInfo) {
         checkUserPreferences();
       }
-    };
+    }
     chrome.storage.onChanged.addListener(storageListener);
 
     return () => {
@@ -56,7 +48,7 @@ export default function Preferences() {
     submitPreferences();
   }, [userPrefs]);
 
-  const checkUserPreferences = async () => {
+  async function checkUserPreferences() {
     try {
       const userInfo = (await chrome.storage.local.get("userInfo")).userInfo;
       setLoggedIn(!!userInfo.id);
@@ -83,54 +75,9 @@ export default function Preferences() {
     } catch (error) {
       console.error("Error checking user preferences:", error);
     }
-  };
+  }
 
-  const toggleCourseTracking = (event) => {
-    setUserPrefs((prev) => ({
-      ...prev,
-      courseTracking: event.target.checked,
-    }));
-    shouldSendUpdate.current = true;
-  };
-
-  const toggleShowRatings = (event) => {
-    setUserPrefs((prev) => ({
-      ...prev,
-      showRatings: event.target.checked,
-    }));
-    shouldSendUpdate.current = true;
-  };
-
-  const handleDifficultyPreferenceChange = (newValue) => {
-    setUserPrefs((prev) => ({
-      ...prev,
-      difficulty: newValue,
-    }));
-    shouldSendUpdate.current = true;
-  };
-
-  const handleTimePreferenceChange = (newValue) => {
-    setUserPrefs((prev) => ({
-      ...prev,
-      preferredSectionTimeRange: {
-        ...newValue,
-      },
-    }));
-    shouldSendUpdate.current = true;
-  };
-
-  const handlePercentagePreferenceChange = (newValue) => {
-    setUserPrefs((prev) => ({
-      ...prev,
-      scoreWeighting: {
-        scuEvals: newValue[0],
-        rmp: 100 - newValue[0],
-      },
-    }));
-    shouldSendUpdate.current = true;
-  };
-
-  const submitPreferences = () => {
+  function submitPreferences() {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -152,7 +99,60 @@ export default function Preferences() {
         } else setErrorMessage(null);
       });
     }, 500);
-  };
+  }
+
+  function toggleCourseTracking(event) {
+    setUserPrefs((prev) => ({
+      ...prev,
+      courseTracking: event.target.checked,
+    }));
+    shouldSendUpdate.current = true;
+  }
+
+  function toggleShowRatings(event) {
+    setUserPrefs((prev) => ({
+      ...prev,
+      showRatings: event.target.checked,
+    }));
+    shouldSendUpdate.current = true;
+  }
+
+  function handleDifficultyPreferenceChange(newValue) {
+    setUserPrefs((prev) => ({
+      ...prev,
+      difficulty: newValue,
+    }));
+    shouldSendUpdate.current = true;
+  }
+
+  function handleTimePreferenceChange(newValue) {
+    setUserPrefs((prev) => ({
+      ...prev,
+      preferredSectionTimeRange: {
+        ...newValue,
+      },
+    }));
+    shouldSendUpdate.current = true;
+  }
+
+  function handlePercentagePreferenceChange(newValue) {
+    setUserPrefs((prev) => ({
+      ...prev,
+      scoreWeighting: {
+        scuEvals: newValue[0],
+        rmp: 100 - newValue[0],
+      },
+    }));
+    shouldSendUpdate.current = true;
+  }
+
+  function handleDialogOpen() {
+    setDialogOpen(true);
+  }
+
+  function handleDialogClose() {
+    setDialogOpen(false);
+  }
 
   return (
     userPrefs && (

@@ -40,7 +40,7 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
     setActiveMenu("main");
   }, []);
 
-  const handleClose = () => {
+  function handleClose () {
     window.close();
   };
 

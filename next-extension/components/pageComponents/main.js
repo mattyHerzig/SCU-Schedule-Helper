@@ -3,14 +3,14 @@ import { Box, Typography } from "@mui/material";
 import ProfCourseSearch from "../queryComponents/ProfCourseSearch";
 import AuthWrapper from "./authWrapper";
 
-export default function Main({ navigateToPage }) {
+export default function Main({}) {
   const boxRef = useRef(null);
 
-  const scrollToTop = () => {
+  function scrollToTop() {
     if (boxRef.current) {
       boxRef.current.parentElement.scrollTo(0, 0);
     }
-  };
+  }
 
   return (
     <AuthWrapper>

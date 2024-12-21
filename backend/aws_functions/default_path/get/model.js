@@ -10,11 +10,11 @@ export const defaultResponse = {
   body: apiDocs.toString(),
 };
 
-export const unsupportedMethodError = (resource, method) => {
+export function unsupportedMethodError(resource, method) {
   return {
     statusCode: 405,
     body: JSON.stringify({
       message: `Resource "${resource}" does not support the ${method} method.`,
     }),
   };
-};
+}

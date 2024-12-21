@@ -24,11 +24,11 @@ export default function Profile() {
   const [currentAction, setCurrentAction] = useState(null);
 
   useEffect(() => {
-    const storageListener = (changes, namespace) => {
+    function storageListener(changes, namespace) {
       if (namespace === "local" && changes.userInfo) {
         checkUserInfo();
       }
-    };
+    }
     chrome.storage.onChanged.addListener(storageListener);
     checkUserInfo();
     return () => {
@@ -36,7 +36,7 @@ export default function Profile() {
     };
   }, []);
 
-  const checkUserInfo = async () => {
+  async function checkUserInfo() {
     try {
       const data = await chrome.storage.local.get("userInfo");
       setUserInfo(data.userInfo || null);
@@ -44,9 +44,9 @@ export default function Profile() {
       console.error("Error checking user info:", error);
       setUserInfo(null);
     }
-  };
+  }
 
-  const signOut = async () => {
+  async function signOut() {
     try {
       await chrome.runtime.sendMessage("signOut");
     } catch (error) {
@@ -56,9 +56,9 @@ export default function Profile() {
         "error",
       );
     }
-  };
+  }
 
-  const deleteAccount = async () => {
+  async function deleteAccount() {
     try {
       const errorMessage = await chrome.runtime.sendMessage("deleteAccount");
       if (errorMessage) {
@@ -70,9 +70,9 @@ export default function Profile() {
         "error",
       );
     }
-  };
+  }
 
-  const importCurrentCourses = async () => {
+  async function importCurrentCourses() {
     try {
       const errorMessage = await chrome.runtime.sendMessage(
         "importCurrentCourses",
@@ -87,9 +87,9 @@ export default function Profile() {
         "error",
       );
     }
-  };
+  }
 
-  const importCourseHistory = async () => {
+  async function importCourseHistory() {
     try {
       const errorMessage = await chrome.runtime.sendMessage(
         "importCourseHistory",
@@ -104,9 +104,9 @@ export default function Profile() {
         "error",
       );
     }
-  };
+  }
 
-  const deleteCourseHistory = async () => {
+  async function deleteCourseHistory() {
     try {
       const errorMessage =
         await chrome.runtime.sendMessage("clearCourseHistory");
@@ -125,28 +125,28 @@ export default function Profile() {
         "error",
       );
     }
-  };
+  }
 
-  const handleOpenDialog = () => {
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const handleConfirmDeleteAccount = async () => {
+  async function handleConfirmDeleteAccount() {
     await deleteAccount();
     setOpenDialog(false);
-  };
+  }
 
-  const handleActionCompleted = (message, type) => {
+  function handleActionCompleted(message, type) {
     setCurrentAction({
       message,
       type,
     });
     setShowActionCompletedMessage(true);
-  };
+  }
+
+  function handleOpenDialog() {
+    setOpenDialog(true);
+  }
+
+  function handleCloseDialog() {
+    setOpenDialog(false);
+  }
 
   return (
     <AuthWrapper>

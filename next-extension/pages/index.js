@@ -9,13 +9,15 @@ import Profile from "../components/pageComponents/profile";
 export default function Home() {
   const [activePage, setActivePage] = useState("main");
 
-  const navigateToPage = (page) => {
+  function navigateToPage(page) {
     setActivePage(page);
-  };
+  }
 
-  const openLandingPage = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("landing_page/index.html") });
-  };
+  function openLandingPage() {
+    chrome.tabs.create({
+      url: chrome.runtime.getURL("landing_page/index.html"),
+    });
+  }
 
   useEffect(() => {
     chrome.runtime.sendMessage("runStartupChecks");
@@ -24,12 +26,12 @@ export default function Home() {
   return (
     <Box
       sx={{
-        width: '450px',
-        height: '500px',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative',
+        width: "450px",
+        height: "500px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
       <Menu navigateToPage={navigateToPage} openLandingPage={openLandingPage} />
@@ -40,20 +42,14 @@ export default function Home() {
           overflowY: "auto",
           overflowX: "hidden",
           width: "100%",
-          position: 'relative',
-          paddingBottom: '20px', 
+          position: "relative",
+          paddingBottom: "20px",
         }}
       >
-        {activePage === "main" && <Main navigateToPage={navigateToPage} />}
-        {activePage === "preferences" && (
-          <Preferences navigateToPage={navigateToPage} />
-        )}
-        {activePage === "friends" && (
-          <Friends navigateToPage={navigateToPage} />
-        )}
-        {activePage === "profile" && (
-          <Profile navigateToPage={navigateToPage} />
-        )}
+        {activePage === "main" && <Main />}
+        {activePage === "preferences" && <Preferences />}
+        {activePage === "friends" && <Friends />}
+        {activePage === "profile" && <Profile />}
       </Box>
     </Box>
   );

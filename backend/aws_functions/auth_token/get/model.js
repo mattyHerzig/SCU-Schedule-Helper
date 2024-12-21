@@ -15,7 +15,7 @@ export class OAuthInfo {
   }
 }
 
-export const validResponse = (response) => {
+export function validResponse(response) {
   return {
     statusCode: 200,
     headers: {
@@ -23,9 +23,9 @@ export const validResponse = (response) => {
     },
     body: JSON.stringify(response),
   };
-};
+}
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError(message) {
   return {
     statusCode: 401,
     headers: {
@@ -35,4 +35,4 @@ export const unauthorizedError = (message) => {
       message: `Authorization failed: ${message}`,
     }),
   };
-};
+}

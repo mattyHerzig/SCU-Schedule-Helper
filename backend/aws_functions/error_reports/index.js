@@ -17,7 +17,7 @@ const reportSubject = process.env.REPORT_SUBJECT;
 const cwlClient = new CloudWatchLogsClient({ region });
 const snsClient = new SNSClient({ region });
 
-export const handler = async (event) => {
+export async function handler(event) {
   const requestParams = {
     metricName,
     metricNamespace,
@@ -32,7 +32,7 @@ export const handler = async (event) => {
   } catch (err) {
     console.error("Error fetching metric filters:", err);
   }
-};
+}
 
 async function getLogsAndPublishToSNS(metricFilterData) {
   try {
@@ -66,11 +66,11 @@ async function getLogsAndPublishToSNS(metricFilterData) {
 
 function generateSNSContent(events) {
   let logData = "Logs:\n\n";
-  events.forEach((event) => {
+  for (const event of events) {
     logData += `Function: ${event.logGroupName}\n`;
     logData += `Log stream: ${event.logStreamName}\n`;
     logData += `Message: ${event.message}\n\n`;
-  });
+  }
 
   const date = new Date();
   const text = `

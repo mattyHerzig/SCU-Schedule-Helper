@@ -55,7 +55,7 @@ export class UserPreferences {
   }
 }
 
-export const validResponse = (response) => {
+export function validResponse (response) {
   return {
     statusCode: 200,
     headers: {
@@ -65,7 +65,7 @@ export const validResponse = (response) => {
   };
 };
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError (message) {
   return {
     statusCode: 401,
     headers: {
@@ -77,7 +77,7 @@ export const unauthorizedError = (message) => {
   };
 };
 
-export const notFoundError = (error) => {
+export function notFoundError (error) {
   return {
     statusCode: 404,
     headers: {

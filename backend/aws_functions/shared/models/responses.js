@@ -11,7 +11,7 @@ export const defaultResponse = {
 <h1 style="text-align:center;"><span style="color:hsl( 352, 56%, 34% );font-family:Verdana, Geneva, sans-serif;"><strong>SCU</strong></span><span style="font-family:Verdana, Geneva, sans-serif;"><strong> </strong></span><span style="color:#212121;font-family:Verdana, Geneva, sans-serif;"><strong>Schedule Helper</strong></span></h1>`,
 };
 
-export const validResponse = (response) => {
+export function validResponse (response) {
   return {
     statusCode: 200,
     headers: {
@@ -21,7 +21,7 @@ export const validResponse = (response) => {
   };
 };
 
-export const badRequestResponse = (message) => {
+export function badRequestResponse (message) {
   return {
     statusCode: 400,
     headers: {
@@ -33,7 +33,7 @@ export const badRequestResponse = (message) => {
   };
 };
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError (message) {
   return {
     statusCode: 401,
     headers: {
@@ -45,7 +45,7 @@ export const unauthorizedError = (message) => {
   };
 };
 
-export const resourceNotFoundError = (resource) => {
+export function resourceNotFoundError (resource) {
   return {
     statusCode: 404,
     headers: {

@@ -12,7 +12,7 @@ export default function UserSearch({ handleActionCompleted }) {
   const [users, setUsers] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  const searchUsersByName = async (name) => {
+  async function searchUsersByName(name) {
     if (!name || name.length < 1) {
       setUsers([]);
       return;
@@ -24,6 +24,7 @@ export default function UserSearch({ handleActionCompleted }) {
         name: name,
       });
       if (typeof foundUsers === "string") {
+        console.error("Error searching users:", foundUsers);
         handleActionCompleted(foundUsers, "error");
         setUsers([]);
       } else setUsers(foundUsers || []);
@@ -37,11 +38,10 @@ export default function UserSearch({ handleActionCompleted }) {
     } finally {
       setSearchLoading(false);
     }
-  };
+  }
 
-  const sendFriendRequest = async () => {
+  async function sendFriendRequest() {
     if (!selectedUser) return;
-
     const message = {
       type: "updateUser",
       updateItems: {
@@ -65,7 +65,7 @@ export default function UserSearch({ handleActionCompleted }) {
         "error",
       );
     }
-  };
+  }
 
   return (
     <>

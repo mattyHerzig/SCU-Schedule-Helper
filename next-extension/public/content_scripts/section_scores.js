@@ -189,7 +189,7 @@ async function displayProfessorDifficulty(
   });
 }
 
-const getCourseEvalAvgMetric = (rating) => {
+function getCourseEvalAvgMetric(rating) {
   if (
     !rating ||
     !rating.qualityTotal ||
@@ -205,7 +205,7 @@ const getCourseEvalAvgMetric = (rating) => {
     courseEvalDifficulty: rating.difficultyTotal / rating.difficultyCount,
     courseEvalWorkload: rating.workloadTotal / rating.workloadCount,
   };
-};
+}
 
 function calcOverallScore(scores) {
   let { scuEvals = 50, rmp = 50 } = userInfo.preferences.scoreWeighting || {};
@@ -362,7 +362,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
   friendsTaken.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsTaken.length}</span> Friends Taken
+                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsTaken.length}</span> ${(ratingInfo.friendsTaken.length === 1 && "Friend") || "Friends"} Took
               </div>
             </div>
           `;
@@ -396,7 +396,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
   friendsInterested.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsInterested.length}</span> Friends Interested
+                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsInterested.length}</span> ${(ratingInfo.friendsInterested.length === 1 && "Friend") || "Friends"} Interested
               </div>
             </div>
           `;

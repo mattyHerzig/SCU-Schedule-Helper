@@ -11,97 +11,23 @@ import {
 } from "@mui/material";
 import { ExpandMore, Check, Close } from "@mui/icons-material";
 
-const transformUserToCourses = (user) => {
-  const transformCourses = (courseList, type) => {
-    return courseList
-      .map((encodedCourseCode) => {
-        const courseMatch = encodedCourseCode.match(/P{(.*?)}C{(.*?)}T{(.*?)}/);
-        if (!courseMatch) return null;
-        const indexOfDash = courseMatch[2].indexOf("-");
-        let indexOfEnd = courseMatch[2].indexOf("(-)");
-        if (indexOfEnd === -1) indexOfEnd = courseMatch[2].length;
-        const courseCode = courseMatch[2]
-          .substring(0, indexOfDash)
-          .replace(" ", "");
-        const professor = courseMatch[1];
-        const courseName = courseMatch[2]
-          .substring(indexOfDash + 1, indexOfEnd)
-          .trim();
-
-        return {
-          courseCode,
-          courseName,
-          professor: professor,
-        };
-      })
-      .filter((course) => course !== null);
-  };
-
-  return {
-    taken: transformCourses(user.coursesTaken || [], "taken"),
-    interested: transformCourses(user.interestedSections || [], "interested"),
-  };
-};
-
 export default function RequestsAccordion({
   requestsIn = [],
   requestsOut = [],
   handleActionCompleted = (action, type) => {},
 }) {
-  const [transformedRequestsIn, setTransformedRequestsIn] =
-    useState(requestsIn);
-  const [transformedRequestsOut, setTransformedRequestsOut] =
-    useState(requestsOut);
-
   const [requestsInExpanded, setRequestsInExpanded] = useState(
     requestsIn.length > 0,
   );
   const [requestsOutExpanded, setRequestsOutExpanded] = useState(false);
 
   useEffect(() => {
-    setTransformedRequestsIn(
-      requestsIn.map((request) => ({
-        ...request,
-        type: "incoming",
-        expanded: false,
-        courses: transformUserToCourses(request),
-      })),
-    );
-    setTransformedRequestsOut(
-      requestsOut.map((request) => ({
-        ...request,
-        expanded: false,
-        type: "outgoing",
-        courses: transformUserToCourses(request),
-      })),
-    );
     if (requestsIn.length > 0) setRequestsInExpanded(true);
     if (requestsIn.length === 0) setRequestsInExpanded(false);
     if (requestsOut.length === 0) setRequestsOutExpanded(false);
   }, [requestsIn, requestsOut]);
 
-  const handleAccordionChange = (curReq, expanded) => {
-    const transformedRequests =
-      curReq.type === "incoming"
-        ? transformedRequestsIn
-        : transformedRequestsOut;
-    const setter =
-      curReq.type === "incoming"
-        ? setTransformedRequestsIn
-        : setTransformedRequestsOut;
-    setter(
-      transformedRequests.map(
-        (request) =>
-          (request.id === curReq.id && {
-            ...request,
-            expanded,
-          }) ||
-          request,
-      ),
-    );
-  };
-
-  const handleAcceptRequest = async (event, request) => {
+  async function handleAcceptRequest (event, request) {
     event.stopPropagation();
     try {
       const updateResponse = await chrome.runtime.sendMessage({
@@ -120,10 +46,9 @@ export default function RequestsAccordion({
     }
   };
 
-  const handleRejectRequest = async (event, request) => {
+  async function handleRejectRequest (event, request, requestType) {
     event.stopPropagation();
-    const key =
-      request.type == "incoming" ? "removeIncoming" : "removeOutgoing";
+    const key = requestType == "incoming" ? "removeIncoming" : "removeOutgoing";
     try {
       const updateResponse = await chrome.runtime.sendMessage({
         type: "updateUser",
@@ -178,13 +103,9 @@ export default function RequestsAccordion({
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          {transformedRequestsIn.map((request) => (
+          {requestsIn.map((request) => (
             <Accordion
               key={request.id}
-              expanded={request.expanded}
-              onChange={(event, expanded) =>
-                handleAccordionChange(request, expanded)
-              }
               sx={{
                 mb: 1,
                 "&:before": {
@@ -235,7 +156,9 @@ export default function RequestsAccordion({
                     </IconButton>
                     <IconButton
                       size="small"
-                      onClick={(e) => handleRejectRequest(e, request)}
+                      onClick={(e) =>
+                        handleRejectRequest(e, request, "incoming")
+                      }
                       sx={{
                         color: "error.main",
                         "&:hover": {
@@ -297,13 +220,9 @@ export default function RequestsAccordion({
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          {transformedRequestsOut.map((request) => (
+          {requestsOut.map((request) => (
             <Accordion
               key={request.id}
-              expanded={request.expanded}
-              onChange={(event, expanded) =>
-                handleAccordionChange(request, expanded)
-              }
               sx={{
                 mb: 1,
                 "&:before": {
@@ -341,7 +260,9 @@ export default function RequestsAccordion({
                   <Stack direction="row" spacing={1}>
                     <IconButton
                       size="small"
-                      onClick={(e) => handleRejectRequest(e, request)}
+                      onClick={(e) =>
+                        handleRejectRequest(e, request, "outgoing")
+                      }
                       sx={{
                         color: "error.main",
                         "&:hover": {

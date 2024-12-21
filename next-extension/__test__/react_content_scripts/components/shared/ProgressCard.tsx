@@ -37,6 +37,15 @@ export default function ProgressCard({
         >
           {title}
         </Typography>
+        <Typography
+          variant="h6"
+          fontSize="1rem"
+          marginBottom="0.3rem"
+          color="textPrimary"
+          textAlign={"center"}
+        >
+          Please do not scroll.
+        </Typography>
         <Box sx={{ minWidth: 35 }}>
           <Typography variant="body2" textAlign="center" color="text.primary">
             {progressMessage}

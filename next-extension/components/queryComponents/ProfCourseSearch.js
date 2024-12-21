@@ -37,7 +37,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
     });
   }, []);
 
-  const checkEvals = async () => {
+  async function checkEvals () {
     try {
       setIsLoading(true);
       const data = await chrome.storage.local.get([
@@ -53,7 +53,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
     }
   };
 
-  const retryDownload = async () => {
+  async function retryDownload () {
     try {
       const errorMessage = await chrome.runtime.sendMessage("downloadEvals");
       if (errorMessage) onError(errorMessage);
@@ -63,7 +63,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
     }
   };
 
-  const onError = (message) => {
+  function onError (message) {
     setError(message);
     setShowActionCompletedMessage(true);
   };
@@ -110,7 +110,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
     );
   }, [allOptions, searchQuery]);
 
-  const onPageNavigation = (newPageKey) => {
+  function onPageNavigation (newPageKey) {
     setSelected((prev) => {
       const newPageData = evalsData[newPageKey];
       if (newPageData.type === "prof") {
@@ -142,7 +142,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
     );
   }
 
-  const handleSearchChange = (event) => {
+  function handleSearchChange (event) {
     setSearchQuery(event.target.value);
   };
 

@@ -62,7 +62,7 @@ export default function FriendCoursesTooltip({ friendData }) {
               {friendData.friendTakenInfos.length === 1
                 ? "friend "
                 : "friends "}
-              taken
+              took
             </Typography>
           </Tooltip>
         </Box>

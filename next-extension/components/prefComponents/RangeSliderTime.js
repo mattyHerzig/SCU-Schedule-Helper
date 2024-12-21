@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, Slider, createTheme, ThemeProvider } from "@mui/material";
 
-const generateMarks = (startHour, endHour) => {
+function generateMarks (startHour, endHour) {
   const marks = [];
   // Generate marks for every 15 minutes
   for (let i = 0; i <= (endHour - startHour) * 4; i++) {
@@ -77,11 +77,11 @@ export default function RangeSliderTime({ initValue, onChangeCommitted }) {
     setValue(getValuesFromTimeRange(initValue));
   }, [initValue]);
 
-  const handleChange = (event, newValue) => {
+  function handleChange (event, newValue) {
     setValue(newValue);
   };
 
-  const handleChangeCommitted = (event, newValue) => {
+  function handleChangeCommitted (event, newValue) {
     if (onChangeCommitted) {
       onChangeCommitted(getSectionTimeRange(newValue));
     }

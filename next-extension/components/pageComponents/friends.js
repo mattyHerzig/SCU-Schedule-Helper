@@ -14,7 +14,7 @@ export default function Friends() {
   const [currentAction, setCurrentAction] = useState(null);
 
   useEffect(() => {
-    const fetchFriendData = async () => {
+    async function fetchFriendData () {
       try {
         let { friendRequestsIn, friendRequestsOut, friends } =
           await chrome.storage.local.get([
@@ -47,7 +47,7 @@ export default function Friends() {
     });
   }, []);
 
-  const handleActionCompleted = (action, type) => {
+  function handleActionCompleted (action, type) {
     setCurrentAction({
       message: action,
       type,

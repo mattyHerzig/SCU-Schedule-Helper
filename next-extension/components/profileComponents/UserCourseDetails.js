@@ -9,8 +9,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CourseDetailsCard from "../utils/CourseDetailsCard";
 import {
   mostRecentTermFirst,
-  transformInterestedSections,
-  transformTakenCourses,
+  parseInterestedSections,
+  parseTakenCourses,
 } from "../utils/user";
 
 export default function UserCourseDetails() {
@@ -24,11 +24,8 @@ export default function UserCourseDetails() {
   });
 
   useEffect(() => {
-    // Function to transform interested sections
-    const transformedSections = transformInterestedSections(
-      userCourses.interested,
-    );
-    const transformedCourses = transformTakenCourses(userCourses.taken).sort(
+    const transformedSections = parseInterestedSections(userCourses.interested);
+    const transformedCourses = parseTakenCourses(userCourses.taken).sort(
       mostRecentTermFirst,
     );
     setTransformedUserCourses({
@@ -38,7 +35,7 @@ export default function UserCourseDetails() {
   }, [userCourses]);
 
   useEffect(() => {
-    const fetchUserCourses = async () => {
+    async function fetchUserCourses() {
       try {
         const { userInfo } = await chrome.storage.local.get("userInfo");
 
@@ -56,7 +53,7 @@ export default function UserCourseDetails() {
       } catch (error) {
         console.error("Error fetching user courses:", error);
       }
-    };
+    }
 
     fetchUserCourses();
     chrome.storage.onChanged.addListener((changes, namespace) => {

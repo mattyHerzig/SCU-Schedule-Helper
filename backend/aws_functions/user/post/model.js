@@ -25,7 +25,7 @@ export class CreatedUserResponse {
   }
 }
 
-export const validResponse = (response) => {
+export function validResponse (response) {
   return {
     statusCode: 200,
     headers: {
@@ -35,7 +35,7 @@ export const validResponse = (response) => {
   };
 };
 
-export const createdResponse = (response) => {
+export function createdResponse (response) {
   return {
     statusCode: 201,
     headers: {
@@ -45,7 +45,7 @@ export const createdResponse = (response) => {
   };
 };
 
-export const badRequestResponse = (message) => {
+export function badRequestResponse (message) {
   return {
     statusCode: 400,
     headers: {
@@ -57,7 +57,7 @@ export const badRequestResponse = (message) => {
   };
 };
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError (message) {
   return {
     statusCode: 401,
     headers: {

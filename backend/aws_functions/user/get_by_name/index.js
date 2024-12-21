@@ -23,7 +23,7 @@ const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 async function handleGetUserByNameRequest(event, context, userId) {
   const nameQueryParam = event.queryStringParameters?.name;
   if (!nameQueryParam) {
-    return badRequestError(`missing required query parameter 'name'.`);
+    return badRequestError(`Missing required query parameter 'name'.`);
   }
   const caseInsensitiveName = nameQueryParam.toLowerCase();
   const nameIndexQuery = await dynamoClient.send(

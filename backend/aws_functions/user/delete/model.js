@@ -3,7 +3,7 @@ export const noContentValidResponse = {
   headers: {},
 };
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError (message) {
   return {
     statusCode: 401,
     headers: {
@@ -15,7 +15,7 @@ export const unauthorizedError = (message) => {
   };
 };
 
-export const notFoundError = (message) => {
+export function notFoundError (message) {
   return {
     statusCode: 404,
     headers: {

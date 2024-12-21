@@ -33,11 +33,11 @@ export default function DifficultySlider({ initValue, onChangeCommitted }) {
     setSliderValue(initValue);
   }, [initValue]);
 
-  const handleChange = (event, newValue) => {
+  function handleChange (event, newValue) {
     setSliderValue(newValue);
   };
 
-  const handleChangeCommitted = (event, newValue) => {
+  function handleChangeCommitted (event, newValue) {
     if (onChangeCommitted) {
       onChangeCommitted(newValue);
     }

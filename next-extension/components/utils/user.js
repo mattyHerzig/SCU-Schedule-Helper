@@ -1,9 +1,9 @@
 /**
  * 
  * @param {*} interestedSections An object of interested sections from the userInfo object in Chrome storage.
- * @returns A transformed array of interested sections, that can be used for the interested courses accordion.
+ * @returns An array of interested section objects, that can be used for the interested courses accordion.
  */
-export function transformInterestedSections(interestedSections) {
+export function parseInterestedSections(interestedSections) {
   return Object.keys(interestedSections || {})
     .map((encodedCourse) => {
       const courseMatch = encodedCourse.match(/P{(.*?)}S{(.*?)}M{(.*?)}/);
@@ -43,11 +43,11 @@ export function transformInterestedSections(interestedSections) {
 
 /**
  * 
- * @param {*} coursesTaken A courses taken array from the userInfo object in Chrome storage.
- * @returns A transformed array of courses taken, that can be used for the courses taken accordion.
+ * @param {*} encodedCoursesTaken A courses taken string array from the userInfo object in Chrome storage.
+ * @returns An array of courses taken objects, that can be used for the courses taken accordion.
  */
-export function transformTakenCourses(coursesTaken) {
-  return coursesTaken
+export function parseTakenCourses(encodedCoursesTaken) {
+  return encodedCoursesTaken
     .map((encodedCourse) => {
       const courseMatch = encodedCourse.match(/P{(.*?)}C{(.*?)}T{(.*?)}/);
       if (!courseMatch) return null;

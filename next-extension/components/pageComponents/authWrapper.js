@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Alert, Box, Button, Snackbar, Typography } from "@mui/material";
 
-const AuthWrapper = ({ children }) => {
+export default function AuthWrapper({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -11,18 +11,18 @@ const AuthWrapper = ({ children }) => {
 
   useEffect(() => {
     checkAuthStatus();
-    const authListener = (changes, namespace) => {
+    function authListener(changes, namespace) {
       if (changes.accessToken) {
         checkAuthStatus();
       }
-    };
+    }
     chrome.storage.onChanged.addListener(authListener);
     return () => {
       chrome.storage.onChanged.removeListener(authListener);
     };
   }, []);
 
-  const checkAuthStatus = async () => {
+  async function checkAuthStatus() {
     setIsCheckingAuth(true);
     try {
       const accessToken = (await chrome.storage.sync.get("accessToken"))
@@ -35,9 +35,9 @@ const AuthWrapper = ({ children }) => {
       );
     }
     setIsCheckingAuth(false);
-  };
+  }
 
-  const handleSignIn = async () => {
+  async function handleSignIn() {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
@@ -49,18 +49,16 @@ const AuthWrapper = ({ children }) => {
     } finally {
       setIsLoggingIn(false);
     }
-  };
+  }
 
-  const onError = (message) => {
+  function onError(message) {
     setError(message);
     setShowActionCompletedMessage(true);
-  };
+  }
 
   if (isCheckingAuth) {
     return <></>;
-  }
-  // If not logged in, show sign-in prompt
-  if (!isLoggedIn) {
+  } else if (!isLoggedIn) {
     return (
       <Box
         sx={{
@@ -109,8 +107,5 @@ const AuthWrapper = ({ children }) => {
       </Box>
     );
   }
-
   return <>{children}</>;
-};
-
-export default AuthWrapper;
+}

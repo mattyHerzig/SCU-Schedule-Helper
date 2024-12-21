@@ -21,7 +21,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
     setPhotoUrl(getUniquePhotoUrl(userInfo?.photoUrl));
   }, [userInfo]);
 
-  const handlePhotoChange = async (event) => {
+  async function handlePhotoChange (event) {
     if (!userInfo) return;
     const file = event.target.files[0];
     if (!file) return;
@@ -43,7 +43,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
     submitPersonal(compressedFile, null);
   };
 
-  const submitPersonal = async (photoFile, newName) => {
+  async function submitPersonal (photoFile, newName) {
     if (!userInfo) return;
 
     const message = {
@@ -85,18 +85,18 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
     }
   };
 
-  const handleNameChange = () => {
+  function handleNameChange () {
     if (!userInfo) return;
     submitPersonal(null, name);
   };
 
-  const cancelEditing = () => {
+  function cancelEditing () {
     if (!userInfo) return;
     setName(userInfo.name || "");
     setIsEditingName(false);
   };
 
-  const handleInputChange = (e) => {
+  function handleInputChange (e) {
     if (!userInfo) return;
     const newName = e.target.value;
     setName(newName);
