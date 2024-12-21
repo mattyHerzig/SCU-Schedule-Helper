@@ -102,12 +102,13 @@ export default function FriendsAccordion({
             aria-controls={`panel${friend.id}-content`}
             id={`panel${friend.id}-header`}
             sx={{
-              "& .MuiAccordionSummary-content": {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mr: 1,
-              },
+              "& .MuiAccordionSummary-content, & .MuiAccordionSummary-content.Mui-expanded":
+                {
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mr: 1,
+                },
             }}
           >
             <Stack

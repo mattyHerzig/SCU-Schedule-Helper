@@ -198,12 +198,13 @@ export default function RequestsAccordion({
                 aria-controls={`panel${request.id}-content`}
                 id={`panel${request.id}-header`}
                 sx={{
-                  "& .MuiAccordionSummary-content": {
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mr: 1,
-                  },
+                  "& .MuiAccordionSummary-content, & .MuiAccordionSummary-content.Mui-expanded":
+                    {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mr: 1,
+                    },
                 }}
               >
                 <Stack
@@ -266,7 +267,6 @@ export default function RequestsAccordion({
           ))}
         </AccordionDetails>
       </Accordion>
-
       <Accordion
         disableGutters
         expanded={requestsOutExpanded}
@@ -275,6 +275,9 @@ export default function RequestsAccordion({
           mb: 2,
           "&:before": {
             display: "none",
+          },
+          "&.Mui-expanded:last-of-type": {
+            mb: 2,
           },
         }}
       >
@@ -314,12 +317,13 @@ export default function RequestsAccordion({
                 aria-controls={`panel${request.id}-content`}
                 id={`panel${request.id}-header`}
                 sx={{
-                  "& .MuiAccordionSummary-content": {
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    mr: 1,
-                  },
+                  "& .MuiAccordionSummary-content, & .MuiAccordionSummary-content.Mui-expanded":
+                    {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mr: 1,
+                    },
                 }}
               >
                 <Stack

@@ -54,22 +54,13 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     const getRMPrating = async () => {
       setIsLoadingRmp(true);
       try {
-        const rmpRating = await new Promise((resolve, reject) => {
-          chrome.runtime.sendMessage(
-            { type: "getRmpRatings", profName: selected.id },
-            (response) => {
-              if (chrome.runtime.lastError || !response) {
-                reject(new Error("Failed to fetch RMP data"));
-              } else {
-                resolve(response);
-              }
-            },
-          );
+        const rmpRating = await chrome.runtime.sendMessage({
+          type: "getRmpRatings",
+          profName: selected.id,
         });
 
         setRmpData(rmpRating);
       } catch (error) {
-        console.error("Detailed error fetching RMP ratings:", error);
         setRmpData(null);
       }
       setIsLoadingRmp(false);
