@@ -138,7 +138,12 @@ export default function FriendsAccordion({
               </IconButton>
             </Stack>
           </AccordionSummary>
-          <AccordionDetails>
+          <AccordionDetails
+            sx={{
+              maxHeight: "10rem",
+              overflowY: "auto",
+            }}
+          >
             <Box>
               <Typography variant="body2" sx={{ mb: 2 }}>
                 Email: {friend.email}
