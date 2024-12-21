@@ -24,6 +24,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
       try {
         const { friendRequestsIn } =
           await chrome.storage.local.get("friendRequestsIn");
+        if (!friendRequestsIn) return;
         setFriendNotificationCount(Object.values(friendRequestsIn).length);
       } catch (error) {
         console.error("Error fetching friend data:", error);
