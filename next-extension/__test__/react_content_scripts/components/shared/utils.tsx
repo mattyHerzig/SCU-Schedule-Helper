@@ -56,7 +56,9 @@ export function selectAllByTextContent<Type extends HTMLElement>(
   );
 }
 
-export async function updateUserCourseData(results: CourseData[]) {
+export async function updateUserCourseData(
+  results: CourseData[],
+) {
   const payload = {
     coursesTaken: {
       add: formatResults(results),

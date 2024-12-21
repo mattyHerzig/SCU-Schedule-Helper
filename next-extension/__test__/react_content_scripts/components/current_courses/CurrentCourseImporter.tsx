@@ -16,6 +16,22 @@ export default function CurrentCourseImporter({
   );
   const [progressNumerator, setProgressNumerator] = useState(0);
   const [progressDenominator, setProgressDenominator] = useState(0);
+  let updatingProfileTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Because React state updates are asynchronous, the call to incrementProgressNumerator
+    // could overwrite the "update profile" message. Thus, we need this effect to ensure it gets displayed.
+    // The timer is needed so that it doesn't overwrite the "Successfully imported courses" message.
+    const lastMessage = `Processing course ${getRelevantRowCount()}/${getRelevantRowCount()}`;
+    if (progressMessage === "Successfully imported courses.") {
+      clearTimeout(updatingProfileTimerRef.current ?? undefined);
+    }
+    if (progressMessage === lastMessage) {
+      updatingProfileTimerRef.current = setTimeout(() => {
+        setProgressMessage("Updating profile...");
+      }, 200);
+    }
+  }, [progressNumerator]);
 
   useEffect(() => {
     let lastTableCount = 0;
@@ -27,25 +43,25 @@ export default function CurrentCourseImporter({
         if (tableCountStable) {
           clearInterval(tableCountInterval);
           let totalRows = getRelevantRowCount();
-          let totalProgress = totalRows + Math.floor(totalRows / 10); // Account for the backend processing time.
+          let totalProgress =
+            totalRows + Math.max(1, Math.floor(totalRows / 10)); // Account for the backend processing time.
           setProgressDenominator(totalProgress);
           setProgressMessage(`Processing course 0/${totalRows}`);
-          processAllTables(
-            () => incrementProgressNumerator(totalRows),
-            setProgressMessage,
-          ).then((error) => {
-            if (error) {
-              setProgressMessage(error);
-              sendResponse(error);
-            } else {
-              setProgressNumerator(totalProgress);
-              setProgressMessage("Successfully imported courses.");
-              sendResponse("Successfully imported courses.");
-              setTimeout(() => {
-                setShouldImport(false);
-              }, 1000);
-            }
-          });
+          processAllTables(() => incrementProgressNumerator(totalRows)).then(
+            (error) => {
+              if (error) {
+                setProgressMessage(error);
+                sendResponse(error);
+              } else {
+                setProgressNumerator(totalProgress);
+                setProgressMessage("Successfully imported courses.");
+                sendResponse("Successfully imported courses.");
+                setTimeout(() => {
+                  setShouldImport(false);
+                }, 1000);
+              }
+            },
+          );
         } else {
           tableCountStable = true;
         }
@@ -78,10 +94,7 @@ export default function CurrentCourseImporter({
   );
 }
 
-async function processAllTables(
-  incrementProgressNumerator: () => void,
-  setProgressMessage: (message: string) => void,
-) {
+async function processAllTables(incrementProgressNumerator: () => void) {
   const relevantTables = getRelevantTables();
   const academicPeriods = getAcademicPeriods();
 
@@ -100,7 +113,6 @@ async function processAllTables(
       }
     }
   }
-  setProgressMessage("Uploading to profile...");
   return await updateUserCourseData(results);
 }
 

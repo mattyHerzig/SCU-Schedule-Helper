@@ -2,10 +2,13 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import CourseHistoryImporter from "../components/course_history/CourseHistoryImporter";
 
+let messageReceived = false;
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  if (message !== "importCourseHistory") {
+  if (message !== "importCourseHistory" || messageReceived) {
     return false;
   }
+  messageReceived = true;
   const courseImporter = document.createElement("div");
   courseImporter.id = "root";
 
@@ -20,9 +23,8 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
 
   root.render(
     <React.StrictMode>
-      <CourseHistoryImporter sendResponse={sendResponse}/>
+      <CourseHistoryImporter sendResponse={sendResponse} />
     </React.StrictMode>,
   );
   return true;
 });
-

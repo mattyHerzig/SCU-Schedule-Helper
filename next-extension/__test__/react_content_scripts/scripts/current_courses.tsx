@@ -2,10 +2,12 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import CurrentCourseImporter from "../components/current_courses/CurrentCourseImporter";
 
+let messageReceived = false;
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  if (message !== "importCurrentCourses") {
+  if (message !== "importCurrentCourses" || messageReceived) {
     return false;
   }
+  messageReceived = true;
   const courseImporter = document.createElement("div");
   courseImporter.id = "root";
 
@@ -20,7 +22,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
 
   root.render(
     <React.StrictMode>
-      <CurrentCourseImporter sendResponse={sendResponse}/>
+      <CurrentCourseImporter sendResponse={sendResponse} />
     </React.StrictMode>,
   );
   return true;

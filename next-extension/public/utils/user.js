@@ -430,6 +430,7 @@ async function openTabAndSendMessage(url, message) {
         return response;
       } catch (ignore) {}
     }
+    return true;
   };
   chrome.tabs.onUpdated.addListener(tabListener);
 }
