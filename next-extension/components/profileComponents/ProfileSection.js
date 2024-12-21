@@ -4,9 +4,9 @@ import { Edit } from "@mui/icons-material";
 import { compress } from "compress.js/src/compress.js";
 
 export default function ProfileSection({ userInfo, handleActionCompleted }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(userInfo?.name || "");
   const [photoUrl, setPhotoUrl] = useState(
-    getUniquePhotoUrl(null) 
+    getUniquePhotoUrl(userInfo?.photoUrl),
   );
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -17,15 +17,12 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
   }
 
   useEffect(() => {
-    if (userInfo) {
-      setName(userInfo.name || "");
-      setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
-    }
+    setName(userInfo?.name || "");
+    setPhotoUrl(getUniquePhotoUrl(userInfo?.photoUrl));
   }, [userInfo]);
 
   const handlePhotoChange = async (event) => {
     if (!userInfo) return;
-    
     const file = event.target.files[0];
     if (!file) return;
 
@@ -89,12 +86,12 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
   };
 
   const handleNameChange = () => {
-    if (!userInfo) return; 
+    if (!userInfo) return;
     submitPersonal(null, name);
   };
 
   const cancelEditing = () => {
-    if (!userInfo) return; 
+    if (!userInfo) return;
     setName(userInfo.name || "");
     setIsEditingName(false);
   };
@@ -108,7 +105,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
     }
   };
 
-  if (!userInfo) {
+  if (!userInfo?.id) {
     return (
       <Box sx={{ mb: 2 }}>
         <Typography variant="body1">Loading profile...</Typography>
@@ -183,7 +180,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
             variant="outlined"
             value={name}
             onChange={handleInputChange}
-            placeholder="Enter Name"
+            placeholder={"Enter Name"}
             sx={{
               width: "250px",
               "& .MuiOutlinedInput-root": {
