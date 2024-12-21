@@ -14,7 +14,7 @@ export default function Friends() {
   const [currentAction, setCurrentAction] = useState(null);
 
   useEffect(() => {
-    async function fetchFriendData () {
+    async function fetchFriendData() {
       try {
         let { friendRequestsIn, friendRequestsOut, friends } =
           await chrome.storage.local.get([
@@ -33,7 +33,7 @@ export default function Friends() {
       } catch (error) {
         console.error("Error fetching friend data:", error);
       }
-    };
+    }
 
     fetchFriendData();
     chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -47,13 +47,13 @@ export default function Friends() {
     });
   }, []);
 
-  function handleActionCompleted (action, type) {
+  function handleActionCompleted(action, type) {
     setCurrentAction({
       message: action,
       type,
     });
     setShowActionCompletedMessage(true);
-  };
+  }
 
   return (
     <AuthWrapper>

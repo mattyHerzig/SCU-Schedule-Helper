@@ -3,6 +3,7 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Button from "@mui/material/Button";
+import Badge from "@mui/material/Badge";
 import {
   Home,
   AccountCircle,
@@ -14,9 +15,28 @@ import {
 
 export const supportEmail = "swdean@scu.edu";
 
-export default function Menu({ navigateToPage, openLandingPage, onClose }) {
+export default function Menu({ navigateToPage, openLandingPage }) {
   const [activeMenu, setActiveMenu] = useState("main");
+  const [friendNotificationCount, setFriendNotificationCount] = useState(0);
 
+  useEffect(() => {
+    async function updateFriendNotificationCount() {
+      try {
+        const { friendRequestsIn } =
+          await chrome.storage.local.get("friendRequestsIn");
+        setFriendNotificationCount(Object.values(friendRequestsIn).length);
+      } catch (error) {
+        console.error("Error fetching friend data:", error);
+      }
+    }
+
+    updateFriendNotificationCount();
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === "local" && changes.friendRequestsIn) {
+        updateFriendNotificationCount();
+      }
+    });
+  }, []);
   const menuItems = [
     { icon: <Search />, id: "main", action: () => navigateToPage("main") },
     {
@@ -40,9 +60,9 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
     setActiveMenu("main");
   }, []);
 
-  function handleClose () {
+  function handleClose() {
     window.close();
-  };
+  }
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -186,14 +206,38 @@ export default function Menu({ navigateToPage, openLandingPage, onClose }) {
                 }}
                 className={activeMenu === item.id ? "active" : ""}
               >
-                {React.cloneElement(item.icon, {
-                  className: "menu-icon",
-                  sx: {
-                    fontSize: 24,
-                    color: activeMenu === item.id ? "#703331" : "#d1d1d1",
-                    transition: "color 0.3s",
-                  },
-                })}
+                {item.id === "friends" ? (
+                  <Badge
+                    badgeContent={friendNotificationCount}
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        fontSize: 10,
+                        height: 15,
+                        minWidth: 15,
+                        backgroundColor: "firebrick",
+                        color: "white",
+                      },
+                    }}
+                  >
+                    {React.cloneElement(item.icon, {
+                      className: "menu-icon",
+                      sx: {
+                        fontSize: 24,
+                        color: activeMenu === item.id ? "#703331" : "#d1d1d1",
+                        transition: "color 0.3s",
+                      },
+                    })}
+                  </Badge>
+                ) : (
+                  React.cloneElement(item.icon, {
+                    className: "menu-icon",
+                    sx: {
+                      fontSize: 24,
+                      color: activeMenu === item.id ? "#703331" : "#d1d1d1",
+                      transition: "color 0.3s",
+                    },
+                  })
+                )}
               </Button>
             ))}
           </Box>
