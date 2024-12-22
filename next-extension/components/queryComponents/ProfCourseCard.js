@@ -7,7 +7,6 @@ import {
   CircularProgress,
   Divider,
 } from "@mui/material";
-import "@fontsource/roboto/400.css";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
 import EvalStats from "./EvalStats";
 import RmpStats from "./RmpStats";

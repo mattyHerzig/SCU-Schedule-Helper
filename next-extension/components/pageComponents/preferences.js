@@ -10,7 +10,6 @@ import {
   Snackbar,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
-import AuthWrapper from "./authWrapper";
 import RangeSliderTime from "../prefComponents/RangeSliderTime";
 import PercentSlider from "../prefComponents/PercentSlider";
 import PreferencesDialog from "../prefComponents/PreferencesDialog";
@@ -162,7 +161,13 @@ export default function Preferences() {
             <Typography variant="h6" sx={{ textAlign: "center" }}>
               Course Preferences
             </Typography>
-            <IconButton onClick={handleDialogOpen} aria-label="info">
+            <IconButton
+              sx={{
+                ml: 0.5,
+              }}
+              onClick={handleDialogOpen}
+              aria-label="info"
+            >
               <InfoIcon fontSize="small" />
             </IconButton>
           </Stack>

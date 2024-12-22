@@ -1,15 +1,26 @@
-import { useRef } from "react";
-import { Box, Typography } from "@mui/material";
+import { useRef, useState } from "react";
+import { Box, Typography, IconButton } from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
 import ProfCourseSearch from "../queryComponents/ProfCourseSearch";
 import AuthWrapper from "./authWrapper";
+import QueryDialog from "../queryComponents/QueryDialog";
 
 export default function Main({}) {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const boxRef = useRef(null);
 
   function scrollToTop() {
     if (boxRef.current) {
       boxRef.current.parentElement.scrollTo(0, 0);
     }
+  }
+
+  function handleDialogOpen() {
+    setDialogOpen(true);
+  }
+
+  function handleDialogClose() {
+    setDialogOpen(false);
   }
 
   return (
@@ -24,8 +35,24 @@ export default function Main({}) {
             alignItems: "center",
           }}
         >
-          <Typography sx={{ mb: 3 }}>
-            Search Professor and Course Information:
+          <Typography
+            sx={{
+              mb: 3,
+              alignSelf: "flex-start ",
+              ml: "1.3rem",
+            }}
+            variant="h6"
+          >
+            Search Professor and Course Information
+            <IconButton
+              sx={{
+                ml: 0.5,
+              }}
+              onClick={handleDialogOpen}
+              aria-label="info"
+            >
+              <InfoIcon fontSize="small" />
+            </IconButton>
           </Typography>
 
           <Box sx={{ width: "100%", maxWidth: "420px" }}>
@@ -33,6 +60,7 @@ export default function Main({}) {
           </Box>
         </Box>
       </Box>
+      <QueryDialog open={dialogOpen} onClose={handleDialogClose} />
     </AuthWrapper>
   );
 }
