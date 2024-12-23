@@ -40,9 +40,8 @@ export default function CourseAccordion() {
   const [editingCourse, setEditingCourse] = useState(null);
   const [editedCourseName, setEditedCourseName] = useState("");
   const [editedProfessor, setEditedProfessor] = useState("");
-  const accordionDetailsRef = useRef(null);  // Added ref for scroll position
+  const accordionDetailsRef = useRef(null); 
 
-  // Function to preserve scroll position
   const preserveScroll = () => {
     if (accordionDetailsRef.current) {
       const currentScroll = accordionDetailsRef.current.scrollTop;
@@ -66,7 +65,6 @@ export default function CourseAccordion() {
     if (!editingCourse) return;
 
     try {
-      // First remove the old course
       const updateItems = {};
       if (editingCourse.type === "interested") {
         updateItems.interestedSections = {
@@ -83,13 +81,11 @@ export default function CourseAccordion() {
         updateItems,
       };
 
-      // Remove the old course first
       const removeResponse = await chrome.runtime.sendMessage(removeMessage);
       if (removeResponse && !removeResponse.ok) {
         throw new Error(removeResponse.message || "Failed to remove old course");
       }
 
-      // Then add the new course
       if (editingCourse.type === "interested") {
         await handleAddCourse(
           "interestedSections",
@@ -108,7 +104,6 @@ export default function CourseAccordion() {
         );
       }
 
-      // Update local state to remove the old course
       setUserCourses(prevState => {
         if (editingCourse.type === "interested") {
           const newInterested = { ...prevState.interested };
@@ -153,7 +148,7 @@ export default function CourseAccordion() {
           userInfo.coursesTaken = userInfo.coursesTaken.filter(course => course);
 
           setUserCourses({
-            interested: userInfo.interestedSections || {},
+            interested: userInfo.interestedSections?.M || {}, 
             taken: userInfo.coursesTaken || [],
           });
         }
@@ -171,7 +166,7 @@ export default function CourseAccordion() {
 
 
   const transformedCourses = {
-    interested: Object.keys(userCourses.interested || {}).map(section => {
+    interested: Object.entries(userCourses.interested?.M || {}).map(([section, value]) => {
       const matches = section.match(/P{(.+?)}S{(.+?)}M{(.+?)}/);
       if (matches) {
         const [_, professor, courseName, meetingTime] = matches;
@@ -179,7 +174,8 @@ export default function CourseAccordion() {
           professor,
           courseName,
           meetingTime,
-          originalString: section
+          originalString: section,
+          expirationDate: value.S  
         };
       }
       return null;
@@ -271,8 +267,15 @@ export default function CourseAccordion() {
     try {
       let courseIdentifier;
       if (courseType === "interestedSections") {
-        // Remove the meetingTime check and set it to null
-        courseIdentifier = `P{${selectedProfessor.label}}S{${selectedCourse.label}}M{null}`;
+        setUserCourses(prev => ({
+          ...prev,
+          interested: {
+            M: { 
+              ...prev.interested.M,
+              [courseIdentifier]: { S: new Date().toISOString() }
+            }
+          }
+        }));
       } else {
         if (!quarter) {
           setMessage("Please specify the quarter for taken courses.");
@@ -367,7 +370,7 @@ export default function CourseAccordion() {
           selectedCourse,
           selectedProfessor,
           null,
-          null  // Meeting time is now always null for interested sections
+          null 
         );
       } else {
         await handleAddCourse(
