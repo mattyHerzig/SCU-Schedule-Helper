@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Typography,
   Box,
@@ -18,7 +18,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { ExpandMore, Close } from "@mui/icons-material";
+import { Edit, Close, Add, ExpandMore} from "@mui/icons-material";
 import {
   mostRecentTermFirst,
   parseInterestedSections,
@@ -27,20 +27,122 @@ import {
 
 export default function CourseAccordion() {
   const [userCourses, setUserCourses] = useState({
-    interested: [],
+    interested: {},
     taken: [],
   });
   const [evalsData, setEvalsData] = useState(null);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [courseToRemove, setCourseToRemove] = useState(null);
   const [courseRemoveType, setCourseRemoveType] = useState(null);
-  const [showActionCompletedMessage, setShowActionCompletedMessage] =
-    useState(false);
+  const [showActionCompletedMessage, setShowActionCompletedMessage] = useState(false);
   const [message, setMessage] = useState("");
   const [messageSeverity, setMessageSeverity] = useState("success");
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [editedCourseName, setEditedCourseName] = useState("");
+  const [editedProfessor, setEditedProfessor] = useState("");
+  const accordionDetailsRef = useRef(null);  // Added ref for scroll position
 
+  // Function to preserve scroll position
+  const preserveScroll = () => {
+    if (accordionDetailsRef.current) {
+      const currentScroll = accordionDetailsRef.current.scrollTop;
+      requestAnimationFrame(() => {
+        if (accordionDetailsRef.current) {
+          accordionDetailsRef.current.scrollTop = currentScroll;
+        }
+      });
+    }
+  };
+
+  const handleEditClick = (event, course, type) => {
+    event.stopPropagation();
+    setEditingCourse({ ...course, type });
+    setEditedCourseName(type === "taken" ? course.courseName : course.courseName);
+    setEditedProfessor(course.professor);
+    preserveScroll();
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCourse) return;
+
+    try {
+      // First remove the old course
+      const updateItems = {};
+      if (editingCourse.type === "interested") {
+        updateItems.interestedSections = {
+          remove: [editingCourse.originalString],
+        };
+      } else {
+        updateItems.coursesTaken = {
+          remove: [editingCourse.originalString],
+        };
+      }
+
+      const removeMessage = {
+        type: "updateUser",
+        updateItems,
+      };
+
+      // Remove the old course first
+      const removeResponse = await chrome.runtime.sendMessage(removeMessage);
+      if (removeResponse && !removeResponse.ok) {
+        throw new Error(removeResponse.message || "Failed to remove old course");
+      }
+
+      // Then add the new course
+      if (editingCourse.type === "interested") {
+        await handleAddCourse(
+          "interestedSections",
+          { label: editedCourseName },
+          { label: editedProfessor },
+          null,
+          editingCourse.meetingTime
+        );
+      } else {
+        await handleAddCourse(
+          "coursesTaken",
+          { label: `${editingCourse.courseCode} - ${editedCourseName}` },
+          { label: editedProfessor },
+          editingCourse.quarter,
+          null
+        );
+      }
+
+      // Update local state to remove the old course
+      setUserCourses(prevState => {
+        if (editingCourse.type === "interested") {
+          const newInterested = { ...prevState.interested };
+          delete newInterested[editingCourse.originalString];
+          return { ...prevState, interested: newInterested };
+        } else {
+          const newTaken = prevState.taken.filter(
+            course => course !== editingCourse.originalString
+          );
+          return { ...prevState, taken: newTaken };
+        }
+      });
+
+      setMessage("Course successfully updated!");
+      setMessageSeverity("success");
+      setShowActionCompletedMessage(true);
+      setEditingCourse(null);
+      preserveScroll();
+    } catch (error) {
+      console.error("Error updating course:", error);
+      setMessage("An error occurred while updating the course.");
+      setMessageSeverity("error");
+      setShowActionCompletedMessage(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCourse(null);
+    setEditedCourseName("");
+    setEditedProfessor("");
+    preserveScroll();
+  };
   useEffect(() => {
-    async function fetchData () {
+    async function fetchData() {
       try {
         const { userInfo } = await chrome.storage.local.get("userInfo");
         const { evals } = await chrome.storage.local.get("evals");
@@ -48,13 +150,11 @@ export default function CourseAccordion() {
         if (userInfo) {
           userInfo.coursesTaken = userInfo.coursesTaken || [];
           userInfo.interestedSections = userInfo.interestedSections || {};
-          userInfo.coursesTaken = userInfo.coursesTaken.filter(
-            (course) => course,
-          );
+          userInfo.coursesTaken = userInfo.coursesTaken.filter(course => course);
 
           setUserCourses({
-            interested: userInfo.interestedSections,
-            taken: userInfo.coursesTaken,
+            interested: userInfo.interestedSections || {},
+            taken: userInfo.coursesTaken || [],
           });
         }
 
@@ -64,34 +164,67 @@ export default function CourseAccordion() {
       } catch (error) {
         console.error("Error fetching data:", error);
       }
-    };
+    }
 
     fetchData();
   }, []);
 
+
   const transformedCourses = {
-    interested: parseInterestedSections(userCourses.interested),
-    taken: parseTakenCourses(userCourses.taken).sort(mostRecentTermFirst),
+    interested: Object.keys(userCourses.interested || {}).map(section => {
+      const matches = section.match(/P{(.+?)}S{(.+?)}M{(.+?)}/);
+      if (matches) {
+        const [_, professor, courseName, meetingTime] = matches;
+        return {
+          professor,
+          courseName,
+          meetingTime,
+          originalString: section
+        };
+      }
+      return null;
+    }).filter(Boolean),
+    taken: (userCourses.taken || []).map(course => {
+      const matches = course.match(/P{(.+?)}C{(.+?)}T{(.+?)}/);
+      if (matches) {
+        const [_, professor, courseInfo, term] = matches;
+        const [courseCode, courseName] = courseInfo.split(' - ');
+        return {
+          professor,
+          courseCode,
+          courseName: courseName || '',
+          quarter: term,
+          originalString: course
+        };
+      }
+      return null;
+    }).filter(Boolean).sort(mostRecentTermFirst),
   };
 
-  function handleRemoveCourseClick (event, course) {
+  const handleRemoveCourseClick = (event, course, type) => {
     event.stopPropagation();
     setCourseToRemove(course);
+    setCourseRemoveType(type);
     setOpenConfirmDialog(true);
   };
 
-  async function handleConfirmRemoveCourse () {
+  const handleConfirmRemoveCourse = async () => {
     if (courseToRemove) {
       try {
-        const courseIdentifier = `P{${courseToRemove.professor}}C{${courseToRemove.courseCode}}T{${courseToRemove.quarter}}`;
+        const updateItems = {};
+        if (courseRemoveType === "interested") {
+          updateItems.interestedSections = {
+            remove: [courseToRemove.originalString],
+          };
+        } else {
+          updateItems.coursesTaken = {
+            remove: [courseToRemove.originalString],
+          };
+        }
 
         const messagePayload = {
           type: "updateUser",
-          updateItems: {
-            coursesTaken: {
-              remove: [courseIdentifier],
-            },
-          },
+          updateItems,
         };
 
         const updateResponse = await chrome.runtime.sendMessage(messagePayload);
@@ -99,16 +232,17 @@ export default function CourseAccordion() {
         if (updateResponse && !updateResponse.ok) {
           handleActionCompleted(updateResponse.message, "error");
         } else {
-          setUserCourses((prevState) => {
-            const updatedTakenCourses = prevState.taken.filter(
-              (course) =>
-                `P{${course.professor}}C{${course.courseCode}}T{${course.quarter}}` !==
-                courseIdentifier,
-            );
-            return {
-              ...prevState,
-              taken: updatedTakenCourses,
-            };
+          setUserCourses(prevState => {
+            if (courseRemoveType === "interested") {
+              const newInterested = { ...prevState.interested };
+              delete newInterested[courseToRemove.originalString];
+              return { ...prevState, interested: newInterested };
+            } else {
+              const newTaken = prevState.taken.filter(
+                course => course !== courseToRemove.originalString
+              );
+              return { ...prevState, taken: newTaken };
+            }
           });
 
           setMessage("Course successfully removed!");
@@ -117,6 +251,7 @@ export default function CourseAccordion() {
 
         setOpenConfirmDialog(false);
         setCourseToRemove(null);
+        setCourseRemoveType(null);
       } catch (error) {
         console.error("Error removing course:", error);
         setMessage("An error occurred while removing the course.");
@@ -125,32 +260,29 @@ export default function CourseAccordion() {
     }
   };
 
-  function handleCancelRemoveCourse () {
-    setOpenConfirmDialog(false);
-    setCourseToRemove(null);
-    setCourseRemoveType(null);
-  };
-
-  const handleAddCourse = async (
-    courseType,
-    selectedCourse,
-    selectedProfessor,
-    quarter,
-  ) => {
-    if (!selectedCourse || !selectedProfessor || !quarter) {
-      setMessage("Please select a course, professor, and specify the quarter.");
+  const handleAddCourse = async (courseType, selectedCourse, selectedProfessor, quarter, meetingTime) => {
+    if (!selectedCourse || !selectedProfessor) {
+      setMessage("Please select both a course and professor.");
       setMessageSeverity("error");
       setShowActionCompletedMessage(true);
       return;
     }
 
-    console.log("selectedCourse:", selectedCourse);
-    console.log("selectedProfessor:", selectedProfessor);
-    console.log("quarter:", quarter);
-
-    const courseIdentifier = `P{${selectedProfessor.label}}C{${selectedCourse.label}}T{${quarter}}`;
-    
     try {
+      let courseIdentifier;
+      if (courseType === "interestedSections") {
+        // Remove the meetingTime check and set it to null
+        courseIdentifier = `P{${selectedProfessor.label}}S{${selectedCourse.label}}M{null}`;
+      } else {
+        if (!quarter) {
+          setMessage("Please specify the quarter for taken courses.");
+          setMessageSeverity("error");
+          setShowActionCompletedMessage(true);
+          return;
+        }
+        courseIdentifier = `P{${selectedProfessor.label}}C{${selectedCourse.label}}T{${quarter}}`;
+      }
+
       const updatePayload = {
         type: "updateUser",
         updateItems: {
@@ -160,20 +292,26 @@ export default function CourseAccordion() {
         },
       };
 
-      console.log("updatePayload:", updatePayload);
-
       const response = await chrome.runtime.sendMessage(updatePayload);
 
       if (response && !response.ok) {
         setMessage(response.message || "Failed to add course.");
         setMessageSeverity("error");
       } else {
-        if (courseType === "interestedSections") courseType = "interested";
-        else courseType = "taken";
-        setUserCourses((prev) => ({
-          ...prev,
-          [courseType]: [...prev[courseType], courseIdentifier],
-        }));
+        if (courseType === "interestedSections") {
+          setUserCourses(prev => ({
+            ...prev,
+            interested: {
+              ...prev.interested,
+              [courseIdentifier]: { S: new Date().toISOString() }
+            }
+          }));
+        } else {
+          setUserCourses(prev => ({
+            ...prev,
+            taken: [...prev.taken, courseIdentifier]
+          }));
+        }
         setMessage("Course successfully added!");
         setMessageSeverity("success");
       }
@@ -186,149 +324,160 @@ export default function CourseAccordion() {
     setShowActionCompletedMessage(true);
   };
 
-  const courseOptions = useMemo(() => {
-    if (!evalsData) return [];
-
-    try {
-      return Object.entries(evalsData || {})
-        .filter(([key, value]) => value && value.type === "course")
-        .map(([key, value]) => ({
-          id: key,
-          label: `${key} - ${value?.courseName || "Unnamed Course"}`,
-        }));
-    } catch (err) {
-      console.error("Error processing course options:", err);
-      return [];
-    }
-  }, [evalsData]);
-
-  const professorOptions = useMemo(() => {
-    if (!evalsData) return [];
-
-    try {
-      return Object.entries(evalsData || {})
-        .filter(([key, value]) => value && value.type === "prof")
-        .map(([key]) => ({ id: key, label: key }));
-    } catch (err) {
-      console.error("Error processing professor options:", err);
-      return [];
-    }
-  }, [evalsData]);
-
-  function CourseSection ({ title, courses, type }) {
+  function CourseSection({ title, courses, type }) {
+    const [expanded, setExpanded] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [selectedProfessor, setSelectedProfessor] = useState(null);
     const [quarter, setQuarter] = useState("");
-
-    function handleAddClick () {
-      if (!selectedCourse || !selectedProfessor || !quarter) {
-        setMessage("Please fill in all fields before adding the course.");
-        setMessageSeverity("error");
-        setShowActionCompletedMessage(true);
-        return;
+    const [courseTag, setCourseTag] = useState("");
+  
+    const handleCourseChange = (event, newValue) => {
+      setSelectedCourse(newValue);
+      if (newValue) {
+        const courseCode = newValue.label.split(' - ')[0];
+        const tag = courseCode.replace(/\s+/g, '');
+        setCourseTag(tag);
+      } else {
+        setCourseTag("");
       }
-
-      handleAddCourse(
-        type === "interested" ? "interestedSections" : "coursesTaken",
-        selectedCourse,
-        selectedProfessor,
-        quarter,
-      );
-
+      preserveScroll();
+    };
+  
+    const handleProfessorChange = (event, newValue) => {
+      setSelectedProfessor(newValue);
+      preserveScroll();
+    };
+  
+    const handleQuarterChange = (e) => {
+      setQuarter(e.target.value);
+      preserveScroll();
+    };
+  
+    const handleAddClick = async () => {
+      if (type === "interested") {
+        if (!selectedCourse || !selectedProfessor) {
+          setMessage("Please fill out all fields.");
+          setMessageSeverity("error");
+          setShowActionCompletedMessage(true);
+          return;
+        }
+  
+        await handleAddCourse(
+          "interestedSections",
+          selectedCourse,
+          selectedProfessor,
+          null,
+          null  // Meeting time is now always null for interested sections
+        );
+      } else {
+        await handleAddCourse(
+          "coursesTaken",
+          selectedCourse,
+          selectedProfessor,
+          quarter,
+          null
+        );
+      }
+  
       setSelectedCourse(null);
       setSelectedProfessor(null);
       setQuarter("");
+      setExpanded(false);
+      preserveScroll();
     };
-
+  
     return (
-      <Accordion sx={{ mb: 1 }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>{title}</Typography>
-        </AccordionSummary>
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Add {title}
-          </Typography>
-
-          <Autocomplete
-            options={courseOptions}
-            getOptionLabel={(option) => option.label}
-            filterOptions={(options, { inputValue }) =>
-              inputValue.length >= 2
-                ? options.filter((option) =>
-                    option.label
-                      .toLowerCase()
-                      .includes(inputValue.toLowerCase()),
-                  )
-                : []
-            }
-            value={selectedCourse}
-            onChange={(event, newValue) => setSelectedCourse(newValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select a Course"
-                variant="outlined"
-                size="small"
-                sx={{ mb: 2 }}
-              />
-            )}
-          />
-
-          <Autocomplete
-            options={professorOptions}
-            getOptionLabel={(option) => option.label}
-            filterOptions={(options, { inputValue }) =>
-              inputValue.length >= 2
-                ? options.filter((option) =>
-                    option.label
-                      .toLowerCase()
-                      .includes(inputValue.toLowerCase()),
-                  )
-                : []
-            }
-            value={selectedProfessor}
-            onChange={(event, newValue) => setSelectedProfessor(newValue)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select a Professor"
-                variant="outlined"
-                size="small"
-                sx={{ mb: 2 }}
-              />
-            )}
-          />
-
-          <TextField
-            label="Quarter (e.g., Fall 2024)"
-            variant="outlined"
-            value={quarter}
-            onChange={(e) => setQuarter(e.target.value)}
-            size="small"
-            fullWidth
-            sx={{ mb: 2 }}
-          />
-
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleAddClick}
-            sx={{
-              backgroundColor: "#802a25",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "#671f1a",
-              },
+      <Box sx={{ mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Typography variant="h6">{title}</Typography>
+          <IconButton 
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+              preserveScroll();
             }}
+            sx={{ ml: 1 }}
           >
-            Add Course
-          </Button>
+            <Add />
+          </IconButton>
         </Box>
-        <AccordionDetails>
-          {courses.length > 0 ? (
-            courses.map((course, index) => (
+        
+        {expanded && (
+          <Box 
+            sx={{ mt: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Autocomplete
+              options={courseOptions}
+              getOptionLabel={(option) => option.label}
+              value={selectedCourse}
+              onChange={handleCourseChange}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select a Course"
+                  variant="outlined"
+                  size="small"
+                  sx={{ mb: 2 }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            />
+  
+            <Autocomplete
+              options={professorOptions}
+              getOptionLabel={(option) => option.label}
+              value={selectedProfessor}
+              onChange={handleProfessorChange}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select a Professor"
+                  variant="outlined"
+                  size="small"
+                  sx={{ mb: 2 }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            />
+  
+            {type === "taken" && (
+              <TextField
+                label="Quarter (e.g., Fall 2024)"
+                variant="outlined"
+                value={quarter}
+                onChange={handleQuarterChange}
+                size="small"
+                fullWidth
+                sx={{ mb: 2 }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+  
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddClick();
+              }}
+              sx={{
+                backgroundColor: "#802a25",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#671f1a",
+                },
+              }}
+            >
+              Add Course
+            </Button>
+          </Box>
+        )}
+  
+        {courses.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            {courses.map((course, index) => (
               <Box
                 key={`${type}-${index}`}
                 sx={{
@@ -338,82 +487,190 @@ export default function CourseAccordion() {
                   backgroundColor: "background.paper",
                   boxShadow: 1,
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Typography variant="body1">
-                    {course.courseCode} - {course.courseName}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleRemoveCourseClick(e, course, type)}
-                    sx={{
-                      color: "error.main",
-                      "&:hover": {
-                        backgroundColor: "error.light",
-                        color: "white",
-                      },
-                    }}
-                  >
-                    <Close fontSize="small" />
-                  </IconButton>
-                </Stack>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  {course.professor} | {course.quarter}
-                </Typography>
+                {editingCourse?.originalString === course.originalString ? (
+                  <Box sx={{ mb: 2 }} onClick={(e) => e.stopPropagation()}>
+                    <TextField
+                      fullWidth
+                      label="Course Name"
+                      value={editedCourseName}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setEditedCourseName(e.target.value);
+                        preserveScroll();
+                      }}
+                      size="small"
+                      sx={{ mb: 1 }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Professor"
+                      value={editedProfessor}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setEditedProfessor(e.target.value);
+                        preserveScroll();
+                      }}
+                      size="small"
+                      sx={{ mb: 1 }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Button
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelEdit();
+                        }}
+                        color="inherit"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveEdit();
+                        }}
+                        variant="contained"
+                        color="primary"
+                      >
+                        Save
+                      </Button>
+                    </Stack>
+                  </Box>
+                ) : (
+                  <>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body1">
+                        {type === "interested" ? course.courseName : `${course.courseCode} - ${course.courseName}`}
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(e, course, type);
+                          }}
+                          sx={{
+                            color: "primary.main",
+                            "&:hover": {
+                              backgroundColor: "primary.light",
+                              color: "white",
+                            },
+                          }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCourseClick(e, course, type);
+                          }}
+                          sx={{
+                            color: "error.main",
+                            "&:hover": {
+                              backgroundColor: "error.light",
+                              color: "white",
+                            },
+                          }}
+                        >
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                      {type === "interested" ? 
+                        course.professor : 
+                        `${course.professor} | ${course.quarter}`}
+                    </Typography>
+                  </>
+                )}
               </Box>
-            ))
-          ) : (
-            <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-              No {title.toLowerCase()} available
-            </Typography>
-          )}
-        </AccordionDetails>
-      </Accordion>
+            ))}
+          </Box>
+        )}
+      </Box>
     );
-  };
+  }
+  const courseOptions = useMemo(() => {
+    if (!evalsData) return [];
+    return Object.entries(evalsData || {})
+      .filter(([key, value]) => value && value.type === "course")
+      .map(([key, value]) => ({
+        id: key,
+        label: `${key} - ${value?.courseName || "Unnamed Course"}`,
+      }));
+  }, [evalsData]);
+
+  const professorOptions = useMemo(() => {
+    if (!evalsData) return [];
+    return Object.entries(evalsData || {})
+      .filter(([key, value]) => value && value.type === "prof")
+      .map(([key]) => ({ id: key, label: key }));
+  }, [evalsData]);
 
   return (
     <Box sx={{ width: "100%" }}>
       <Accordion>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>Edit Courses</Typography>
+        <AccordionSummary 
+          expandIcon={<ExpandMore />}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Edit fontSize="small" />
+            <Typography>Edit Courses</Typography>
+          </Stack>
         </AccordionSummary>
-        <AccordionDetails>
-          {/* Interested Courses Section */}
-          <CourseSection
-            title="Interested Courses"
-            courses={transformedCourses.interested}
-            type="interested"
-          />
-
-          {/* Taken Courses Section */}
-          <CourseSection
-            title="Taken Courses"
-            courses={transformedCourses.taken}
-            type="taken"
-          />
+        <AccordionDetails
+          sx={{
+            maxHeight: "250px",
+            overflow: "auto"
+          }}
+        >
+          <Box sx={{ pb: 2 }}>
+            <CourseSection
+              title="Interested Courses"
+              courses={transformedCourses.interested}
+              type="interested"
+            />
+            <CourseSection
+              title="Taken Courses"
+              courses={transformedCourses.taken}
+              type="taken"
+            />
+          </Box>
         </AccordionDetails>
       </Accordion>
 
-      {/* Remove Course Confirmation Dialog */}
       <Dialog
         open={openConfirmDialog}
-        onClose={handleCancelRemoveCourse}
+        onClose={() => {
+          setOpenConfirmDialog(false);
+          setCourseToRemove(null);
+          setCourseRemoveType(null);
+        }}
         aria-labelledby="remove-course-dialog-title"
         aria-describedby="remove-course-dialog-description"
       >
         <DialogTitle id="remove-course-dialog-title">Remove Course</DialogTitle>
         <DialogContent>
           <DialogContentText id="remove-course-dialog-description">
-            Are you sure you want to remove this course from your history?
+            Are you sure you want to remove this course?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelRemoveCourse} color="primary">
+          <Button onClick={() => {
+            setOpenConfirmDialog(false);
+            setCourseToRemove(null);
+            setCourseRemoveType(null);
+          }} color="primary">
             Cancel
           </Button>
           <Button
@@ -427,7 +684,6 @@ export default function CourseAccordion() {
         </DialogActions>
       </Dialog>
 
-      {/* Action Completed Snackbar */}
       <Snackbar
         open={showActionCompletedMessage}
         autoHideDuration={3000}

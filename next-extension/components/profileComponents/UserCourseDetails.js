@@ -4,8 +4,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Stack,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import CourseDetailsCard from "../utils/CourseDetailsCard";
 import {
   mostRecentTermFirst,
@@ -77,7 +79,10 @@ export default function UserCourseDetails() {
         aria-controls="user-courses-content"
         id="user-courses-header"
       >
-        <Typography variant="subtitle1">Your Courses</Typography>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <VisibilityIcon fontSize="small" />
+          <Typography variant="subtitle1">Your Courses</Typography>
+        </Stack>
       </AccordionSummary>
       <AccordionDetails>
         <CourseDetailsCard courses={transformedUserCourses} />

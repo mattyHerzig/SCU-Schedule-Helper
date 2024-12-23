@@ -161,11 +161,12 @@ export default function Profile() {
         />
 
         <Box sx={{ mb: 3 }}>
-          <CourseAccordion />
-        </Box>
-        <Box sx={{ mb: 3 }}>
           <UserCourseDetails />
         </Box>
+        <Box sx={{ mb: 3 }}>
+          <CourseAccordion />
+        </Box>
+    
 
         <Stack spacing={2} sx={{ width: "100%" }}>
           <Button
