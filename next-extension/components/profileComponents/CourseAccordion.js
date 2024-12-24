@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Typography,
   Box,
@@ -69,6 +69,57 @@ export default function CourseAccordion() {
     fetchData();
   }, []);
 
+  const handleEditInterestedSection = async () => {
+    if (!editingCourse) return;
+
+    try {
+      const removePayload = {
+        type: "updateUser",
+        updateItems: {
+          interestedSections: {
+            remove: [editingCourse.originalString]
+          }
+        }
+      };
+      
+      await chrome.runtime.sendMessage(removePayload);
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 21); 
+
+      const newSectionKey = `P{${editedProfessor}}S{${editedCourseName}}M{${editingCourse.meetingTime}}`;
+      
+      const addPayload = {
+        type: "updateUser",
+        updateItems: {
+          interestedSections: {
+            add: {
+              [newSectionKey]: expirationDate.toISOString()
+            }
+          }
+        }
+      };
+
+      await chrome.runtime.sendMessage(addPayload);
+
+      setUserCourses(prev => {
+        const newInterested = { ...prev.interested };
+        delete newInterested[editingCourse.originalString];
+        newInterested[newSectionKey] = { S: expirationDate.toISOString() };
+        return { ...prev, interested: newInterested };
+      });
+
+      setMessage("Course successfully updated!");
+      setMessageSeverity("success");
+      setShowActionCompletedMessage(true);
+      setEditingCourse(null);
+    } catch (error) {
+      console.error("Error updating interested section:", error);
+      setMessage("An error occurred while updating the course.");
+      setMessageSeverity("error");
+      setShowActionCompletedMessage(true);
+    }
+  };
+
   const handleEditClick = (event, course, type) => {
     event.stopPropagation();
     setEditingCourse({ ...course, type });
@@ -76,39 +127,157 @@ export default function CourseAccordion() {
     setEditedProfessor(course.professor);
   };
 
+  const handleAddInterestedSection = async (selectedCourse, selectedProfessor, meetingTime) => {
+    if (!selectedCourse || !selectedProfessor || !meetingTime) {
+      setMessage("Please fill out all fields.");
+      setMessageSeverity("error");
+      setShowActionCompletedMessage(true);
+      return;
+    }
+
+    try {
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 21);
+
+      const sectionKey = `P{${selectedProfessor.label}}S{${selectedCourse.label}}M{${meetingTime}}`;
+
+      const updatePayload = {
+        type: "updateUser",
+        updateItems: {
+          interestedSections: {
+            add: {
+              [sectionKey]: expirationDate.toISOString()
+            }
+          }
+        }
+      };
+
+      const response = await chrome.runtime.sendMessage(updatePayload);
+
+      if (response && !response.ok) {
+        setMessage(response.message || "Failed to add course.");
+        setMessageSeverity("error");
+      } else {
+        setUserCourses(prev => ({
+          ...prev,
+          interested: {
+            ...prev.interested,
+            [sectionKey]: { S: expirationDate.toISOString() }
+          }
+        }));
+        setMessage("Course successfully added!");
+        setMessageSeverity("success");
+      }
+    } catch (error) {
+      console.error("Error adding interested section:", error);
+      setMessage("An error occurred while adding the course.");
+      setMessageSeverity("error");
+    }
+
+    setShowActionCompletedMessage(true);
+  };
+
   const handleSaveEdit = async () => {
     if (!editingCourse) return;
 
     try {
-      // First remove the old course
-      await handleConfirmRemoveCourse(true);
-
-      // Then add the new course with edited information
+      const updateItems = {};
       if (editingCourse.type === "interested") {
-        await handleAddCourse(
-          "interestedSections",
-          { label: editedCourseName },
-          { label: editedProfessor },
-          null,
-          editingCourse.meetingTime
-        );
+        updateItems.interestedSections = {
+          remove: [editingCourse.originalString],
+        };
       } else {
-        await handleAddCourse(
-          "coursesTaken",
-          { label: `${editingCourse.courseCode} - ${editedCourseName}` },
-          { label: editedProfessor },
-          editingCourse.quarter,
-          null
-        );
+        updateItems.coursesTaken = {
+          remove: [editingCourse.originalString],
+        };
+      }
+
+      const removePayload = {
+        type: "updateUser",
+        updateItems,
+      };
+
+      const removeResponse = await chrome.runtime.sendMessage(removePayload);
+      
+      if (removeResponse && !removeResponse.ok) {
+        throw new Error(removeResponse.message || "Failed to remove original course");
+      }
+
+      setUserCourses(prevState => {
+        if (editingCourse.type === "interested") {
+          const newInterested = { ...prevState.interested };
+          delete newInterested[editingCourse.originalString];
+          return { ...prevState, interested: newInterested };
+        } else {
+          const newTaken = prevState.taken.filter(
+            course => course !== editingCourse.originalString
+          );
+          return { ...prevState, taken: newTaken };
+        }
+      });
+
+      if (editingCourse.type === "interested") {
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 21);
+        const newSectionKey = `P{${editedProfessor}}S{${editedCourseName}}M{${editingCourse.meetingTime}}`;
+        
+        const addPayload = {
+          type: "updateUser",
+          updateItems: {
+            interestedSections: {
+              add: {
+                [newSectionKey]: expirationDate.toISOString()
+              }
+            }
+          }
+        };
+
+        const addResponse = await chrome.runtime.sendMessage(addPayload);
+        
+        if (addResponse && !addResponse.ok) {
+          throw new Error(addResponse.message || "Failed to add edited course");
+        }
+
+        setUserCourses(prev => ({
+          ...prev,
+          interested: {
+            ...prev.interested,
+            [newSectionKey]: { S: expirationDate.toISOString() }
+          }
+        }));
+      } else {
+        const newCourseIdentifier = `P{${editedProfessor}}C{${editingCourse.courseCode} - ${editedCourseName}}T{${editingCourse.quarter}}`;
+        
+        const addPayload = {
+          type: "updateUser",
+          updateItems: {
+            coursesTaken: {
+              add: [newCourseIdentifier]
+            }
+          }
+        };
+
+        const addResponse = await chrome.runtime.sendMessage(addPayload);
+        
+        if (addResponse && !addResponse.ok) {
+          throw new Error(addResponse.message || "Failed to add edited course");
+        }
+
+        setUserCourses(prev => ({
+          ...prev,
+          taken: [...prev.taken, newCourseIdentifier]
+        }));
       }
 
       setMessage("Course successfully updated!");
       setMessageSeverity("success");
       setShowActionCompletedMessage(true);
       setEditingCourse(null);
+      setEditedCourseName("");
+      setEditedProfessor("");
     } catch (error) {
       console.error("Error updating course:", error);
-      setMessage("An error occurred while updating the course.");
+      setMessage(error.message || "An error occurred while updating the course.");
       setMessageSeverity("error");
       setShowActionCompletedMessage(true);
     }
@@ -283,64 +452,14 @@ export default function CourseAccordion() {
     const [expanded, setExpanded] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [selectedProfessor, setSelectedProfessor] = useState(null);
-    const [quarter, setQuarter] = useState("");
     const [meetingTime, setMeetingTime] = useState("");
-    const [courseTag, setCourseTag] = useState("");
-
-    const handleCourseChange = (event, newValue) => {
-      setSelectedCourse(newValue);
-      if (newValue) {
-        const courseCode = newValue.label.split(' - ')[0];
-        const tag = courseCode.replace(/\s+/g, '');
-        setCourseTag(tag);
-      } else {
-        setCourseTag("");
-      }
-    };
-
+    const [quarter, setQuarter] = useState("");
+    const courseNameRef = useRef(null);
+    const professorRef = useRef(null);
+  
     const handleAddClick = () => {
       if (type === "interested") {
-        if (!selectedCourse || !selectedProfessor || !meetingTime) {
-          setMessage("Please fill out all fields.");
-          setMessageSeverity("error");
-          setShowActionCompletedMessage(true);
-          return;
-        }
-    
-        const expirationDate = new Date();
-        expirationDate.setDate(expirationDate.getDate() + 14);
-    
-        const sectionKey = `P{${selectedProfessor.label}}S{${selectedCourse.label}}M{${meetingTime}}`;
-    
-        const userId = data?.userInfo?.id;
-    
-        if (!userId) {
-          setMessage("User ID not found.");
-          setMessageSeverity("error");
-          setShowActionCompletedMessage(true);
-          return;
-        }
-    
-        const sectionData = {
-          pk: { S: `u#${userId}` },
-          sk: { S: "info#interestedSections" },
-          sections: {
-            M: {
-              [sectionKey]: {
-                S: expirationDate.toISOString(),
-              },
-            },
-          },
-        };
-    
-        handleAddCourse(
-          "interestedSections",
-          selectedCourse,
-          selectedProfessor,
-          null,
-          meetingTime,
-          sectionData
-        );
+        handleAddInterestedSection(selectedCourse, selectedProfessor, "");
       } else {
         handleAddCourse(
           "coursesTaken",
@@ -350,33 +469,38 @@ export default function CourseAccordion() {
           null
         );
       }
-    
+  
       setSelectedCourse(null);
       setSelectedProfessor(null);
       setQuarter("");
       setMeetingTime("");
       setExpanded(false);
     };
-
+  
     return (
       <Box sx={{ mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <Typography variant="h6">{title}</Typography>
-          <IconButton 
-            onClick={() => setExpanded(!expanded)}
-            sx={{ ml: 1 }}
-          >
+          <IconButton onClick={() => setExpanded(!expanded)} sx={{ ml: 1 }}>
             <Add />
           </IconButton>
         </Box>
-        
+  
         {expanded && (
-          <Box sx={{ mt: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1,
+            }}
+          >
             <Autocomplete
               options={courseOptions}
               getOptionLabel={(option) => option.label}
               value={selectedCourse}
-              onChange={handleCourseChange}
+              onChange={(event, newValue) => setSelectedCourse(newValue)}
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -387,7 +511,7 @@ export default function CourseAccordion() {
                 />
               )}
             />
-
+  
             <Autocomplete
               options={professorOptions}
               getOptionLabel={(option) => option.label}
@@ -403,18 +527,8 @@ export default function CourseAccordion() {
                 />
               )}
             />
-
-            {type === "interested" ? (
-              <TextField
-                label="Meeting Time (e.g., M W F | 1:00 PM - 2:05 PM | Rm 206)"
-                variant="outlined"
-                value={meetingTime}
-                onChange={(e) => setMeetingTime(e.target.value)}
-                size="small"
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-            ) : (
+  
+            {type === "taken" && (
               <TextField
                 label="Quarter (e.g., Fall 2024)"
                 variant="outlined"
@@ -425,7 +539,7 @@ export default function CourseAccordion() {
                 sx={{ mb: 2 }}
               />
             )}
-
+  
             <Button
               variant="contained"
               color="primary"
@@ -443,7 +557,7 @@ export default function CourseAccordion() {
             </Button>
           </Box>
         )}
-
+  
         {courses.length > 0 && (
           <Box sx={{ mt: 2 }}>
             {courses.map((course, index) => (
@@ -463,29 +577,38 @@ export default function CourseAccordion() {
                       fullWidth
                       label="Course Name"
                       value={editedCourseName}
-                      onChange={(e) => setEditedCourseName(e.target.value)}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        setEditedCourseName(e.target.value);
+                      }}
+                      inputRef={courseNameRef}
                       size="small"
                       sx={{ mb: 1 }}
+                      autoFocus
                     />
                     <TextField
                       fullWidth
                       label="Professor"
                       value={editedProfessor}
-                      onChange={(e) => setEditedProfessor(e.target.value)}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        setEditedProfessor(e.target.value);
+                      }}
+                      inputRef={professorRef}
                       size="small"
                       sx={{ mb: 1 }}
                     />
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Button
-                        size="small"
-                        onClick={handleCancelEdit}
-                        color="inherit"
-                      >
+                      <Button size="small" onClick={handleCancelEdit} color="inherit">
                         Cancel
                       </Button>
                       <Button
                         size="small"
-                        onClick={handleSaveEdit}
+                        onClick={
+                          type === "interested"
+                            ? handleEditInterestedSection
+                            : handleSaveEdit
+                        }
                         variant="contained"
                         color="primary"
                       >
@@ -498,11 +621,33 @@ export default function CourseAccordion() {
                     <Stack
                       direction="row"
                       justifyContent="space-between"
-                      alignItems="center"
+                      alignItems="flex-start"
                     >
-                      <Typography variant="body1">
-                        {type === "interested" ? course.courseName : `${course.courseCode} - ${course.courseName}`}
-                      </Typography>
+                      <Box>
+                        <Typography variant="body1">
+                          {type === "interested"
+                            ? course.courseName
+                            : `${course.courseCode} - ${course.courseName}`}
+                        </Typography>
+                        <Stack 
+                          direction="row" 
+                          spacing={1} 
+                          alignItems="center"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          <Typography variant="body2">
+                            {course.professor}
+                          </Typography>
+                          {type === "taken" && (
+                            <>
+                              <Typography variant="body2">|</Typography>
+                              <Typography variant="body2">
+                                {course.quarter}
+                              </Typography>
+                            </>
+                          )}
+                        </Stack>
+                      </Box>
                       <Stack direction="row" spacing={1}>
                         <IconButton
                           size="small"
@@ -532,11 +677,6 @@ export default function CourseAccordion() {
                         </IconButton>
                       </Stack>
                     </Stack>
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                      {type === "interested" ? 
-                        course.professor : 
-                        `${course.professor} | ${course.quarter}`}
-                    </Typography>
                   </>
                 )}
               </Box>
@@ -546,6 +686,7 @@ export default function CourseAccordion() {
       </Box>
     );
   }
+  
   const courseOptions = useMemo(() => {
     if (!evalsData) return [];
     return Object.entries(evalsData || {})
@@ -569,9 +710,14 @@ export default function CourseAccordion() {
         <AccordionSummary 
           expandIcon={<ExpandMore />}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Edit fontSize="small" />
-            <Typography>Edit Courses</Typography>
+          <Stack direction="column" spacing={0.5}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Edit fontSize="small" />
+              <Typography>Edit Courses</Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Edit courses displayed on your profile
+            </Typography>
           </Stack>
         </AccordionSummary>
         <AccordionDetails>

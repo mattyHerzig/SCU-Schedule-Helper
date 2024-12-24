@@ -79,9 +79,14 @@ export default function UserCourseDetails() {
         aria-controls="user-courses-content"
         id="user-courses-header"
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <VisibilityIcon fontSize="small" />
-          <Typography variant="subtitle1">Your Courses</Typography>
+        <Stack direction="column" spacing={0.5}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <VisibilityIcon fontSize="small" />
+            <Typography>View your courses</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            View courses displayed on your profile
+          </Typography>
         </Stack>
       </AccordionSummary>
       <AccordionDetails>

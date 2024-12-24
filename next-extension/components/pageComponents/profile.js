@@ -7,20 +7,24 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Snackbar,
   Stack,
   Typography,
 } from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
 import AuthWrapper from "./authWrapper.js";
 import UserCourseDetails from "../profileComponents/UserCourseDetails.js";
 import ProfileSection from "../profileComponents/ProfileSection.js";
 import CourseAccordion from "../profileComponents/CourseAccordion.js";
+import FeedbackButton from "../profileComponents/FeedbackButton.js";
+import { Feed } from "@mui/icons-material";
 
 export default function Profile() {
   const [userInfo, setUserInfo] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [showActionCompletedMessage, setShowActionCompletedMessage] =
-    useState(false);
+  const [openInfoDialog, setOpenInfoDialog] = useState(false); // Info dialog state
+  const [showActionCompletedMessage, setShowActionCompletedMessage] = useState(false);
   const [currentAction, setCurrentAction] = useState(null);
 
   useEffect(() => {
@@ -51,10 +55,7 @@ export default function Profile() {
       await chrome.runtime.sendMessage("signOut");
     } catch (error) {
       console.error("Error signing out:", error);
-      handleActionCompleted(
-        "An unknown error occurred while signing out.",
-        "error",
-      );
+      handleActionCompleted("An unknown error occurred while signing out.", "error");
     }
   }
 
@@ -63,67 +64,49 @@ export default function Profile() {
       const errorMessage = await chrome.runtime.sendMessage("deleteAccount");
       if (errorMessage) {
         handleActionCompleted(errorMessage, "error");
+      } else {
+        handleActionCompleted("Account deleted successfully.", "success");
       }
     } catch (error) {
-      handleActionCompleted(
-        "An unknown error occurred while deleting account. Please try again.",
-        "error",
-      );
+      handleActionCompleted("An unknown error occurred while deleting account. Please try again.", "error");
     }
   }
 
   async function importCurrentCourses() {
     try {
-      const errorMessage = await chrome.runtime.sendMessage(
-        "importCurrentCourses",
-      );
+      const errorMessage = await chrome.runtime.sendMessage("importCurrentCourses");
       if (errorMessage) {
         handleActionCompleted(errorMessage, "error");
       }
     } catch (error) {
       console.error("Error adding current courses:", error);
-      handleActionCompleted(
-        "An unknown error occurred while adding current courses.",
-        "error",
-      );
+      handleActionCompleted("An unknown error occurred while adding current courses.", "error");
     }
   }
 
   async function importCourseHistory() {
     try {
-      const errorMessage = await chrome.runtime.sendMessage(
-        "importCourseHistory",
-      );
+      const errorMessage = await chrome.runtime.sendMessage("importCourseHistory");
       if (errorMessage) {
         handleActionCompleted(errorMessage, "error");
       }
     } catch (error) {
       console.error("Error importing course history:", error);
-      handleActionCompleted(
-        "An unknown error occurred while importing course history.",
-        "error",
-      );
+      handleActionCompleted("An unknown error occurred while importing course history.", "error");
     }
   }
 
   async function deleteCourseHistory() {
     try {
-      const errorMessage =
-        await chrome.runtime.sendMessage("clearCourseHistory");
+      const errorMessage = await chrome.runtime.sendMessage("clearCourseHistory");
       if (errorMessage) {
         handleActionCompleted(errorMessage, "error");
       } else {
-        handleActionCompleted(
-          "Course history cleared successfully.",
-          "success",
-        );
+        handleActionCompleted("Course history cleared successfully.", "success");
       }
     } catch (error) {
       console.error("Error clearing course history:", error);
-      handleActionCompleted(
-        "An unknown error occurred while clearing course history.",
-        "error",
-      );
+      handleActionCompleted("An unknown error occurred while clearing course history.", "error");
     }
   }
 
@@ -140,20 +123,40 @@ export default function Profile() {
     setShowActionCompletedMessage(true);
   }
 
-  function handleOpenDialog() {
+  function handleOpenDeleteDialog() {
     setOpenDialog(true);
   }
 
-  function handleCloseDialog() {
+  function handleCloseDeleteDialog() {
     setOpenDialog(false);
+  }
+
+  function handleOpenInfoDialog() {
+    setOpenInfoDialog(true);
+  }
+
+  function handleCloseInfoDialog() {
+    setOpenInfoDialog(false);
   }
 
   return (
     <AuthWrapper>
       <Box sx={{ padding: 2, boxSizing: "border-box" }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Your Profile
-        </Typography>
+        <Stack direction="row" alignItems="center">
+          <Typography variant="h6" sx={{ textAlign: "center" }}>
+            Your Profile
+          </Typography>
+          <IconButton
+            sx={{
+              ml: 1, 
+              p: 0,
+            }}
+            onClick={handleOpenInfoDialog}
+            aria-label="info"
+          >
+            <InfoIcon fontSize="small" />
+          </IconButton>
+        </Stack>
 
         <ProfileSection
           userInfo={userInfo}
@@ -166,7 +169,6 @@ export default function Profile() {
         <Box sx={{ mb: 3 }}>
           <CourseAccordion />
         </Box>
-    
 
         <Stack spacing={2} sx={{ width: "100%" }}>
           <Button
@@ -205,6 +207,16 @@ export default function Profile() {
           >
             Delete Course History
           </Button>
+          
+          <FeedbackButton></FeedbackButton>
+          
+          <Button
+            color="success"
+            variant="contained"
+          >
+            Support
+          </Button>
+
           <Button
             sx={{
               backgroundColor: "#802a25",
@@ -217,6 +229,7 @@ export default function Profile() {
           >
             Sign Out
           </Button>
+
           <Button
             sx={{
               backgroundColor: "red",
@@ -225,13 +238,13 @@ export default function Profile() {
                 backgroundColor: "#ff4d4d",
               },
             }}
-            onClick={handleOpenDialog}
+            onClick={handleOpenDeleteDialog}
           >
             Delete Account
           </Button>
         </Stack>
 
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <Dialog open={openDialog} onClose={handleCloseDeleteDialog}>
           <DialogTitle>Confirm Deletion</DialogTitle>
           <DialogContent>
             <Typography variant="body1">
@@ -239,7 +252,7 @@ export default function Profile() {
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog} color="primary">
+            <Button onClick={handleCloseDeleteDialog} color="primary">
               Cancel
             </Button>
             <Button
@@ -251,6 +264,41 @@ export default function Profile() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Info Dialog */}
+        <Dialog open={openInfoDialog} onClose={handleCloseInfoDialog}>
+          <DialogTitle>Button Information</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Import Current Courses:</strong> Click this to automatically import your current quarter's course history from Workday
+              to your profile
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Import Course History:</strong> Click this to automatically import your course history from Workday to display what courses
+              you have taken to your friends in Workday. Note that we are only reading the course and professor name when reading your course history.
+              Feel free to manually enter and adjust your course history.
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Interested Courses:</strong> The courses added to saved schedules will be added to your interested course section
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Delete Course History:</strong> This clears all your past and interested courses from the system.
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>Support:</strong> If you would like to see an AI powered course schedule generator feature, 
+              consider donating to support development of more features.
+            </Typography>
+            <Typography variant="body2">
+              <strong>Delete Account:</strong> Permanently deletes your account and data.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseInfoDialog} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Snackbar
           open={showActionCompletedMessage}
           autoHideDuration={3000}
