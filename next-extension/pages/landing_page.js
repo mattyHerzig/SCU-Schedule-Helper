@@ -67,7 +67,7 @@ const LandingPage = () => {
     {
       icon: <InfoIcon sx={{ fontSize: 40 }} />,
       title: "View course and professor information directly in Workday",
-      description: "Scores are calculated for each course directly from historical professor and course ratings from RateMyProfessor and SCU Course Evaluations"
+      description: "Scores are calculated for each course section from thousands of professor and course ratings from RateMyProfessor and SCU Course Evaluations"
     },
     {
       icon: <PersonAddIcon sx={{ fontSize: 40 }} />,
@@ -77,7 +77,7 @@ const LandingPage = () => {
     {
       icon: <TuneIcon sx={{ fontSize: 40 }} />,
       title: "Filter courses by your preferences",
-      description: "Filter courses according to your time preferences, hide important courses automatically, select the course and version quality vs. spot limit score and versus seats/professor slots should be weighted in course scores"
+      description: "Filter courses according to your time preferences, how important course difficulty is, how important professor quality is. Input how course eval versus RateMyProfessor data should be weighed in course scores"
     },
     {
       icon: <CalendarMonthIcon sx={{ fontSize: 40 }} />,
