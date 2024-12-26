@@ -67,7 +67,7 @@ export default function ProfileDialog({
           courses from before this quarter, but not courses from this quarter)
           from Workday. Note that we are only reading the course name and
           professor name when reading your course history--no sensitive data is
-          every stored on our servers.
+          ever stored on our servers.
         </Typography>
         <Typography
           variant="subtitle1"

@@ -23,6 +23,31 @@ export default function CourseBox({
   const [editedProfessor, setEditedProfessor] = useState(course.professor);
   const [editedCourseTime, setEditedCourseTime] = useState(null);
 
+  const textFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "#ccc",
+      },
+      "&:hover fieldset": {
+        borderColor: "#ccc",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#703331",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "#ccc",
+    },
+    "& .MuiInputLabel-outlined-root": {
+      "&.Mui-focused": {
+        color: "#703331",
+      },
+    },
+    "& .Mui-focused.MuiInputLabel-root": {
+      color: "#703331",
+    },
+  };
+
   function handleEditClick(e, course) {
     e.preventDefault();
     setIsEditingCourse(true);
@@ -58,7 +83,8 @@ export default function CourseBox({
         p: 2,
         borderRadius: 1,
         backgroundColor: "background.paper",
-        boxShadow: 1,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)",
+        border: "1px solid #eee",
       }}
     >
       {isEditingCourse ? (
@@ -78,6 +104,7 @@ export default function CourseBox({
                 label="Course Name"
                 variant="outlined"
                 size="small"
+                sx={textFieldSx}
               />
             )}
           />
@@ -97,6 +124,7 @@ export default function CourseBox({
                   label="Professor"
                   variant="outlined"
                   size="small"
+                  sx={textFieldSx}
                 />
               )}
             />
@@ -117,6 +145,7 @@ export default function CourseBox({
                   }
                   variant="outlined"
                   size="small"
+                  sx={textFieldSx}
                 />
               )}
             />
@@ -129,7 +158,16 @@ export default function CourseBox({
               py: 1,
             }}
           >
-            <Button size="small" onClick={handleCancelEdit} color="inherit">
+            <Button 
+              size="small" 
+              onClick={handleCancelEdit} 
+              sx={{
+                color: "#802a25",
+                "&:hover": {
+                  backgroundColor: "rgba(128, 42, 37, 0.1)",
+                },
+              }}
+            >
               Cancel
             </Button>
             <Button
@@ -155,7 +193,7 @@ export default function CourseBox({
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="body1">{getCourseString()}</Typography>
+            <Typography variant="body1" sx={{ color: "#333" }}>{getCourseString()}</Typography>
             <Stack
               direction="row"
               spacing={1}
@@ -167,10 +205,9 @@ export default function CourseBox({
                 size="small"
                 onClick={(e) => handleEditClick(e, course)}
                 sx={{
-                  color: "primary.main",
+                  color: "#802a25",
                   "&:hover": {
-                    backgroundColor: "primary.light",
-                    color: "white",
+                    backgroundColor: "rgba(128, 42, 37, 0.1)",
                   },
                 }}
               >

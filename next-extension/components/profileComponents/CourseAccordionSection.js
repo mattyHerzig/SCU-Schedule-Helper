@@ -6,7 +6,11 @@ import {
   Button,
   Autocomplete,
   TextField,
-  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
   Tooltip,
 } from "@mui/material";
 import { Add, Delete, Description, ImportContacts } from "@mui/icons-material";
@@ -28,8 +32,35 @@ export default function CourseAccordionSection({
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedProfessor, setSelectedProfessor] = useState(null);
   const [selectedCourseTime, setSelectedCourseTime] = useState(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importType, setImportType] = useState("");
 
   const timeOptions = useMemo(() => getRelevantCourseTimes(type), [type]);
+
+  const textFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "#ccc",
+      },
+      "&:hover fieldset": {
+        borderColor: "#ccc",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#703331",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "#ccc",
+    },
+    "& .MuiInputLabel-outlined-root": {
+      "&.Mui-focused": {
+        color: "#703331",
+      },
+    },
+    "& .Mui-focused.MuiInputLabel-root": {
+      color: "#703331",
+    },
+  };
 
   const handleAddClick = async (type) => {
     await handleAddCourse(
@@ -45,9 +76,15 @@ export default function CourseAccordionSection({
     setExpanded(false);
   };
 
-  async function startImport(functionName) {
+  const handleImportClick = (functionName) => {
+    setImportType(functionName);
+    setImportDialogOpen(true);
+  };
+
+  const handleImportConfirm = async () => {
+    setImportDialogOpen(false);
     try {
-      const errorMessage = await chrome.runtime.sendMessage(functionName);
+      const errorMessage = await chrome.runtime.sendMessage(importType);
       if (errorMessage) {
         handleActionCompleted(errorMessage, "error");
       }
@@ -58,7 +95,19 @@ export default function CourseAccordionSection({
         "error",
       );
     }
-  }
+  };
+
+  const getDialogText = () => {
+    const isCurrentCourses = importType === "importCurrentCourses";
+    return {
+      title: `Import ${isCurrentCourses ? "Current" : "Previous"} Courses`,
+      content: `You will be redirected to the Workday course page to automatically import your ${
+        isCurrentCourses ? "current" : "previous"
+      } courses. We will only collect: Course names, Professor names, and Quarter information
+
+This data helps display courses you and your friends have taken or are interested in. It will also be used for our upcoming course schedule generator feature.`,
+    };
+  };
 
   return (
     <Box sx={{ mb: 1 }}>
@@ -71,21 +120,17 @@ export default function CourseAccordionSection({
         </Tooltip>
         {type === "taken" && (
           <>
-            <Tooltip title="Import current courses from Workday (opens in tab)">
+            <Tooltip title="Import current courses from Workday">
               <IconButton
-                onClick={() => {
-                  startImport("importCurrentCourses");
-                }}
+                onClick={() => handleImportClick("importCurrentCourses")}
                 sx={{ ml: 1 }}
               >
                 <ImportContacts />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Import all previous courses from Workday (opens in tab)">
+            <Tooltip title="Import all previous courses from Workday">
               <IconButton
-                onClick={() => {
-                  startImport("importCourseHistory");
-                }}
+                onClick={() => handleImportClick("importCourseHistory")}
                 sx={{ ml: 1 }}
               >
                 <Description />
@@ -102,6 +147,46 @@ export default function CourseAccordionSection({
           </IconButton>
         </Tooltip>
       </Box>
+
+      {/* Import Confirmation Dialog */}
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        aria-labelledby="import-dialog-title"
+        aria-describedby="import-dialog-description"
+      >
+        <DialogTitle id="import-dialog-title">
+          {getDialogText().title}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="import-dialog-description" sx={{ whiteSpace: "pre-line" }}>
+            {getDialogText().content}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setImportDialogOpen(false)}
+            sx={{
+              color: "#802a25",
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleImportConfirm}
+            variant="contained"
+            sx={{
+              backgroundColor: "#802a25",
+              "&:hover": {
+                backgroundColor: "#671f1a",
+              },
+            }}
+          >
+            Proceed
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {expanded && (
         <Box
           sx={{
@@ -127,6 +212,7 @@ export default function CourseAccordionSection({
                 label="Course"
                 variant="outlined"
                 size="small"
+                sx={textFieldSx}
               />
             )}
           />
@@ -145,6 +231,7 @@ export default function CourseAccordionSection({
                 label="Professor"
                 variant="outlined"
                 size="small"
+                sx={textFieldSx}
               />
             )}
           />
@@ -163,6 +250,7 @@ export default function CourseAccordionSection({
                 label={type === "interested" ? "Meeting Pattern" : "Quarter"}
                 variant="outlined"
                 size="small"
+                sx={textFieldSx}
               />
             )}
           />

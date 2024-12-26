@@ -229,7 +229,7 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
           <Stack direction="column" spacing={0.5}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Edit fontSize="small" />
-              <Typography>Edit Your Courses</Typography>
+              <Typography>Your Courses</Typography>
             </Stack>
             <Typography variant="body2" color="text.secondary">
               Edit and import courses to be displayed on your profile.

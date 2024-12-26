@@ -25,7 +25,7 @@ export default function Main({}) {
 
   return (
     <AuthWrapper>
-      <Box ref={boxRef} sx={{ overflow: "auto" }}>
+      <Box ref={boxRef} sx={{ padding: 2, overflow: "auto" }}>
         <Box
           sx={{
             mb: 3,
@@ -38,12 +38,13 @@ export default function Main({}) {
           <Typography
             sx={{
               mb: 3,
-              alignSelf: "flex-start ",
+              alignSelf: "flex-start",
               ml: "1.3rem",
+              fontSize: "1.1rem", 
             }}
             variant="h6"
           >
-            Search Professor and Course Information
+            Search Course and Professor Information
             <IconButton
               sx={{
                 ml: 0.5,

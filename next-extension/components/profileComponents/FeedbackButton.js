@@ -34,6 +34,31 @@ export default function FeedbackButton({ handleActionCompleted }) {
     handleActionCompleted("Feedback submitted successfully!", "success");
   }
 
+  const customStyles = {
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "#ccc",
+      },
+      "&:hover fieldset": {
+        borderColor: "#ccc",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#703331",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      color: "#ccc",
+    },
+    "& .MuiInputLabel-outlined-root": {
+      "&.Mui-focused": {
+        color: "#703331",
+      },
+    },
+    "& .Mui-focused.MuiInputLabel-root": {
+      color: "#703331",
+    },
+  };
+
   return (
     <>
       <Button
@@ -57,7 +82,7 @@ export default function FeedbackButton({ handleActionCompleted }) {
           }}
         >
           <Stack spacing={2} marginTop={2}>
-            <FormControl fullWidth>
+            <FormControl fullWidth sx={customStyles}>
               <InputLabel id="feedback-type-label">Feedback Type</InputLabel>
               <Select
                 labelId="feedback-type-label"
@@ -80,6 +105,7 @@ export default function FeedbackButton({ handleActionCompleted }) {
               placeholder="Write your feedback here..."
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
+              sx={customStyles}
             />
 
             <Button
@@ -107,3 +133,4 @@ export default function FeedbackButton({ handleActionCompleted }) {
     </>
   );
 }
+

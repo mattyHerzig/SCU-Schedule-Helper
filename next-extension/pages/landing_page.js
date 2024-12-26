@@ -115,7 +115,7 @@ const LandingPage = () => {
         sx={{
           position: 'fixed',
           top: 0,
-          right: 50, // Moved more to the right
+          right: 50,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

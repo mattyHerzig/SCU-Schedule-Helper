@@ -66,7 +66,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
   }
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: 1 }}>
       <AppBar
         position="static"
         sx={{
