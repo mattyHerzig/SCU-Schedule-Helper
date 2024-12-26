@@ -37,7 +37,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
     });
   }, []);
 
-  async function checkEvals () {
+  async function checkEvals() {
     try {
       setIsLoading(true);
       const data = await chrome.storage.local.get([
@@ -51,9 +51,9 @@ export default function ProfCourseSearch({ scrollToTop }) {
     } catch (ignore) {
       setIsLoading(false);
     }
-  };
+  }
 
-  async function retryDownload () {
+  async function retryDownload() {
     try {
       const errorMessage = await chrome.runtime.sendMessage("downloadEvals");
       if (errorMessage) onError(errorMessage);
@@ -61,12 +61,12 @@ export default function ProfCourseSearch({ scrollToTop }) {
       console.error("Error retrying download:", error);
       onError("An unknown error occurred while retrying download.");
     }
-  };
+  }
 
-  function onError (message) {
+  function onError(message) {
     setError(message);
     setShowActionCompletedMessage(true);
-  };
+  }
 
   const allOptions = useMemo(() => {
     if (!evalsData) return [];
@@ -105,12 +105,10 @@ export default function ProfCourseSearch({ scrollToTop }) {
 
   const searchOptions = useMemo(() => {
     if (searchQuery.trim() === "") return [];
-    return allOptions.filter((option) =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    return allOptions;
   }, [allOptions, searchQuery]);
 
-  function onPageNavigation (newPageKey) {
+  function onPageNavigation(newPageKey) {
     setSelected((prev) => {
       const newPageData = evalsData[newPageKey];
       if (newPageData.type === "prof") {
@@ -132,7 +130,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
       }
     });
     scrollToTop();
-  };
+  }
 
   if (isLoading) {
     return (
@@ -142,9 +140,9 @@ export default function ProfCourseSearch({ scrollToTop }) {
     );
   }
 
-  function handleSearchChange (event) {
+  function handleSearchChange(event) {
     setSearchQuery(event.target.value);
-  };
+  }
 
   if (!evalsData || Object.keys(evalsData).length === 0) {
     return (
@@ -183,7 +181,6 @@ export default function ProfCourseSearch({ scrollToTop }) {
         <Autocomplete
           options={searchOptions}
           groupBy={(option) => option.groupLabel}
-          getOptionLabel={(option) => option.label}
           value={selected}
           onChange={(event, newValue) => {
             setSelected(newValue);

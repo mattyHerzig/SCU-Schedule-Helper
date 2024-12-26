@@ -63,7 +63,7 @@ export default function FeedbackButton() {
         }}
         onClick={handleOpen}
       >
-        Submit Feedback/Bug Report
+        Submit Feedback
       </Button>
 
       <Dialog 
