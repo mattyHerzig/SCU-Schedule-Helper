@@ -20,7 +20,7 @@ import CourseAccordionSection from "./CourseAccordionSection.js";
 export default function CourseAccordion({ userInfo, handleActionCompleted }) {
   const [evalsData, setEvalsData] = useState(null);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
-  const [courseToRemove, setCourseToRemove] = useState(null);
+  const [coursesToRemove, setCoursesToRemove] = useState([]);
   const [transformedCourses, setTransformedCourses] = useState({
     interested: [],
     taken: [],
@@ -165,43 +165,60 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
 
   function handleRemoveCourseClick(event, course) {
     event.stopPropagation();
-    setCourseToRemove(course);
+    setCoursesToRemove([course]);
     setOpenConfirmDialog(true);
   }
 
-  async function handleConfirmRemoveCourse() {
-    if (courseToRemove) {
-      try {
-        const updateItems = {};
-        if (courseToRemove.type === "interested") {
-          updateItems.interestedSections = {
-            remove: [courseToRemove.key],
-          };
-        } else {
-          updateItems.coursesTaken = {
-            remove: [courseToRemove.key],
-          };
-        }
+  function handleDeleteAllCoursesClick(event, type) {
+    event.stopPropagation();
+    setOpenConfirmDialog(true);
+    setCoursesToRemove(
+      transformedCourses[type === "interested" ? "interested" : "taken"].filter(
+        (course) => course.type === type,
+      ),
+    );
+  }
 
-        const messagePayload = {
-          type: "updateUser",
-          updateItems,
-        };
+  async function handleConfirmRemoveCourses() {
+    if (coursesToRemove.length < 1) {
+      setOpenConfirmDialog(false);
+      handleActionCompleted("No courses to delete!", "error");
+      return;
+    }
+    try {
+      const updateItems = {};
+      updateItems.interestedSections = {
+        remove: coursesToRemove
+          .filter((course) => course.type === "interested")
+          .map((course) => course.key),
+      };
+      updateItems.coursesTaken = {
+        remove: coursesToRemove
+          .filter((course) => course.type === "taken")
+          .map((course) => course.key),
+      };
 
-        const updateResponse = await chrome.runtime.sendMessage(messagePayload);
-        setOpenConfirmDialog(false);
-        if (updateResponse && !updateResponse.ok) {
-          handleActionCompleted(updateResponse.message, "error");
-        } else {
-          handleActionCompleted("Course successfully removed!", "success");
-        }
-      } catch (error) {
-        console.error("Error removing course:", error);
+      const messagePayload = {
+        type: "updateUser",
+        updateItems,
+      };
+
+      const updateResponse = await chrome.runtime.sendMessage(messagePayload);
+      setOpenConfirmDialog(false);
+      if (updateResponse && !updateResponse.ok) {
+        handleActionCompleted(updateResponse.message, "error");
+      } else {
         handleActionCompleted(
-          "An unexpected error occurred while removing the course. Please try again later.",
-          "error",
+          `Course${(coursesToRemove.length > 1 && "s") || ""} successfully removed!`,
+          "success",
         );
       }
+    } catch (error) {
+      console.error("Error removing course:", error);
+      handleActionCompleted(
+        "An unexpected error occurred while removing the course. Please try again later.",
+        "error",
+      );
     }
   }
 
@@ -226,6 +243,7 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
             handleAddCourse={handleAddCourse}
             handleEditCourse={handleEditCourse}
             handleRemoveCourseClick={handleRemoveCourseClick}
+            handleDeleteAllCoursesClick={handleDeleteAllCoursesClick}
             title="Interested Courses"
             courses={transformedCourses.interested}
             type="interested"
@@ -236,6 +254,7 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
             handleAddCourse={handleAddCourse}
             handleEditCourse={handleEditCourse}
             handleRemoveCourseClick={handleRemoveCourseClick}
+            handleDeleteAllCoursesClick={handleDeleteAllCoursesClick}
             title="Taken Courses"
             courses={transformedCourses.taken}
             type="taken"
@@ -246,29 +265,31 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
         open={openConfirmDialog}
         onClose={() => {
           setOpenConfirmDialog(false);
-          setCourseToRemove(null);
         }}
         aria-labelledby="remove-course-dialog-title"
         aria-describedby="remove-course-dialog-description"
       >
-        <DialogTitle id="remove-course-dialog-title">Remove Course</DialogTitle>
+        <DialogTitle id="remove-course-dialog-title">
+          {coursesToRemove.length === 1 ? "Remove Course" : "Remove Courses"}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText id="remove-course-dialog-description">
-            Are you sure you want to remove this course?
+            {coursesToRemove.length === 1
+              ? "Are you sure you want to remove this course?"
+              : "Are you sure you want to remove these courses?"}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button
             onClick={() => {
               setOpenConfirmDialog(false);
-              setCourseToRemove(null);
             }}
             color="primary"
           >
             Cancel
           </Button>
           <Button
-            onClick={handleConfirmRemoveCourse}
+            onClick={handleConfirmRemoveCourses}
             color="error"
             variant="contained"
             autoFocus

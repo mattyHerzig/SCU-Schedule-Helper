@@ -422,7 +422,7 @@ export async function importCourseHistory() {
 async function openTabAndSendMessage(url, message) {
   const createdTab = await chrome.tabs.create({ url });
 
-  async function tabListener (tabId, changeInfo, tab) {
+  async function tabListener(tabId, changeInfo, tab) {
     if (tabId === createdTab.id && changeInfo.status === "complete") {
       try {
         const response = await chrome.tabs.sendMessage(createdTab.id, message);
@@ -431,20 +431,8 @@ async function openTabAndSendMessage(url, message) {
       } catch (ignore) {}
     }
     return true;
-  };
-  chrome.tabs.onUpdated.addListener(tabListener);
-}
-
-export async function clearCourseHistory() {
-  const currentCoursesTaken =
-    (await chrome.storage.local.get("userInfo")).userInfo.coursesTaken || [];
-  const updateResponse = await updateUser({
-    coursesTaken: { remove: currentCoursesTaken },
-  });
-  if (updateResponse && !updateResponse.ok) {
-    return updateResponse.message;
   }
-  return null;
+  chrome.tabs.onUpdated.addListener(tabListener);
 }
 
 function getS3PhotoUrl(userId) {

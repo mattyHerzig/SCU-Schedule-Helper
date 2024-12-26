@@ -7,7 +7,6 @@ import { handleNotification, subscribe } from "./utils/notifications.js";
 import { getRmpRatings } from "./utils/rmp.js";
 import {
   importCurrentCourses,
-  clearCourseHistory,
   deleteAccount,
   importCourseHistory,
   queryUserByName,
@@ -80,11 +79,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse(response);
       });
       break;
-    case "clearCourseHistory":
-      clearCourseHistory().then((response) => {
-        sendResponse(response);
-      });
-      break;
+
     case "runStartupChecks":
       runStartupChecks().then(() => {
         sendResponse();

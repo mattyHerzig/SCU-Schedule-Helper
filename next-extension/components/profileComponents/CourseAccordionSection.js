@@ -9,7 +9,7 @@ import {
   Stack,
   Tooltip,
 } from "@mui/material";
-import { Add, Delete, OpenInBrowser } from "@mui/icons-material";
+import { Add, Delete, Description, ImportContacts } from "@mui/icons-material";
 import CourseBox from "./CourseBox";
 import { getRelevantCourseTimes } from "../utils/user.js";
 
@@ -19,6 +19,7 @@ export default function CourseAccordionSection({
   handleAddCourse,
   handleEditCourse,
   handleRemoveCourseClick,
+  handleDeleteAllCoursesClick,
   title,
   courses,
   type,
@@ -59,50 +60,47 @@ export default function CourseAccordionSection({
     }
   }
 
-  async function clearCourses() {
-    try {
-      const message = {
-        type: "updateUser",
-        updateItems: {
-          [type === "interested" ? "interestedSections" : "coursesTaken"]: {
-            remove: courses.map((course) => course.key),
-          },
-        },
-      };
-      await chrome.runtime.sendMessage(message);
-    } catch (error) {
-      console.error("Error clearing courses:", error);
-      handleActionCompleted(
-        "An unknown error occurred while clearing courses.",
-        "error",
-      );
-    }
-  }
-
   return (
     <Box sx={{ mb: 1 }}>
       <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
         <Typography variant="h6">{title}</Typography>
-        <IconButton onClick={() => setExpanded(!expanded)} sx={{ ml: 1 }}>
-          <Add />
-        </IconButton>
+        <Tooltip title="Add a course">
+          <IconButton onClick={() => setExpanded(!expanded)} sx={{ ml: 1 }}>
+            <Add />
+          </IconButton>
+        </Tooltip>
         {type === "taken" && (
-          <Tooltip title="Import courses from Workday">
-            <IconButton
-              onClick={() => {
-                startImport("importAll");
-              }}
-              sx={{ ml: 1 }}
-            >
-              <OpenInBrowser />
-            </IconButton>
-          </Tooltip>
+          <>
+            <Tooltip title="Import current courses from Workday (opens in tab)">
+              <IconButton
+                onClick={() => {
+                  startImport("importCurrentCourses");
+                }}
+                sx={{ ml: 1 }}
+              >
+                <ImportContacts />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Import all previous courses from Workday (opens in tab)">
+              <IconButton
+                onClick={() => {
+                  startImport("importCourseHistory");
+                }}
+                sx={{ ml: 1 }}
+              >
+                <Description />
+              </IconButton>
+            </Tooltip>
+          </>
         )}
-        {/* <Tooltip title={`Clear all ${title.toLowerCase()}`}>
-          <IconButton onClick={clearCourses} sx={{ ml: 1 }}>
+        <Tooltip title={`Delete all ${title.toLowerCase()}`}>
+          <IconButton
+            onClick={(e) => handleDeleteAllCoursesClick(e, type)}
+            sx={{ ml: 1 }}
+          >
             <Delete />
           </IconButton>
-        </Tooltip> */}
+        </Tooltip>
       </Box>
       {expanded && (
         <Box

@@ -6,6 +6,8 @@ import {
 } from "./evalsAndMappings.js";
 import { refreshUserData } from "./user.js";
 
+const sizePattern = /(.*)=s\d+-c/;
+
 /**
  * Triggers the OAuth flow to sign in the user, and creates an account for the user, using the OAuth info provided by Google.
  * @returns {Promise<string | null>} Error message or null if successful
@@ -64,6 +66,12 @@ export async function signIn() {
   // Start eval download in background.
   downloadEvals();
   downloadProfessorNameMappings();
+  if (data.oAuthInfo.photoUrl.match(sizePattern)) {
+    data.oAuthInfo.photoUrl = data.oAuthInfo.photoUrl.replace(
+      sizePattern,
+      "$1=s256-c",
+    );
+  }
 
   const createdUser = await fetch(prodUserEndpoint, {
     method: "POST",

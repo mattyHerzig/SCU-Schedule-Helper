@@ -34,7 +34,9 @@ export default function CourseDetailsCard({
                 <React.Fragment key={index}>
                   <Stack>
                     <Typography variant="body2">
-                      {course.courseCode} - {course.courseName}
+                      {(course.courseCode &&
+                        `${course.courseCode} - ${course.courseName}`) ||
+                        course.courseName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Prof. {course.professor} | {course.meetingPattern}
@@ -67,7 +69,9 @@ export default function CourseDetailsCard({
                 <React.Fragment key={index}>
                   <Stack>
                     <Typography variant="body2">
-                      {course.courseCode} - {course.courseName}
+                      {(course.courseCode &&
+                        `${course.courseCode} - ${course.courseName}`) ||
+                        course.courseName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {(course.professor !== "Not taken at SCU" &&

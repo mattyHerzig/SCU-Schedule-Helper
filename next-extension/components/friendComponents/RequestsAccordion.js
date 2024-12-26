@@ -27,7 +27,7 @@ export default function RequestsAccordion({
     if (requestsOut.length === 0) setRequestsOutExpanded(false);
   }, [requestsIn, requestsOut]);
 
-  async function handleAcceptRequest (event, request) {
+  async function handleAcceptRequest(event, request) {
     event.stopPropagation();
     try {
       const updateResponse = await chrome.runtime.sendMessage({
@@ -44,9 +44,9 @@ export default function RequestsAccordion({
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
-  };
+  }
 
-  async function handleRejectRequest (event, request, requestType) {
+  async function handleRejectRequest(event, request, requestType) {
     event.stopPropagation();
     const key = requestType == "incoming" ? "removeIncoming" : "removeOutgoing";
     try {
@@ -64,7 +64,7 @@ export default function RequestsAccordion({
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
-  };
+  }
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -182,7 +182,7 @@ export default function RequestsAccordion({
               >
                 <Box>
                   <Typography variant="body2">
-                    Email: {request.email}
+                    Email: {`${request.id}@scu.edu`}
                   </Typography>
                 </Box>
               </AccordionDetails>
@@ -286,7 +286,7 @@ export default function RequestsAccordion({
               >
                 <Box>
                   <Typography variant="body2">
-                    Email: {request.email}
+                    Email: {`${request.id}@scu.edu`}
                   </Typography>
                 </Box>
               </AccordionDetails>

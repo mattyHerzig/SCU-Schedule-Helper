@@ -12,8 +12,8 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   courseImporter.id = "root";
 
   courseImporter.style.position = "fixed";
-  courseImporter.style.top = "5rem";
-  courseImporter.style.right = "5rem";
+  courseImporter.style.top = "3rem";
+  courseImporter.style.right = "3rem";
   courseImporter.style.zIndex = "9999";
 
   document.body.prepend(courseImporter);

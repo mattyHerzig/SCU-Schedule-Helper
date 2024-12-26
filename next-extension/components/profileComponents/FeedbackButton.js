@@ -1,55 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  FormControl,
+  InputLabel,
+  MenuItem,
   TextField,
-  Typography,
-  Stack
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+  Select,
+  Stack,
+} from "@mui/material";
 
-export default function FeedbackButton() {
+export default function FeedbackButton({ handleActionCompleted }) {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [feedbackText, setFeedbackText] = useState('');
-  const [selectedFeedbackType, setSelectedFeedbackType] = useState('');
+  const [feedbackText, setFeedbackText] = useState("");
+  const [selectedFeedbackType, setSelectedFeedbackType] = useState("");
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
-    setExpanded(false);
-    setFeedbackText('');
-    setSelectedFeedbackType('');
+    setFeedbackText("");
+    setSelectedFeedbackType("");
   };
 
-  const handleAccordionChange = (event, isExpanded) => {
-    setExpanded(isExpanded ? 'feedback' : false);
-  };
-
-  const handleFeedbackTypeChange = (type) => {
-    setSelectedFeedbackType(type);
-  };
-
-  /*
-  const handleSubmit = async () => {
-    if (feedbackText.trim()) {
-      console.log('Feedback Submitted:', selectedFeedbackType, feedbackText);
-      handleClose();
-    }
-  };
-  */
-
-  const feedbackTypes = [
-    { type: 'comment', label: 'Comment' },
-    { type: 'question', label: 'Question' },
-    { type: 'bug', label: 'Bug Report' }
-  ];
+  async function handleSubmit() {
+    // TODO: Submit feedback to backend.
+    console.log("Submitting feedback...");
+    setOpen(false);
+    setFeedbackText("");
+    setSelectedFeedbackType("");
+    handleActionCompleted("Feedback submitted successfully!", "success");
+  }
 
   return (
     <>
@@ -66,52 +49,29 @@ export default function FeedbackButton() {
         Submit Feedback
       </Button>
 
-      <Dialog 
-        open={open} 
-        onClose={handleClose}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>Submit Feedback</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2}>
-            <Accordion
-              expanded={expanded === 'feedback'}
-              onChange={handleAccordionChange}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1">
-                  Select Feedback Type
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack spacing={2}>
-                  <Typography variant="body2" color="text.secondary">
-                    Please select the type of feedback you'd like to submit.
-                  </Typography>
-                  {feedbackTypes.map((feedbackType) => (
-                    <Button
-                      key={feedbackType.type}
-                      variant={selectedFeedbackType === feedbackType.type ? "contained" : "outlined"}
-                      onClick={() => handleFeedbackTypeChange(feedbackType.type)}
-                      fullWidth
-                      sx={{
-                        borderColor: "#802a25", 
-                        color: selectedFeedbackType === feedbackType.type ? "white" : "#802a25",
-                        backgroundColor: selectedFeedbackType === feedbackType.type ? "#671f1a" : "transparent",
-                        "&:hover": {
-                          backgroundColor: "#671f1a", 
-                          color: "white", 
-                        },
-                      }}
-                    >
-                      {feedbackType.label}
-                    </Button>
-                  ))}
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
-
+        <DialogContent
+          sx={{
+            paddingBottom: 0,
+          }}
+        >
+          <Stack spacing={2} marginTop={2}>
+            <FormControl fullWidth>
+              <InputLabel id="feedback-type-label">Feedback Type</InputLabel>
+              <Select
+                labelId="feedback-type-label"
+                id="feedback-type"
+                value={selectedFeedbackType}
+                label="Feedback Type"
+                onChange={(e) => setSelectedFeedbackType(e.target.value)}
+              >
+                <MenuItem value={"general"}>General</MenuItem>
+                <MenuItem value={"feature request"}>Feature Request</MenuItem>
+                <MenuItem value={"bug report"}>Bug Report</MenuItem>
+                <MenuItem value={"other"}>Other</MenuItem>
+              </Select>
+            </FormControl>
             <TextField
               multiline
               rows={4}
@@ -124,7 +84,7 @@ export default function FeedbackButton() {
 
             <Button
               variant="contained"
-              //onClick={handleSubmit}
+              onClick={handleSubmit}
               disabled={!selectedFeedbackType || !feedbackText.trim()}
               sx={{
                 backgroundColor: "#802a25",
@@ -147,4 +107,3 @@ export default function FeedbackButton() {
     </>
   );
 }
-
