@@ -136,7 +136,13 @@ export default function CourseBox({
               size="small"
               onClick={handleSaveEdit}
               variant="contained"
-              color="primary"
+              sx={{
+                backgroundColor: "#802a25",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#671f1a",
+                },
+              }}
             >
               Save
             </Button>
