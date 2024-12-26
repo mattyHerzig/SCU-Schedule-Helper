@@ -34,8 +34,12 @@ export const CourseCode = z
   );
 
 export const CourseRange = z.object({
-  startCourseCode: CourseCode,
-  endCourseCode: CourseCode,
+  startCourseCode: CourseCode.describe(
+    "The first course code in the range (inclusive)",
+  ),
+  endCourseCode: CourseCode.describe(
+    "The last course code in the range (inclusive)",
+  ),
   numFromRange: z
     .number()
     .describe(
@@ -47,7 +51,7 @@ export const CourseRange = z.object({
 });
 
 export const CourseCodeOrRange = z
-  .union([CourseCode, CourseRange])
+  .union([CourseCode, CourseRange.omit({ numFromRange: true })])
   .describe("A course code or a range of course codes");
 
 export const AnyNFromPool = z
@@ -123,6 +127,11 @@ export const Emphasis = z.object({
     .describe(
       "Requirements on the number units of a certain type that must be taken, if applicable",
     ),
+  otherRequirements: z
+    .string()
+    .describe(
+      "Any other requirements that are not covered by the other fields",
+    ),
 });
 
 export const Minor = z.object({
@@ -151,6 +160,20 @@ export const Minor = z.object({
     .describe(
       "Requirements on the number units of a certain type that must be taken, if applicable",
     ),
+  otherRequirements: z
+    .string()
+    .describe(
+      "Any other requirements that are not covered by the other fields",
+    ),
+});
+
+export const OtherRequirement = z.object({
+  requirementName: z
+    .string()
+    .describe("A short, descriptive name of the requirement"),
+  requirementDescription: z
+    .string()
+    .describe("A full description of the requirement"),
 });
 
 export const Major = z.object({
@@ -180,6 +203,11 @@ export const Major = z.object({
     .array(UnitRequirement)
     .describe(
       "Requirements on the number units of a certain type that must be taken, if applicable",
+    ),
+  otherRequirements: z
+    .array(OtherRequirement)
+    .describe(
+      "Any other requirements that are not covered by the other fields",
     ),
 });
 
@@ -264,8 +292,22 @@ export const DepartmentInfo = z.object({
     .describe("Any errors that are encountered when parsing the page"),
 });
 
+export const SchoolInfo = z.object({
+  schoolName: z.string().describe("The name of the school or college"),
+  schoolDescription: z.string().describe("A short description of the school"),
+  schoolRequirements: z
+    .array(
+      Requirement.omit({
+        appliesTo: true,
+        otherPleaseSpecify: true,
+        nameOfWhichItAppliesTo: true,
+      }),
+    )
+    .describe("The requirements for the school"),
+});
+
 export const CourseCatalog = z.object({
-  courses: z.array(Course).optional(),
+  courses: z.array(Course),
   errors: z
     .array(z.string())
     .describe("Any errors that are encountered when parsing the page"),
