@@ -8,6 +8,7 @@ const nextConfig = {
   reactStrictMode: true,
   // Disable server features
   trailingSlash: true,
+  assetPrefix: "./", // Required for static export
 };
 
 module.exports = nextConfig;

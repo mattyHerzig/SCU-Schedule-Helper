@@ -110,7 +110,7 @@ export default function Profile() {
   return (
     <AuthWrapper>
       <Box sx={{ padding: 2, boxSizing: "border-box" }}>
-        <Stack sx ={{mb: 2}} direction="row" alignItems="center"a>
+        <Stack sx ={{mb: 2}} direction="row" alignItems="center">
           <Typography variant="h6" sx={{ textAlign: "center" }}>
             Your Profile
           </Typography>

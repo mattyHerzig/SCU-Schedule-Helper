@@ -103,9 +103,7 @@ export default function CourseAccordionSection({
       title: `Import ${isCurrentCourses ? "Current" : "Previous"} Courses`,
       content: `You will be redirected to the Workday course page to automatically import your ${
         isCurrentCourses ? "current" : "previous"
-      } courses. We will only collect: Course names, Professor names, and Quarter information
-
-This data helps display courses you and your friends have taken or are interested in. It will also be used for our upcoming course schedule generator feature.`,
+      } courses. Only course names, professor names, and course time information is stored.`,
     };
   };
 
@@ -159,7 +157,10 @@ This data helps display courses you and your friends have taken or are intereste
           {getDialogText().title}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="import-dialog-description" sx={{ whiteSpace: "pre-line" }}>
+          <DialogContentText
+            id="import-dialog-description"
+            sx={{ whiteSpace: "pre-line" }}
+          >
             {getDialogText().content}
           </DialogContentText>
         </DialogContent>
