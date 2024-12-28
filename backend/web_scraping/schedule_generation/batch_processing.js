@@ -1,18 +1,13 @@
 import OpenAI from "openai";
 import { get_encoding, encoding_for_model } from "tiktoken";
 import fs from "fs";
-import { count } from "console";
 
 const universityCatalog = {
   schools: [],
-  majors: [],
-  minors: [],
-  emphases: [],
+  depts: [],
   specialPrograms: [],
-  requirements: [],
   courses: [],
   errors: [],
-  // ...existingCatalog,
 };
 
 const openAIClient = new OpenAI(process.env.OPENAI_API_KEY);
@@ -30,11 +25,6 @@ async function deleteAllFiles() {
   }
 }
 
-function countTokens(text) {
-  const enc = get_encoding("cl100k_base");
-  console.log(`Text has ${enc.encode(text).length} tokens`);
-}
-
 function mergeBatchResults(batchFilenames) {
   for (const filename of batchFilenames) {
     const data = fs.readFileSync(filename, "utf-8").toString();
@@ -44,24 +34,24 @@ function mergeBatchResults(batchFilenames) {
       if (line) {
         try {
           const result = JSON.parse(line);
-          const {
-            schools,
-            majors,
-            minors,
-            emphases,
-            specialPrograms,
-            requirements,
-            courses,
-            errors,
-          } = JSON.parse(result.response.body.choices[0].message.content);
-          universityCatalog.schools.push(...(schools || []));
-          universityCatalog.majors.push(...(majors || []));
-          universityCatalog.minors.push(...(minors || []));
-          universityCatalog.emphases.push(...(emphases || []));
-          universityCatalog.specialPrograms.push(...(specialPrograms || []));
-          universityCatalog.requirements.push(...(requirements || []));
-          universityCatalog.courses.push(...(courses || []));
-          universityCatalog.errors.push(...(errors || []));
+
+          const data = JSON.parse(
+            result.response.body.choices[0].message.content,
+          );
+          universityCatalog.errors.push(...(data.errors || []));
+          delete data.errors;
+          if (result.custom_id.includes("SCHOOL_INFO")) {
+            universityCatalog.schools.push(data);
+          }
+          if (result.custom_id.includes("DEPARTMENT_INFO")) {
+            universityCatalog.depts.push(data);
+          }
+          if (result.custom_id.includes("SPECIAL_PROGRAM_INFO")) {
+            universityCatalog.specialPrograms.push(data);
+          }
+          if (result.custom_id.includes("COURSE_INFO")) {
+            universityCatalog.courses.push(data.courses);
+          }
         } catch (e) {
           console.error(`Error parsing line ${i} of ${filename}`);
           console.error(e);
@@ -70,19 +60,9 @@ function mergeBatchResults(batchFilenames) {
     }
   }
   fs.writeFileSync(
-    "university_catalog.json",
+    "full_university_catalog.json",
     JSON.stringify(universityCatalog),
   );
 }
 
-// countTokens(
-//   fs
-//     .readFileSync("chunk_0_gpt_4o_requests_1735329994541.jsonl", "utf-8")
-//     .toString(),
-// );
-// checkBatchStatus("batch_676ee98e2c50819090f4342bb24effb5");
-
-mergeBatchResults([
-  "batch_676f0db4d8a88190a2b69525e93537d9_output.jsonl",
-  "batch_676f0db2d0c88190a44670d75a80e0f6_output.jsonl",
-]);
+mergeBatchResults(["batch_67705ff73d3081908ec6adaa2820d866_output.jsonl"]);

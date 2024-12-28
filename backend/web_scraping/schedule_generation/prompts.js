@@ -1,86 +1,84 @@
-export const EXTRACT_DATA_PROMPT = `Extract any data that you can from the page! Some pages will not have any useful data, and that's totally fine. Just a few notes:
-
-For courses: the course code should be a string with four uppercase letters, representing the department, immediately followed by the course number, for example CSCI183. Don't include any leading zeros in the course code. If the page represents a page for a particular department(s), do not include courses from other departments (even if they are referenced on the page). 
-
-Some pages may include course sequences within a singular entry. These should still be listed as separate courses. You may assume that if there is a name and fairly long description of a course on a page, then it is within that department (and should be included).
-
-Some pages might include multiple majors/minors and emphases. Please include all of the ones that you see. Include requirements that apply to majors, minors, emphases, and also general requirements that apply to all students. You can also mark a requirement in the other category, if it doesn't fit into one of the aforementioned categories.
-
-In general, a department must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department).
-
-A lower division course always has a number between 1 and 99 (inclusive), while upper division courses always have a number between 100 and 199 (inclusive). 
-
-If a page says you need to take "any other lower division course" from a department, you can just include that as a CourseRange with startCourseCode being the department code followed by 1 and the endCourseCode being the department code followed by 99.
-
-Furthermore, sometimes the university may require that a student take a number of courses from a pool of given courses. For example “One of the following Methods 1 courses: ANTH 111, 112, 113” is an example of a requirement where at least n=1 course is required from a pool of course codes which is {ANTH111, ANTH112, ANTH113}.
-
-Here is a more complex example:
-
-“Six upper-division courses selected from the following three categories (all three categories must be represented):
-Archaeology (ANTH 140-149, 173, 186, 189)
-Biological Anthropology (ANTH 130-139)
-Cultural Anthropology (ANTH 150-179, 184, 185, 187, 188)”
-
-In this example, the requirement can be described as {
-	n: 6
-	fromPools: [
-[
-	{
-startCourseCode: “ANTH140”
-endCourseCode: “ANTH149”
-},
-“ANTH173”,
-“ANTH186”,
-“ANTH189”,
-],
-[
-	{
-		startCourseCode: “ANTH130”
-		endCourseCode: “ANTH139”
-	}
-],
-[
-	{
-		startCourseCode: “ANTH150”
-		endCourseCode: “ANTH179”
-	},
-	“ANTH184”,
-	“ANTH185”,
-	“ANTH187”,
-	“ANTH188”,
-]
-
-}
-
-Sometimes, there are requirements that don't involve courses, such as attending events or doing community service. For these, you can create a separate requirement entry with just a name and a description and the major which it applies to, and leave the required courses field blank. These types of requirements should definitely be included too.
-
-If there is a requirement, but you can't get the necessary information from the page to figure out which courses are required, you can also leave the required courses field blank in this case. An example of this would be a requirement like “Students must complete a minimum of 175 quarter units of credit, at least 60 of which must be upper-division” but the page does not include a list of all the undergraduate departments.
-
-If you encounter any errors or strange information on the page, you can just describe the error and mark it in the output.
-
-Thanks for your help!`;
-
 export const EXTRACT_SCHOOL_INFO_PROMPT = `Extract any data about the school/college that you can from the page! Just a few notes:
-
-The page may include detailed information about some courses. IN this case, the course code should be a string with four uppercase letters, representing the department, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
-
-The page may include course sequences within a singular entry. These should still be listed as separate courses. Do not include courses that do not have a detailed description, or are only briefly referenced.
 
 A department code must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department).
 
+A course code should always be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
+
 A lower division course always has a number between 1 and 99 (inclusive), while upper division courses always have a number between 100 and 199 (inclusive).
 
-If a page says you need to take "any lower division course" from a department, you can just include that as a CourseRange with startCourseCode being the department code followed by 1 and the endCourseCode being the department code followed by 99. Or, if they say ANY course can be taken from the department, that would be a range with the startCourseCode being the department code followed by 0, and the endCourseCode being the department code followed by 200.
+The page might include requirements regarding specific course requirements. These requirements are represented through expressions that combine sets of courses and/or course ranges, which are similar to boolean expressions. Each set can be prefixed with a number (the lower bound) or number range (lower bound and upper bound), which represents the min/max bounds on how many courses must be matched in the set to fulfill the requirement, or if no bounds are provided, one is calculated automatically. For example, if the page says students are required to take “one of the following courses: ANTH 111, 112, 115”, this can be represented by the expression (ANTH111 | ANTH112 | ANTH115). Also note in this case the calculated lower bound is 1. Or, if it said two of the following courses instead of one, that would be 2(ANTH111 | ANTH112 | ANTH115). Or, if all of the courses were required, it would be (ANTH111 & ANTH112 & ANTH115). An upper bound can also be given, which represents the maximum number of courses that can be matched in the set. If only one number is provided, it is assumed to be the lower bound (and with no upper bound). If a number range is provided, it is assumed to be in the form <lowerBound-upperBound>. As a more complex example:
 
-Furthermore, sometimes the university may require that a student take a number of courses from a pool of given courses. For example “One of the following Methods 1 courses: ANTH 111, 112, 115” is an example of a requirement where at least n=1 course is required from a pool of course codes which is {ANTH111, ANTH112, ANTH115}. There may sometimes be range requirements, where the requirement is something like: “Any three courses between CSCI 10 and 99, excluding 88”, and the requirement can then be described as:
-{
-startCourseCode: CSCI10,
-endCourseCode: CSCI99,
-numFromRange: 3,
-excludeCourses: [“CSCI88”]
-}
+The requirement: “Six (6) courses from the following lists, but no more than two (2) from List II.
 
-Course ranges can only be used for courses in the same department (i.e. you cannot make a range using both CSCI and MATH courses, use a pool instead). 
+List I—Production Courses:
+
+COMM 103
+COMM 130 or 130A (or COMM 130B prior toFall 2022)
+COMM 131D (or COMM 132B prior to Fall 2022)
+COMM 131E (or COMM 133B prior to Fall 2022)
+COMM 131F (or COMM 131B prior to Fall 2022)
+COMM 132
+COMM 132D
+COMM 133
+COMM 133W (or 188B prior to Fall 2022)
+COMM 134 (or COMM 134B prior to Fall 2022)
+COMM 135 (or COMM 135B prior to Fall 2022)
+COMM 146
+List II—History/Theory Courses:
+
+COMM 104
+COMM 136S (or COMM 136A prior to Fall 2022)
+COMM 136F
+COMM 137 (or COMM 137A prior to Fall 2022)
+COMM 137S
+COMM 138 (or COMM 138A prior to Fall 2022)
+COMM 139 (or Comm 139A prior to Fall 2022)
+COMM 140
+COMM 140B
+COMM 140W
+COMM 140C
+COMM 140Q
+COMM 141
+COMM 143 (or Comm prior to Fall 2022)
+COMM 145 (or Comm prior to Fall 2022)
+COMM 188A if completed before Fall 2022”
+
+Could be described as 
+6(COMM103 || 
+0-1(COM130 || COM130A || COMM130B) || 
+0-1(COMM131D || COMM132B) ||
+0-1(COMM131E || COMM133B) || 
+0-1(COMM131F || COMM131B) || 
+COMM132 || 
+COMM132D || 
+COMM133 || 
+0-1(COMM133W || COM188B) || 
+0-1(COMM134 || COMM134B) || 
+COMM146 || 
+0-2(
+COMM104 || 
+0-1(COMM136S || COMM136A) || 
+COMM136F || 
+0-1(COMM137 || COMM137A) || 
+COMM137S || 
+0-1(COMM138 || COMM138A) || 
+0-1(COMM139 || COMM139A) || 
+COMM140 || 
+COMM140B || 
+COMM140W || 
+COMM140C || 
+COMM140Q || 
+COMM141 || 
+COMM143 || 
+COMM145 || 
+COMM188A)
+)
+
+A course range can be represented with two course codes separated by a dash. For example, ANTH100-199. The lower and upper bounds on a range are always inclusive, so ANTH100-199 represents all upper division courses. If a requirement said something like “One course from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190” this could be represented as (CSCI183 | CSCI180 | CSCI168 | CSCI100-189). 
+
+Sometimes, courses need to be excluded from a set (i.e. not count towards the lower bound), in this case, we can use an exclusionary list at the end of the set to indicate this. If the previous example had said “Two courses from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190, except CSCI 172 and CSCI170, and any course between CSCI 130-135” we could do 2((CSCI183 | CSCI180 | CSCI168 | CSCI100-189) - (CSCI172, CSCI170, CSCI130-135)). Each element in the exclusionary list is separated by a comma. Notice that the lower bound goes on the outer set.
+
+Furthermore, sets can be combined using the same boolean logic.
 
 Here is a more complex example:
 
@@ -89,62 +87,7 @@ Archaeology (ANTH 140–149, 173, 186, 189)
 Biological Anthropology (ANTH 130–139)
 Cultural Anthropology (ANTH 150–179, 184, 185, 187, 188)”
 
-In this example, the requirement can be described as {
-	n: 6
-	fromPools: [
-[
-	{
-startCourseCode: “ANTH140”
-endCourseCode: “ANTH149”
-},
-“ANTH173”,
-“ANTH186”,
-“ANTH189”,
-],
-[
-	{
-		startCourseCode: “ANTH130”
-		endCourseCode: “ANTH139”
-	}
-],
-[
-	{
-		startCourseCode: “ANTH150”
-		endCourseCode: “ANTH179”
-	},
-	“ANTH184”,
-	“ANTH185”,
-	“ANTH187”,
-	“ANTH188”,
-]
-
-}
-
-Note from the above example that pools can include ranges. For example, the requirement “Two more courses from CSCI 127, 146, 147, 164, 166, MATH 123, CSEN/COEN 166, or any other additional 4-5 unit upper-division CSCI course below 190 or CSEN/COEN course below 188” would be described as 
-{
-n: 2,
-fromPools: [[
-  "CSCI127”,
-              “CSCI146”,
-              “CSCI147”,
-              “CSCI164”,
-              “CSCI166”,
-              “MATH123”,
-              “CSEN166”,
-	{
-	startCourseCode: CSCI100
-	endCourseCode: CSCI189
-	excludeCourses: []
-},
-	{
-	startCourseCode: CSCI100
-	endCourseCode: CSEN187
-	excludeCourses: []
-}
-]]
-}
-
-Note that the start and end course codes are always inclusive. Because the verbage said below CSEN 188, that means the range only goes up to CSEN187 inclusively.
+In this example, the requirement can be described as 6((ANTH140-149 | ANTH173 | ANTH186 | ANTH189) & (ANTH130-139) & (ANTH150-179 | ANTH184 | ANTH185 | ANTH187 | ANTH188)). The outer most set requires 6 courses, and at least one of them has to be from ANTH140-149, ANTH173, ANTH186 or ANTH189, and at least one of them must be from ANTH130-139 and at least one of them must be from ANTH150-179, ANTH184, ANTH185, ANTH187, or ANTH188.
 
 Sometimes, there are requirements that don’t involve courses, such as attending events or doing community service. For these, you can create an “other requirement” with just a name and a description. These types of requirements should definitely be included too. 
 
@@ -160,21 +103,86 @@ export const EXTRACT_DEPT_INFO_PROMPT = `Extract any data about the department t
 
 A department code must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department).
 
+A course code should always be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
+
 A lower division course always has a number between 1 and 99 (inclusive), while upper division courses always have a number between 100 and 199 (inclusive).
 
-The page might include multiple majors/minors and emphases. Please include all of the ones that you see. Also include all requirements on the page: those that apply to majors, minors, emphases, and also general requirements that apply to all students. You can also mark a requirement in the other category, if it doesn’t fit into one of the aforementioned categories.
+The page might include multiple majors/minors and emphases. Please include all of the ones that have detailed descriptions and the requirements. Do not include one if it is merely referenced. 
 
-If a page says you need to take "any lower division course" from a department, you can just include that as a CourseRange with startCourseCode being the department code followed by 1 and the endCourseCode being the department code followed by 99. Or, if they say ANY course can be taken from the department, that would be a range with the startCourseCode being the department code followed by 0, and the endCourseCode being the department code followed by 200.
+In terms of the requirements for majors/minors/emphases, course requirements are represented through expressions that combine sets of courses and/or course ranges, which are similar to boolean expressions. Each set can be prefixed with a number (the lower bound) or number range (lower bound and upper bound), which represents the min/max bounds on how many courses must be matched in the set to fulfill the requirement, or if no bounds are provided, one is calculated automatically. For example, if the page says students are required to take “one of the following courses: ANTH 111, 112, 115”, this can be represented by the expression (ANTH111 | ANTH112 | ANTH115). Also note in this case the calculated lower bound is 1. Or, if it said two of the following courses instead of one, that would be 2(ANTH111 | ANTH112 | ANTH115). Or, if all of the courses were required, it would be (ANTH111 & ANTH112 & ANTH115). An upper bound can also be given, which represents the maximum number of courses that can be matched in the set. If only one number is provided, it is assumed to be the lower bound (and with no upper bound). If a number range is provided, it is assumed to be in the form <lowerBound-upperBound>. As a more complex example:
 
-Furthermore, sometimes the university may require that a student take a number of courses from a pool of given courses. For example “One of the following Methods 1 courses: ANTH 111, 112, 115” is an example of a requirement where at least n=1 course is required from a pool of course codes which is {ANTH111, ANTH112, ANTH115}. There may sometimes be range requirements, where the requirement is something like: “Any three courses between CSCI 10 and 99, excluding 88”, and the requirement can then be described as:
-{
-startCourseCode: CSCI10,
-endCourseCode: CSCI99,
-numFromRange: 3,
-excludeCourses: [“CSCI88”]
-}
+The requirement: “Six (6) courses from the following lists, but no more than two (2) from List II.
 
-Course ranges can only be used for courses in the same department (i.e. you cannot make a range using both CSCI and MATH courses, use a pool instead). 
+List I—Production Courses:
+
+COMM 103
+COMM 130 or 130A (or COMM 130B prior toFall 2022)
+COMM 131D (or COMM 132B prior to Fall 2022)
+COMM 131E (or COMM 133B prior to Fall 2022)
+COMM 131F (or COMM 131B prior to Fall 2022)
+COMM 132
+COMM 132D
+COMM 133
+COMM 133W (or 188B prior to Fall 2022)
+COMM 134 (or COMM 134B prior to Fall 2022)
+COMM 135 (or COMM 135B prior to Fall 2022)
+COMM 146
+List II—History/Theory Courses:
+
+COMM 104
+COMM 136S (or COMM 136A prior to Fall 2022)
+COMM 136F
+COMM 137 (or COMM 137A prior to Fall 2022)
+COMM 137S
+COMM 138 (or COMM 138A prior to Fall 2022)
+COMM 139 (or Comm 139A prior to Fall 2022)
+COMM 140
+COMM 140B
+COMM 140W
+COMM 140C
+COMM 140Q
+COMM 141
+COMM 143 (or Comm prior to Fall 2022)
+COMM 145 (or Comm prior to Fall 2022)
+COMM 188A if completed before Fall 2022”
+
+Could be described as 
+6(COMM103 || 
+0-1(COM130 || COM130A || COMM130B) || 
+0-1(COMM131D || COMM132B) ||
+0-1(COMM131E || COMM133B) || 
+0-1(COMM131F || COMM131B) || 
+COMM132 || 
+COMM132D || 
+COMM133 || 
+0-1(COMM133W || COM188B) || 
+0-1(COMM134 || COMM134B) || 
+COMM146 || 
+0-2(
+COMM104 || 
+0-1(COMM136S || COMM136A) || 
+COMM136F || 
+0-1(COMM137 || COMM137A) || 
+COMM137S || 
+0-1(COMM138 || COMM138A) || 
+0-1(COMM139 || COMM139A) || 
+COMM140 || 
+COMM140B || 
+COMM140W || 
+COMM140C || 
+COMM140Q || 
+COMM141 || 
+COMM143 || 
+COMM145 || 
+COMM188A)
+)
+
+
+A course range can be represented with two course codes separated by a dash. For example, ANTH100-199. The lower and upper bounds on a range are always inclusive, so ANTH100-199 represents all upper division courses. If a requirement said something like “One course from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190” this could be represented as (CSCI183 | CSCI180 | CSCI168 | CSCI100-189). 
+
+Sometimes, courses need to be excluded from a set (i.e. not count towards the lower bound), in this case, we can use the exclusion operator (!) at the end of the set to indicate this. If the previous example had said “Two courses from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190, except CSCI 172 and CSCI170, and any course between CSCI 130-135” we could do 2((CSCI183 | CSCI180 | CSCI168 | CSCI100-189) && !(CSCI172 || CSCI170 || CSCI130-135)). Each element in the exclusionary list is separated by a comma. Notice that the lower bound goes on the outer set.
+
+Furthermore, sets can be combined using the same boolean logic.
 
 Here is a more complex example:
 
@@ -183,62 +191,7 @@ Archaeology (ANTH 140–149, 173, 186, 189)
 Biological Anthropology (ANTH 130–139)
 Cultural Anthropology (ANTH 150–179, 184, 185, 187, 188)”
 
-In this example, the requirement can be described as {
-	n: 6
-	fromPools: [
-[
-	{
-startCourseCode: “ANTH140”
-endCourseCode: “ANTH149”
-},
-“ANTH173”,
-“ANTH186”,
-“ANTH189”,
-],
-[
-	{
-		startCourseCode: “ANTH130”
-		endCourseCode: “ANTH139”
-	}
-],
-[
-	{
-		startCourseCode: “ANTH150”
-		endCourseCode: “ANTH179”
-	},
-	“ANTH184”,
-	“ANTH185”,
-	“ANTH187”,
-	“ANTH188”,
-]
-
-}
-
-Note from the above example that pools can include ranges. For example, the requirement “Two more courses from CSCI 127, 146, 147, 164, 166, MATH 123, CSEN/COEN 166, or any other additional 4-5 unit upper-division CSCI course below 190 or CSEN/COEN course below 188” would be described as 
-{
-n: 2,
-fromPools: [[
-  "CSCI127”,
-              “CSCI146”,
-              “CSCI147”,
-              “CSCI164”,
-              “CSCI166”,
-              “MATH123”,
-              “CSEN166”,
-	{
-	startCourseCode: CSCI100
-	endCourseCode: CSCI189
-	excludeCourses: []
-},
-	{
-	startCourseCode: CSCI100
-	endCourseCode: CSEN187
-	excludeCourses: []
-}
-]]
-}
-
-Note that the start and end course codes are always inclusive. Because the verbage said below CSEN 188, that means the range only goes up to CSEN187 inclusively.
+In this example, the requirement can be described as 6((ANTH140-149 | ANTH173 | ANTH186 | ANTH189) & (ANTH130-139) & (ANTH150-179 | ANTH184 | ANTH185 | ANTH187 | ANTH188)). The outer most set requires 6 courses, and at least one of them has to be from ANTH140-149, ANTH173, ANTH186 or ANTH189, and at least one of them must be from ANTH130-139 and at least one of them must be from ANTH150-179, ANTH184, ANTH185, ANTH187, or ANTH188.
 
 Sometimes, there are requirements that don’t involve courses, such as attending events or doing community service. For these, you can create an “other requirement” with just a name and a description. These types of requirements should definitely be included too. 
 
@@ -252,25 +205,85 @@ Thanks for your help!`;
 
 export const EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT = `Extract any data about the special program offered by the university that you can from the page! Just a few notes:
 
-The page may include detailed information about some courses. In this case, the course code should be a string with four uppercase letters, representing the department, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
-
-The page may include course sequences within a singular entry. These should still be listed as separate courses. Do not include courses that do not have a detailed description, or are only briefly referenced.
-
 A department code must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department).
+
+A course code should always be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
 
 A lower division course always has a number between 1 and 99 (inclusive), while upper division courses always have a number between 100 and 199 (inclusive).
 
-If the page says you need to take "any lower division course" from a department, you can just include that as a CourseRange with startCourseCode being the department code followed by 1 and the endCourseCode being the department code followed by 99. Or, if they say ANY course can be taken from the department, that would be a range with the startCourseCode being the department code followed by 0, and the endCourseCode being the department code followed by 200.
+The page may include course requirements for the special program. Course requirements are represented through expressions that combine sets of courses and/or course ranges, which are similar to boolean expressions. Each set can be prefixed with a number (the lower bound) or number range (lower bound and upper bound), which represents the min/max bounds on how many courses must be matched in the set to fulfill the requirement, or if no bounds are provided, one is calculated automatically. For example, if the page says students are required to take “one of the following courses: ANTH 111, 112, 115”, this can be represented by the expression (ANTH111 | ANTH112 | ANTH115). Also note in this case the calculated lower bound is 1. Or, if it said two of the following courses instead of one, that would be 2(ANTH111 | ANTH112 | ANTH115). Or, if all of the courses were required, it would be (ANTH111 & ANTH112 & ANTH115). An upper bound can also be given, which represents the maximum number of courses that can be matched in the set. If only one number is provided, it is assumed to be the lower bound (and with no upper bound). If a number range is provided, it is assumed to be in the form <lowerBound-upperBound>. As a more complex example:
 
-Furthermore, sometimes the university may require that a student take a number of courses from a pool of given courses. For example “One of the following Methods 1 courses: ANTH 111, 112, 115” is an example of a requirement where at least n=1 course is required from a pool of course codes which is {ANTH111, ANTH112, ANTH115}. There may sometimes be range requirements, where the requirement is something like: “Any three courses between CSCI 10 and 99, excluding 88”, and the requirement can then be described as:
-{
-startCourseCode: CSCI10,
-endCourseCode: CSCI99,
-numFromRange: 3,
-excludeCourses: [“CSCI88”]
-}
+The requirement: “Six (6) courses from the following lists, but no more than two (2) from List II.
 
-Course ranges can only be used for courses in the same department (i.e. you cannot make a range using both CSCI and MATH courses, use a pool instead). 
+List I—Production Courses:
+
+COMM 103
+COMM 130 or 130A (or COMM 130B prior toFall 2022)
+COMM 131D (or COMM 132B prior to Fall 2022)
+COMM 131E (or COMM 133B prior to Fall 2022)
+COMM 131F (or COMM 131B prior to Fall 2022)
+COMM 132
+COMM 132D
+COMM 133
+COMM 133W (or 188B prior to Fall 2022)
+COMM 134 (or COMM 134B prior to Fall 2022)
+COMM 135 (or COMM 135B prior to Fall 2022)
+COMM 146
+List II—History/Theory Courses:
+
+COMM 104
+COMM 136S (or COMM 136A prior to Fall 2022)
+COMM 136F
+COMM 137 (or COMM 137A prior to Fall 2022)
+COMM 137S
+COMM 138 (or COMM 138A prior to Fall 2022)
+COMM 139 (or Comm 139A prior to Fall 2022)
+COMM 140
+COMM 140B
+COMM 140W
+COMM 140C
+COMM 140Q
+COMM 141
+COMM 143 (or Comm prior to Fall 2022)
+COMM 145 (or Comm prior to Fall 2022)
+COMM 188A if completed before Fall 2022”
+
+Could be described as 
+6(COMM103 || 
+0-1(COM130 || COM130A || COMM130B) || 
+0-1(COMM131D || COMM132B) ||
+0-1(COMM131E || COMM133B) || 
+0-1(COMM131F || COMM131B) || 
+COMM132 || 
+COMM132D || 
+COMM133 || 
+0-1(COMM133W || COM188B) || 
+0-1(COMM134 || COMM134B) || 
+COMM146 || 
+0-2(
+COMM104 || 
+0-1(COMM136S || COMM136A) || 
+COMM136F || 
+0-1(COMM137 || COMM137A) || 
+COMM137S || 
+0-1(COMM138 || COMM138A) || 
+0-1(COMM139 || COMM139A) || 
+COMM140 || 
+COMM140B || 
+COMM140W || 
+COMM140C || 
+COMM140Q || 
+COMM141 || 
+COMM143 || 
+COMM145 || 
+COMM188A)
+)
+
+A course range can be represented with two course codes separated by a dash. For example, ANTH100-199. The lower and upper bounds on a range are always inclusive, so ANTH100-199 represents all upper division courses. If a requirement said something like “One course from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190” this could be represented as (CSCI183 | CSCI180 | CSCI168 | CSCI100-189). 
+
+Sometimes, courses need to be excluded from a set (i.e. not count towards the lower bound), in this case, we can use an exclusionary list at the end of the set to indicate this. If the previous example had said “Two courses from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190, except CSCI 172 and CSCI170, and any course between CSCI 130-135” we could do 2((CSCI183 | CSCI180 | CSCI168 | CSCI100-189) - (CSCI172, CSCI170, CSCI130-135)). Each element in the exclusionary list is separated by a comma. Notice that the lower bound goes on the outer set.
+
+Furthermore, sets can be combined using the same boolean logic.
 
 Here is a more complex example:
 
@@ -279,62 +292,7 @@ Archaeology (ANTH 140–149, 173, 186, 189)
 Biological Anthropology (ANTH 130–139)
 Cultural Anthropology (ANTH 150–179, 184, 185, 187, 188)”
 
-In this example, the requirement can be described as {
-	n: 6
-	fromPools: [
-[
-	{
-startCourseCode: “ANTH140”
-endCourseCode: “ANTH149”
-},
-“ANTH173”,
-“ANTH186”,
-“ANTH189”,
-],
-[
-	{
-		startCourseCode: “ANTH130”
-		endCourseCode: “ANTH139”
-	}
-],
-[
-	{
-		startCourseCode: “ANTH150”
-		endCourseCode: “ANTH179”
-	},
-	“ANTH184”,
-	“ANTH185”,
-	“ANTH187”,
-	“ANTH188”,
-]
-
-}
-
-Note from the above example that pools can include ranges. For example, the requirement “Two more courses from CSCI 127, 146, 147, 164, 166, MATH 123, CSEN/COEN 166, or any other additional 4-5 unit upper-division CSCI course below 190 or CSEN/COEN course below 188” would be described as 
-{
-n: 2,
-fromPools: [[
-  "CSCI127”,
-              “CSCI146”,
-              “CSCI147”,
-              “CSCI164”,
-              “CSCI166”,
-              “MATH123”,
-              “CSEN166”,
-	{
-	startCourseCode: CSCI100
-	endCourseCode: CSCI189
-	excludeCourses: []
-},
-	{
-	startCourseCode: CSCI100
-	endCourseCode: CSEN187
-	excludeCourses: []
-}
-]]
-}
-
-Note that the start and end course codes are always inclusive. Because the verbage said below CSEN 188, that means the range only goes up to CSEN187 inclusively.
+In this example, the requirement can be described as 6((ANTH140-149 | ANTH173 | ANTH186 | ANTH189) & (ANTH130-139) & (ANTH150-179 | ANTH184 | ANTH185 | ANTH187 | ANTH188)). The outer most set requires 6 courses, and at least one of them has to be from ANTH140-149, ANTH173, ANTH186 or ANTH189, and at least one of them must be from ANTH130-139 and at least one of them must be from ANTH150-179, ANTH184, ANTH185, ANTH187, or ANTH188.
 
 Sometimes, there are requirements that don’t involve courses, such as attending events or doing community service. For these, you can create an “other requirement” with just a name and a description. These types of requirements should definitely be included too. 
 
@@ -348,8 +306,15 @@ Thanks for your help!`;
 
 export const EXTRACT_COURSES_PROMPT = `Extract all of the courses that you can from the page! Just a few notes:
 
-The course code should be a string with four uppercase letters, representing the department, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
+A department code must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department).
+
+The course code should be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
+
+Lower division courses are always numbered 0-99, while upper division courses will always be numbered 100-200.
 
 The page may include course sequences within a singular entry. These should still be listed as separate courses.
 
-Thanks for your help!`;
+If there are prerequisites and/or corequisites, these can be represented through expressions that combine sets of courses and/or course ranges, which are similar to boolean expressions. For example, if the course says students are required to take “one of the following courses as a prerequisite: ANTH 111, 112, 115”, this can be represented by the expression (ANTH111 | ANTH112 | ANTH115). Or, if all of the courses were required as prerequisites, it would be (ANTH111 & ANTH112 & ANTH115). Or if it said one could take either ANTH 110 and 111, or ANTH 112 and 115, this could be (ANTH110 & ANTH111) | (ANTH112 & ANTH115). 
+
+Important: the prerequisites and corequisite fields can only contain a valid boolean expression of course codes! If there are other types of requirements, such as a minimum number of units taken prior to taking the course, or a required supplement to the course, those should go in the other requirements section.
+`;

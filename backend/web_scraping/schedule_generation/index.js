@@ -1,17 +1,12 @@
 import OpenAI from "openai";
-import Excel from "exceljs";
 import jsdom from "jsdom";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { get_encoding } from "tiktoken";
 import {
   CourseCatalog,
-  CourseCatalogSchema,
   DepartmentInfo,
-  DepartmentInfoSchema,
   SchoolInfo,
-  SchoolInfoSchema,
   SpecialProgramInfo,
-  SpecialProgramInfoSchema,
 } from "./models.js";
 import fs from "fs";
 import {
@@ -23,6 +18,7 @@ import {
 
 const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate/";
 const RELEVANT_CHAPTERS = new Set([3, 4, 5, 6]);
+
 const PageTypes = {
   SCHOOL: "school",
   DEPARTMENT: "dept",
@@ -30,60 +26,46 @@ const PageTypes = {
 };
 
 const gpt4oBatchRequestsFileName = `gpt_4o_requests_${Date.now()}.jsonl`;
-let gpt4oBatchRequestFileStream = fs.createWriteStream(
-  gpt4oBatchRequestsFileName,
-  {
-    flags: "a",
-  },
-);
+let gpt4oBatchRequestFileStream;
 
 const gpt4oMiniBatchRequestsFileName = `gpt_4o_mini_requests_${Date.now()}.jsonl`;
-let gpt4oMiniBatchRequestFileStream = fs.createWriteStream(
-  gpt4oMiniBatchRequestsFileName,
-  {
-    flags: "a",
-  },
-);
-
-// const existingCatalog = JSON.parse(
-//   fs.readFileSync("university_catalog.json", "utf8").toString(),
-// ) || {
-//   majors: [],
-//   minors: [],
-//   emphases: [],
-//   requirements: [],
-//   courses: [],
-//   errors: [],
-// };
+let gpt4oMiniBatchRequestFileStream;
 
 const universityCatalog = {
   schools: [],
-  majors: [],
-  minors: [],
-  emphases: [],
+  depts: [],
   specialPrograms: [],
-  requirements: [],
   courses: [],
   errors: [],
-  // ...existingCatalog,
 };
 
+const modes = ["batch", "local"];
 const openAIClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function main() {
-  const wb = new Excel.Workbook();
-  await wb.xlsx.readFile("SCU_Find_Course_Sections.xlsx");
-  const sheet = wb.getWorksheet("SCU Find Course Sections");
-  const rows = sheet.getSheetValues();
-  for (let i = 0; i < 30; i++) {
-    console.log(rows[i]);
+  const mode = process.argv[2];
+  if (!modes.includes(mode)) {
+    console.error(
+      "Usage: node --env-file=/path/to/.env index.js <mode>, where mode is one of 'batch' or 'local'",
+    );
+    return;
   }
-  await wb.csv.writeFile("SCU_Find_Course_Sections.csv");
-}
-
-async function startProcessing() {
-  await writeCatalog();
-  await getAndProcessBulletinText();
+  if (mode !== "batch") await writeCatalog();
+  else {
+    gpt4oBatchRequestFileStream = fs.createWriteStream(
+      gpt4oBatchRequestsFileName,
+      {
+        flags: "a",
+      },
+    );
+    gpt4oMiniBatchRequestFileStream = fs.createWriteStream(
+      gpt4oMiniBatchRequestsFileName,
+      {
+        flags: "a",
+      },
+    );
+  }
+  await getAndProcessBulletinText(mode);
 }
 
 async function writeCatalog() {
@@ -91,19 +73,20 @@ async function writeCatalog() {
     "university_catalog.json",
     JSON.stringify(universityCatalog, null, 2),
   );
-  console.log("File updated");
+  console.log("Catalog file updated");
 }
 
-async function getAndProcessBulletinText() {
+async function getAndProcessBulletinText(mode) {
   const response = await fetch(SCU_BULLETIN_URL);
   const text = await response.text();
   const document = new jsdom.JSDOM(text).window.document;
   const sideBar = document.querySelector("#collapsibleNavbar");
   const chapters = sideBar.querySelectorAll("ul > li");
-  const schoolOverviewPages = [];
-  const departmentOverviewPages = [];
-  const specialProgramPages = [];
+  let schoolOverviewPages = [];
+  let departmentOverviewPages = [];
+  let specialProgramPages = [];
   for (const chapter of chapters) {
+    // continue;
     const chapterString = chapter.textContent.toLowerCase();
     const chapterPattern = /chapter (\d+)/;
     const chapterMatch = chapterString.match(chapterPattern);
@@ -126,21 +109,38 @@ async function getAndProcessBulletinText() {
       departmentOverviewPages.push(...allLinks.slice(1));
     }
   }
+
+  // schoolOverviewPages = [];
+  // departmentOverviewPages = [
+  //   "https://www.scu.edu/bulletin/undergraduate/chapter-5-school-of-engineering/computer-science-and-engineering.html#59ffa8ec905c",
+  // ];
+  // specialProgramPages = [];
   for (const schoolPage of schoolOverviewPages) {
-    await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL);
+    await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode);
   }
   for (const specialProgramPage of specialProgramPages) {
     await processBulletinChapterPage(
       specialProgramPage,
       PageTypes.SPECIAL_PROGRAM,
+      mode,
     );
   }
   for (const departmentPage of departmentOverviewPages) {
-    await processBulletinChapterPage(departmentPage, PageTypes.DEPARTMENT);
+    await processBulletinChapterPage(
+      departmentPage,
+      PageTypes.DEPARTMENT,
+      mode,
+    );
   }
-  gpt4oBatchRequestFileStream.end();
-  gpt4oMiniBatchRequestFileStream.end();
 
+  if (mode === "batch") {
+    await createBatches();
+    gpt4oBatchRequestFileStream.end();
+    gpt4oMiniBatchRequestFileStream.end();
+  }
+}
+
+async function createBatches() {
   const gpt4oRequestsFile = await openAIClient.files.create({
     purpose: "batch",
     file: fs.createReadStream(gpt4oBatchRequestsFileName),
@@ -151,49 +151,23 @@ async function getAndProcessBulletinText() {
     completion_window: "24h",
   });
 
-  const gpt4oMiniRequestsFile = await openAIClient.files.create({
-    purpose: "batch",
-    file: fs.createReadStream(gpt4oMiniBatchRequestsFileName),
-  });
-  const gpt4oMiniBatch = await openAIClient.batches.create({
-    input_file_id: gpt4oMiniRequestsFile.id,
-    endpoint: "/v1/chat/completions",
-    completion_window: "24h",
-  });
+  // const gpt4oMiniRequestsFile = await openAIClient.files.create({
+  //   purpose: "batch",
+  //   file: fs.createReadStream(gpt4oMiniBatchRequestsFileName),
+  // });
+  // const gpt4oMiniBatch = await openAIClient.batches.create({
+  //   input_file_id: gpt4oMiniRequestsFile.id,
+  //   endpoint: "/v1/chat/completions",
+  //   completion_window: "24h",
+  // });
 
-  console.log(`Created gpt 4o input file ${gpt4oRequestsFile.id}`);
-  console.log(`Created gpt 4o batch ${gpt4oBatch.id}`);
-  console.log(`Created gpt 4o mini input file ${gpt4oMiniRequestsFile.id}`);
-  console.log(`Created gpt 4o mini batch ${gpt4oMiniBatch.id}`);
+  console.log(`Created GPT-4o input file ${gpt4oRequestsFile.id}`);
+  console.log(`Created GPT-4o batch ${gpt4oBatch.id}`);
+  // console.log(`Created GPT-4o-mini input file ${gpt4oMiniRequestsFile.id}`);
+  // console.log(`Created GPT-4o-mini batch ${gpt4oMiniBatch.id}`);
 }
 
-function breakIntoChunks(fileName) {
-  // Break into chunks of 90000 tokens or less, as that is the limit for GPT-4.
-  const fileContents = fs.readFileSync(fileName, "utf-8").toString();
-  const lines = fileContents.split("\n");
-  let currentChunk = "";
-  let currentChunkTokens = 0;
-  let chunkNumber = 0;
-  for (let line of lines) {
-    const lineTokens = countTokens(line);
-    if (currentChunkTokens + lineTokens > 90000) {
-      fs.writeFileSync(`chunk_${chunkNumber}_${fileName}`, currentChunk);
-      currentChunk = "";
-      currentChunkTokens = 0;
-      chunkNumber++;
-    }
-    currentChunk += line + "\n";
-    currentChunkTokens += lineTokens;
-  }
-  fs.writeFileSync(`chunk_${chunkNumber}_${fileName}`, currentChunk);
-}
-
-function countTokens(text) {
-  const enc = get_encoding("cl100k_base");
-  return enc.encode(text).length;
-}
-
-async function processBulletinChapterPage(link, pageType) {
+async function processBulletinChapterPage(link, pageType, mode) {
   const response = await fetch(link);
   const text = await response.text();
   const document = new jsdom.JSDOM(text).window.document;
@@ -212,31 +186,32 @@ async function processBulletinChapterPage(link, pageType) {
       insertCoursesIfNotPresent &&
       !mainContentString.includes("Lower-Division Courses");
   }
-  const sections = breakPageIntoSectionsSimple(
-    mainContentString,
-    pageType,
-    link,
-  );
+  const sections = breakPageIntoSections(mainContentString, pageType, link);
+  fs.writeFileSync("sections.json", JSON.stringify(sections, null, 2));
   if (pageType === PageTypes.DEPARTMENT) {
-    // fs.writeFileSync("sections.json", JSON.stringify(sections, null, 2));
-    batchExtractDataFromPage(
-      `DEPT_INFO_AT_${link}`,
+    const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
+    await extractDataFromPage(
+      batchRequestId,
       sections.preamble,
       EXTRACT_DEPT_INFO_PROMPT,
       zodResponseFormat(DepartmentInfo, "Department_Info"),
       gpt4oBatchRequestFileStream,
     );
   } else if (pageType === PageTypes.SCHOOL) {
-    batchExtractDataFromPage(
-      `SCHOOL_INFO_AT_${link}`,
+    const batchRequestId =
+      (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
+    await extractDataFromPage(
+      batchRequestId,
       sections.preamble,
       EXTRACT_SCHOOL_INFO_PROMPT,
       zodResponseFormat(SchoolInfo, "School_Info"),
       gpt4oBatchRequestFileStream,
     );
   } else {
-    batchExtractDataFromPage(
-      `SPECIAL_PROGRAM_INFO_AT_${link}`,
+    const batchRequestId =
+      (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
+    await extractDataFromPage(
+      batchRequestId,
       sections.preamble,
       EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
       zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
@@ -245,101 +220,27 @@ async function processBulletinChapterPage(link, pageType) {
   }
   for (let i = 0; i < sections.courses.length; i++) {
     const courseSection = sections.courses[i];
-    batchExtractDataFromPage(
-      `COURSES_SECTION_${i}_AT_${link}`,
+    const batchRequestId =
+      (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
+    await extractDataFromPage(
+      batchRequestId,
       courseSection,
       EXTRACT_COURSES_PROMPT,
       zodResponseFormat(CourseCatalog, "Course_Catalog"),
-      gpt4oMiniBatchRequestFileStream,
-      "gpt-4o-mini",
+      gpt4oBatchRequestFileStream,
     );
   }
 }
 
-function breakPageIntoSectionsSimple(pageText, pageType, pageLink) {
-  let preamble = "";
-  let courses = [];
-
-  let indexOfCourses = findNextCoursesSection(pageText, 0);
-  // if (indexOfCourses === pageText.length && pageType === PageTypes.DEPARTMENT)
-  //   console.error(
-  //     `Could not find lower division courses for pageText ${pageText.substring(
-  //       0,
-  //       20,
-  //     )}`,
-  //   );
-  // if (indexOfCourses !== pageText.length && pageType !== PageTypes.DEPARTMENT)
-  //   console.log(`Found courses section on non-department page ${pageLink}`);
-
-  preamble = pageText.substring(0, indexOfCourses);
-  while (indexOfCourses !== pageText.length) {
-    let nextLowerDivisionCourses = pageText.indexOf(
-      "Lower-Division Courses:",
-      indexOfCourses + 1,
-    );
-    if (nextLowerDivisionCourses === -1)
-      nextLowerDivisionCourses = pageText.indexOf(
-        "Lower-Division Courses",
-        indexOfCourses + 1,
-      );
-    if (nextLowerDivisionCourses === -1)
-      nextLowerDivisionCourses = pageText.length;
-    courses.push(pageText.substring(indexOfCourses, nextLowerDivisionCourses));
-    indexOfCourses = nextLowerDivisionCourses;
-  }
-  return { preamble, courses };
-}
-
-function findNextCoursesSection(pageText, startIndex) {
-  let nextCourses = pageText.indexOf("Lower-Division Courses:", startIndex);
-  if (nextCourses === -1)
-    nextCourses = pageText.indexOf("Lower-Division Courses", startIndex);
-  if (nextCourses === -1)
-    nextCourses = pageText.indexOf("Upper-Division Courses:", startIndex);
-  if (nextCourses === -1)
-    nextCourses = pageText.indexOf("Upper-Division Courses", startIndex);
-  if (nextCourses === -1) nextCourses = pageText.length;
-  return nextCourses;
-}
-
-function batchExtractDataFromPage(
-  requestId = Date.now().toString(),
+async function extractDataFromPage(
+  batchRequestId,
   pageText,
   prompt,
   responseFormat,
   batchFile,
   model = "gpt-4o",
 ) {
-  batchFile.write(
-    JSON.stringify({
-      custom_id: requestId,
-      method: "POST",
-      url: "/v1/chat/completions",
-      body: {
-        model,
-        messages: [
-          {
-            role: "system",
-            content: prompt,
-          },
-          { role: "user", content: pageText },
-        ],
-        response_format: responseFormat,
-        temperature: 0.2,
-        top_p: 0.1,
-      },
-    }) + "\n",
-  );
-}
-
-async function extractDataFromPage(
-  pageText,
-  prompt,
-  responseFormat,
-  model = "gpt-4o",
-) {
-  zodResponseFormat;
-  const completion = await openAIClient.beta.chat.completions.parse({
+  const requestBody = {
     model,
     messages: [
       {
@@ -351,27 +252,107 @@ async function extractDataFromPage(
     response_format: responseFormat,
     temperature: 0.2,
     top_p: 0.1,
+  };
+
+  if (batchRequestId) {
+    batchFile.write(
+      JSON.stringify({
+        custom_id: batchRequestId,
+        method: "POST",
+        url: "/v1/chat/completions",
+        body: { ...requestBody },
+      }) + "\n",
+    );
+    return;
+  }
+
+  const completion = await openAIClient.beta.chat.completions.parse({
+    ...requestBody,
   });
 
   console.log(
     `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`,
   );
-  const parsedData = completion.choices[0].message.parsed;
-  universityCatalog.courses.push(...(parsedData.courses ?? []));
-  universityCatalog.requirements.push(...(parsedData.requirements ?? []));
-  universityCatalog.majors.push(...(parsedData.majors ?? []));
-  universityCatalog.minors.push(...(parsedData.minors ?? []));
-  universityCatalog.emphases.push(...(parsedData.emphases ?? []));
-  universityCatalog.errors.push(...(parsedData.errors ?? []));
+
+  const responseData = completion.choices[0].message.parsed;
+  universityCatalog.courses.push(...(responseData.courses ?? []));
+  universityCatalog.errors.push(...(responseData.errors ?? []));
   if (prompt === EXTRACT_SCHOOL_INFO_PROMPT) {
-    delete parsedData.courses;
-    universityCatalog.schools.push(parsedData);
+    universityCatalog.schools.push(responseData);
+  }
+  if (prompt === EXTRACT_DEPT_INFO_PROMPT) {
+    universityCatalog.depts.push(responseData);
   }
   if (prompt === EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT) {
-    delete parsedData.courses;
-    universityCatalog.specialPrograms.push(parsedData);
+    universityCatalog.specialPrograms.push(responseData);
   }
   await writeCatalog();
+}
+
+function breakPageIntoSections(pageText, pageType, pageLink) {
+  let preamble = "";
+  let courses = [];
+
+  let indexOfCoursesSection = findNextCoursesSection(pageText, 0);
+  // if (indexOfCourses === pageText.length && pageType === PageTypes.DEPARTMENT)
+  //   console.error(
+  //     `Could not find lower division courses for pageText ${pageText.substring(
+  //       0,
+  //       20,
+  //     )}`,
+  //   );
+  // if (indexOfCourses !== pageText.length && pageType !== PageTypes.DEPARTMENT)
+  //   console.log(`Found courses section on non-department page ${pageLink}`);
+
+  preamble = pageText.substring(0, indexOfCoursesSection);
+  while (indexOfCoursesSection !== pageText.length) {
+    let nextCoursesSection = findNextCoursesSection(
+      pageText,
+      indexOfCoursesSection + 1,
+    );
+    courses.push(pageText.substring(indexOfCoursesSection, nextCoursesSection));
+    indexOfCoursesSection = nextCoursesSection;
+  }
+
+  let chunkedCourses = [];
+  for (let i = 0; i < courses.length; i++) {
+    const expectedOutputTokens = countTokens(courses[i]);
+    if (expectedOutputTokens > 15000) {
+      let currentCourseDescription = "";
+      let currentCourseTokens = 0;
+      let currentSection = "";
+      let currentSectionTokens = 0;
+      const lines = courses[i].split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        while (
+          i < lines.length &&
+          lines[i] &&
+          !lines[i].match(/^\d{1,4}\. .*$/)
+        ) {
+          // Wait for the first line to be a course number and title.
+          currentCourseDescription += lines[i] + "\n";
+          currentCourseTokens += countTokens(lines[i]);
+          i++;
+        }
+        if (currentCourseTokens + currentSectionTokens > 15000) {
+          chunkedCourses.push(currentSection);
+          currentSection = "";
+          currentSectionTokens = 0;
+          if (i < lines.length) currentCourseDescription = lines[i] + "\n";
+          currentCourseTokens = countTokens(lines[i]);
+        } else if (i < lines.length) {
+          currentSection += currentCourseDescription;
+          currentSectionTokens += currentCourseTokens;
+          currentCourseDescription = lines[i] + "\n";
+          currentCourseTokens = countTokens(lines[i]);
+        }
+      }
+      if (currentSection) chunkedCourses.push(currentSection);
+    } else {
+      chunkedCourses.push(courses[i]);
+    }
+  }
+  return { preamble, courses: chunkedCourses };
 }
 
 function recursivelyGetTextFromElement(
@@ -408,4 +389,22 @@ function recursivelyGetTextFromElement(
   return text;
 }
 
-startProcessing();
+function findNextCoursesSection(pageText, startIndex) {
+  let nextCourses = pageText.indexOf("Lower-Division Courses:", startIndex);
+  if (nextCourses === -1)
+    nextCourses = pageText.indexOf("Lower-Division Courses", startIndex);
+  if (nextCourses === -1)
+    nextCourses = pageText.indexOf("Upper-Division Courses:", startIndex);
+  if (nextCourses === -1)
+    nextCourses = pageText.indexOf("Upper-Division Courses", startIndex);
+  if (nextCourses === -1) nextCourses = pageText.length;
+  return nextCourses;
+}
+
+function countTokens(text, approx = true) {
+  if (approx) return text.length / 4;
+  const enc = get_encoding("cl100k_base");
+  return enc.encode(text).length;
+}
+
+main();
