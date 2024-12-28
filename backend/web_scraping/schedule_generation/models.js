@@ -1,31 +1,6 @@
 import { z } from "zod";
-
-export const PageSections = z.object({
-  sections: z
-    .array(
-      z
-        .object({
-          type: z.enum(["RelevantToAll", "RelevantToGroup"]),
-          sectionBeginsWith: z
-            .string()
-            .describe(
-              "The exact text from the beginning of the section, no more than a sentence",
-            ),
-          sectionEndsWith: z
-            .string()
-            .describe(
-              "The exact text from the end of the section, no more than a sentence. IF the end of the section is the end of the page, use an empty string",
-            ),
-          groupName: z
-            .string()
-            .describe(
-              "The name of the group, if applicable, or an empty string if not",
-            ),
-        })
-        .describe("A section of the page"),
-    )
-    .describe("All the sections of the page."),
-});
+import { zodToJsonSchema } from "zod-to-json-schema";
+import fs from "fs";
 
 export const CourseCode = z
   .string()
@@ -110,7 +85,7 @@ export const Emphasis = z.object({
     .string()
     .describe("The four-letter department code for the emphasis, like CSCI"),
   requiresCourses: z
-    .array(z.union([CourseCode, CourseRange, AnyNFromPool]))
+    .array(CourseCode)
     .describe("The courses that must always be taken to complete the emphasis"),
   requiresCourseRanges: z
     .array(CourseRange)
@@ -143,7 +118,7 @@ export const Minor = z.object({
     .describe("The four-letter department code for the minor, like CSCI"),
   description: z.string().describe("A full description of the minor"),
   requiresCourses: z
-    .array(z.union([CourseCode, CourseRange, AnyNFromPool]))
+    .array(CourseCode)
     .describe("The courses that must always be taken to complete the minor"),
   requiresCourseRanges: z
     .array(CourseRange)
@@ -187,7 +162,7 @@ export const Major = z.object({
     .describe("The four-letter department code for the major"),
   description: z.string().describe("A full description of the major"),
   requiresCourses: z
-    .array(z.union([CourseCode, CourseRange, AnyNFromPool]))
+    .array(CourseCode)
     .describe("The courses that must always be taken to complete the major"),
   requiresCourseRanges: z
     .array(CourseRange)
@@ -211,34 +186,55 @@ export const Major = z.object({
     ),
 });
 
-export const Requirement = z.object({
-  requirementName: z
-    .string()
-    .describe("A short, descriptive name of the requirement"),
-  requirementDescription: z
-    .string()
-    .describe("A full description of the requirement"),
-  appliesTo: z.enum([
-    "All Students",
-    "Department",
-    "Major",
-    "Minor",
-    "Emphasis",
-    "Other",
-  ]),
-  otherPleaseSpecify: z
-    .string()
-    .describe("If 'Other' is selected for the appliesTo field, please specify"),
-  nameOfWhichItAppliesTo: z
-    .string()
-    .describe(
-      "The name of the major, minor, or emphasis to which the requirement applies",
-    ),
+export const Course = z
+  .object({
+    courseCode: CourseCode.describe("The course code, like CSCI183"),
+    name: z.string().describe("The full name of the course"),
+    description: z.string().describe("A description of the course"),
+    numUnits: z.number().describe("The number of units of the course"),
+    prerequisites: z
+      .array(CourseCode)
+      .describe(
+        "The prerequisites courses for this course, in the form of course codes",
+      ),
+    corequisites: z
+      .array(CourseCode)
+      .describe(
+        "The corequisite courses for this course, in the form of course codes",
+      ),
+    otherNotes: z.string().describe("Any other notes about the course"),
+    offeringSchedule: z
+      .enum([
+        "Normal",
+        "On Demand",
+        "Alternate Years",
+        "Other (please specify)",
+      ])
+      .describe("The schedule of when the course is offered"),
+    otherOfferingSchedule: z
+      .string()
+      .describe(
+        "If 'Other' is selected for the offering pattern, please specify here.",
+      ),
+  })
+  .describe("A course object.");
+
+export const DepartmentInfo = z.object({
+  majors: z.array(Major).optional(),
+  minors: z.array(Minor).optional(),
+  emphases: z.array(Emphasis).optional(),
+  // requirements: z.array(Requirement).optional(),
+  errors: z
+    .array(z.string())
+    .describe("Any errors that are encountered when parsing the page"),
+});
+
+export const SchoolInfo = z.object({
+  name: z.string().describe("The name of the school or college"),
+  description: z.string().describe("A short description of the school"),
   requiresCourses: z
-    .array(z.union([CourseCode, CourseRange, AnyNFromPool]))
-    .describe(
-      "The courses that must always be taken to fulfill the requirement",
-    ),
+    .array(CourseCode)
+    .describe("The courses that must always be taken to complete the emphasis"),
   requiresCourseRanges: z
     .array(CourseRange)
     .describe(
@@ -254,56 +250,47 @@ export const Requirement = z.object({
     .describe(
       "Requirements on the number units of a certain type that must be taken, if applicable",
     ),
-});
-
-export const Course = z.object({
-  courseCode: CourseCode.describe("The course code, like CSCI183"),
-  courseName: z.string().describe("The longer name of the course"),
-  courseDescription: z.string().describe("A description of the course"),
-  courseUnits: z.number().describe("The number of units of the course"),
-  coursePrerequisites: z
-    .array(CourseCode)
-    .describe(
-      "The prerequisites courses for this course, in the form of course codes",
-    ),
-  courseCorequisites: z
-    .array(CourseCode)
-    .describe(
-      "The corequisite courses for this course, in the form of course codes",
-    ),
-  otherNotes: z.string().describe("Any other notes about the course"),
-  courseOfferings: z
-    .enum(["Normal", "On Demand", "Alternate Years", "Other (please specify)"])
-    .describe("The frequency of when the course is offered"),
-  courseOfferingOther: z
+  otherRequirements: z
     .string()
     .describe(
-      "If 'Other' is selected for the offering pattern, please specify here.",
+      "Any other requirements that are not covered by the other fields",
     ),
+  courses: z
+    .array(Course)
+    .describe("General courses that the school/college offers."),
 });
 
-export const DepartmentInfo = z.object({
-  majors: z.array(Major).optional(),
-  minors: z.array(Minor).optional(),
-  emphases: z.array(Emphasis).optional(),
-  // requirements: z.array(Requirement).optional(),
-  errors: z
-    .array(z.string())
-    .describe("Any errors that are encountered when parsing the page"),
-});
-
-export const SchoolInfo = z.object({
-  schoolName: z.string().describe("The name of the school or college"),
-  schoolDescription: z.string().describe("A short description of the school"),
-  schoolRequirements: z
-    .array(
-      Requirement.omit({
-        appliesTo: true,
-        otherPleaseSpecify: true,
-        nameOfWhichItAppliesTo: true,
-      }),
-    )
-    .describe("The requirements for the school"),
+export const SpecialProgramInfo = z.object({
+  name: z.string().describe("The name of the special program"),
+  description: z
+    .string()
+    .describe("A full description of the special program."),
+  requiresCourses: z
+    .array(CourseCode)
+    .describe("The courses that must always be taken to complete the emphasis"),
+  requiresCourseRanges: z
+    .array(CourseRange)
+    .describe(
+      "Ranges of courses from which a student must take a certain number of courses",
+    ),
+  requiresCoursesFromPools: z
+    .array(AnyNFromPool)
+    .describe(
+      "Courses from pools of courses from which a student must take a certain number of courses",
+    ),
+  requiresUnits: z
+    .array(UnitRequirement)
+    .describe(
+      "Requirements on the number units of a certain type that must be taken, if applicable",
+    ),
+  otherRequirements: z
+    .string()
+    .describe(
+      "Any other requirements that are not covered by the other fields",
+    ),
+  courses: z
+    .array(Course)
+    .describe("Courses that are offered as part of the program."),
 });
 
 export const CourseCatalog = z.object({
@@ -312,3 +299,37 @@ export const CourseCatalog = z.object({
     .array(z.string())
     .describe("Any errors that are encountered when parsing the page"),
 });
+
+export const DepartmentInfoSchema = zodToJsonSchema(
+  DepartmentInfo,
+  "DepartmentInfo",
+);
+
+export const SchoolInfoSchema = zodToJsonSchema(SchoolInfo, "SchoolInfo");
+
+export const SpecialProgramInfoSchema = zodToJsonSchema(
+  SpecialProgramInfo,
+  "SpecialProgramInfo",
+);
+
+export const CourseCatalogSchema = zodToJsonSchema(
+  CourseCatalog,
+  "CourseCatalog",
+);
+
+fs.writeFileSync(
+  "schemas/department_info.json",
+  JSON.stringify(DepartmentInfoSchema, null, 2),
+);
+fs.writeFileSync(
+  "schemas/school_info.json",
+  JSON.stringify(SchoolInfoSchema, null, 2),
+);
+fs.writeFileSync(
+  "schemas/special_program_info.json",
+  JSON.stringify(SpecialProgramInfoSchema, null, 2),
+);
+fs.writeFileSync(
+  "schemas/course_catalog.json",
+  JSON.stringify(CourseCatalogSchema, null, 2),
+);
