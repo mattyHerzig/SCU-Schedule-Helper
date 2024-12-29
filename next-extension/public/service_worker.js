@@ -15,6 +15,16 @@ import {
   updateUser,
 } from "./utils/user.js";
 
+chrome.runtime.onInstalled.addListener((object) => {
+  let internalUrl = chrome.runtime.getURL("landing_page/index.html");
+
+  if (object.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    chrome.tabs.create({ url: internalUrl }, function (tab) {
+      console.log("New tab launched with http://yoursite.com/");
+    });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.url !== undefined) {
     fetch(request.url)
@@ -129,11 +139,3 @@ async function runStartupChecks() {
   // Check if we need to expire any interestedSections.
   await refreshInterestedSections();
 }
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "closePopup") {
-    if (sender.tab) {
-      chrome.windows.remove(sender.tab.windowId);
-    }
-  }
-});
