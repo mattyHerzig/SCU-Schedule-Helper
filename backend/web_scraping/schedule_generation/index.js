@@ -7,14 +7,14 @@ import {
   DepartmentInfo,
   SchoolInfo,
   SpecialProgramInfo,
-} from "./models.js";
+} from "./utils/models.js";
 import fs from "fs";
 import {
   EXTRACT_COURSES_PROMPT,
   EXTRACT_DEPT_INFO_PROMPT,
   EXTRACT_SCHOOL_INFO_PROMPT,
   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
-} from "./prompts.js";
+} from "./utils/prompts.js";
 
 const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate/";
 const RELEVANT_CHAPTERS = new Set([3, 4, 5, 6]);
@@ -25,15 +25,17 @@ const PageTypes = {
   SPECIAL_PROGRAM: "specialProgram",
 };
 
-const gpt4oBatchRequestsFileName = `gpt_4o_requests_${Date.now()}.jsonl`;
+const gpt4oBatchRequestsFileName = `./local_data/gpt_4o_requests_${Date.now()}.jsonl`;
 let gpt4oBatchRequestFileStream;
 
-const gpt4oMiniBatchRequestsFileName = `gpt_4o_mini_requests_${Date.now()}.jsonl`;
+const gpt4oMiniBatchRequestsFileName = `./local_data/gpt_4o_mini_requests_${Date.now()}.jsonl`;
 let gpt4oMiniBatchRequestFileStream;
+
+const usingGpt4oMini = false;
 
 const universityCatalog = {
   schools: [],
-  depts: [],
+  deptsAndPrograms: [],
   specialPrograms: [],
   courses: [],
   errors: [],
@@ -58,19 +60,20 @@ async function main() {
         flags: "a",
       },
     );
-    gpt4oMiniBatchRequestFileStream = fs.createWriteStream(
-      gpt4oMiniBatchRequestsFileName,
-      {
-        flags: "a",
-      },
-    );
+    if (usingGpt4oMini)
+      gpt4oMiniBatchRequestFileStream = fs.createWriteStream(
+        gpt4oMiniBatchRequestsFileName,
+        {
+          flags: "a",
+        },
+      );
   }
   await getAndProcessBulletinText(mode);
 }
 
 async function writeCatalog() {
   fs.writeFileSync(
-    "university_catalog.json",
+    "./local_data/university_catalog.json",
     JSON.stringify(universityCatalog, null, 2),
   );
   console.log("Catalog file updated");
@@ -109,12 +112,13 @@ async function getAndProcessBulletinText(mode) {
       departmentOverviewPages.push(...allLinks.slice(1));
     }
   }
-
-  // schoolOverviewPages = [];
-  // departmentOverviewPages = [
-  //   "https://www.scu.edu/bulletin/undergraduate/chapter-5-school-of-engineering/computer-science-and-engineering.html#59ffa8ec905c",
-  // ];
-  // specialProgramPages = [];
+  schoolOverviewPages = [
+    // "https://www.scu.edu/bulletin/undergraduate/chapter-5-school-of-engineering/undergraduate-degrees.html#54b1f7d6146d",
+  ];
+  departmentOverviewPages = [
+    "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/pre-health-sciences.html#4766d405b29e",
+  ];
+  specialProgramPages = [];
   for (const schoolPage of schoolOverviewPages) {
     await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode);
   }
@@ -151,20 +155,22 @@ async function createBatches() {
     completion_window: "24h",
   });
 
-  // const gpt4oMiniRequestsFile = await openAIClient.files.create({
-  //   purpose: "batch",
-  //   file: fs.createReadStream(gpt4oMiniBatchRequestsFileName),
-  // });
-  // const gpt4oMiniBatch = await openAIClient.batches.create({
-  //   input_file_id: gpt4oMiniRequestsFile.id,
-  //   endpoint: "/v1/chat/completions",
-  //   completion_window: "24h",
-  // });
-
   console.log(`Created GPT-4o input file ${gpt4oRequestsFile.id}`);
   console.log(`Created GPT-4o batch ${gpt4oBatch.id}`);
-  // console.log(`Created GPT-4o-mini input file ${gpt4oMiniRequestsFile.id}`);
-  // console.log(`Created GPT-4o-mini batch ${gpt4oMiniBatch.id}`);
+  if (usingGpt4oMini) {
+    const gpt4oMiniRequestsFile = await openAIClient.files.create({
+      purpose: "batch",
+      file: fs.createReadStream(gpt4oMiniBatchRequestsFileName),
+    });
+    const gpt4oMiniBatch = await openAIClient.batches.create({
+      input_file_id: gpt4oMiniRequestsFile.id,
+      endpoint: "/v1/chat/completions",
+      completion_window: "24h",
+    });
+
+    console.log(`Created GPT-4o-mini input file ${gpt4oMiniRequestsFile.id}`);
+    console.log(`Created GPT-4o-mini batch ${gpt4oMiniBatch.id}`);
+  }
 }
 
 async function processBulletinChapterPage(link, pageType, mode) {
@@ -173,28 +179,20 @@ async function processBulletinChapterPage(link, pageType, mode) {
   const document = new jsdom.JSDOM(text).window.document;
   const mainContent = document.querySelector("main");
   let mainContentString = "";
-  let insertCoursesIfNotPresent =
-    !mainContent.textContent.includes("Lower-Division Courses") &&
-    !mainContent.textContent.includes("Upper-Division Courses");
+  let coursesSectionText = isolateAndRemoveCourses(mainContent);
   for (const child of mainContent.children) {
     if (child.classList.contains("plink")) {
       continue;
-    } else
-      mainContentString +=
-        recursivelyGetTextFromElement(child, insertCoursesIfNotPresent) + "\n";
-    insertCoursesIfNotPresent =
-      insertCoursesIfNotPresent &&
-      !mainContentString.includes("Lower-Division Courses");
+    } else mainContentString += recursivelyGetTextFromElement(child) + "\n";
   }
-  const sections = breakPageIntoSections(mainContentString, pageType, link);
-  fs.writeFileSync("sections.json", JSON.stringify(sections, null, 2));
+  const courses = divideCourseSectionsText(coursesSectionText);
   if (pageType === PageTypes.DEPARTMENT) {
     const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
     await extractDataFromPage(
       batchRequestId,
-      sections.preamble,
+      mainContentString,
       EXTRACT_DEPT_INFO_PROMPT,
-      zodResponseFormat(DepartmentInfo, "Department_Info"),
+      zodResponseFormat(DepartmentInfo, "Department_Or_Program_Info"),
       gpt4oBatchRequestFileStream,
     );
   } else if (pageType === PageTypes.SCHOOL) {
@@ -202,7 +200,7 @@ async function processBulletinChapterPage(link, pageType, mode) {
       (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
     await extractDataFromPage(
       batchRequestId,
-      sections.preamble,
+      mainContentString,
       EXTRACT_SCHOOL_INFO_PROMPT,
       zodResponseFormat(SchoolInfo, "School_Info"),
       gpt4oBatchRequestFileStream,
@@ -212,14 +210,14 @@ async function processBulletinChapterPage(link, pageType, mode) {
       (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
     await extractDataFromPage(
       batchRequestId,
-      sections.preamble,
+      mainContentString,
       EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
       zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
       gpt4oBatchRequestFileStream,
     );
   }
-  for (let i = 0; i < sections.courses.length; i++) {
-    const courseSection = sections.courses[i];
+  for (let i = 0; i < courses.length; i++) {
+    const courseSection = courses[i];
     const batchRequestId =
       (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
     await extractDataFromPage(
@@ -247,11 +245,17 @@ async function extractDataFromPage(
         role: "system",
         content: prompt,
       },
-      { role: "user", content: pageText },
+      {
+        role: "user",
+        content: `Here is the page:
+        <page>
+        ${pageText}
+        </page>`,
+      },
     ],
     response_format: responseFormat,
-    temperature: 0.2,
-    top_p: 0.1,
+    temperature: 0,
+    // top_p: 0.1,
   };
 
   if (batchRequestId) {
@@ -281,7 +285,7 @@ async function extractDataFromPage(
     universityCatalog.schools.push(responseData);
   }
   if (prompt === EXTRACT_DEPT_INFO_PROMPT) {
-    universityCatalog.depts.push(responseData);
+    universityCatalog.deptsAndPrograms.push(responseData);
   }
   if (prompt === EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT) {
     universityCatalog.specialPrograms.push(responseData);
@@ -289,28 +293,20 @@ async function extractDataFromPage(
   await writeCatalog();
 }
 
-function breakPageIntoSections(pageText, pageType, pageLink) {
-  let preamble = "";
+function divideCourseSectionsText(coursesText) {
   let courses = [];
-
-  let indexOfCoursesSection = findNextCoursesSection(pageText, 0);
-  // if (indexOfCourses === pageText.length && pageType === PageTypes.DEPARTMENT)
-  //   console.error(
-  //     `Could not find lower division courses for pageText ${pageText.substring(
-  //       0,
-  //       20,
-  //     )}`,
-  //   );
-  // if (indexOfCourses !== pageText.length && pageType !== PageTypes.DEPARTMENT)
-  //   console.log(`Found courses section on non-department page ${pageLink}`);
-
-  preamble = pageText.substring(0, indexOfCoursesSection);
-  while (indexOfCoursesSection !== pageText.length) {
+  let indexOfCoursesSection = findNextCoursesSection(coursesText, 0);
+  if (indexOfCoursesSection === coursesText.length && coursesText.trim()) {
+    courses.push(coursesText);
+  }
+  while (indexOfCoursesSection !== coursesText.length) {
     let nextCoursesSection = findNextCoursesSection(
-      pageText,
+      coursesText,
       indexOfCoursesSection + 1,
     );
-    courses.push(pageText.substring(indexOfCoursesSection, nextCoursesSection));
+    courses.push(
+      coursesText.substring(indexOfCoursesSection, nextCoursesSection),
+    );
     indexOfCoursesSection = nextCoursesSection;
   }
 
@@ -352,13 +348,74 @@ function breakPageIntoSections(pageText, pageType, pageLink) {
       chunkedCourses.push(courses[i]);
     }
   }
-  return { preamble, courses: chunkedCourses };
+  return chunkedCourses;
 }
 
-function recursivelyGetTextFromElement(
-  element,
-  insertCoursesIfNotPresent = false,
-) {
+function isolateAndRemoveCourses(pageMainElement) {
+  const potentialCourses = Array.from(
+    pageMainElement.querySelectorAll("h3 > span"),
+  );
+  let coursesSectionText = "";
+  const seenCourses = new Set();
+  for (const potentialCourse of potentialCourses) {
+    const course = potentialCourse.parentElement;
+    if (
+      (course.textContent.match(/^\d{1,4}[A-Z]{0,1}\. .*$/) ||
+        course.textContent.match(/^[A-Z]{4} \d{1,4}\. .*$/) ||
+        course.textContent.match(/^[A-Z]{4} \d{1,4}: .*$/)) &&
+      !seenCourses.has(course.textContent)
+    ) {
+      if (!course.nextElementSibling || !course.previousElementSibling) {
+        console.warn(
+          `Course element with title ${course.textContent} has no next or previous element`,
+        );
+      }
+      // This is a course, add it to the list of courses
+      // If the prev element is a section header for the course, add that too.
+      let potentialHeading =
+        course.previousElementSibling?.previousElementSibling;
+      let numElementsTried = 0;
+
+      while (
+        numElementsTried < 6 &&
+        potentialHeading &&
+        potentialHeading.tagName !== "H2" &&
+        !potentialHeading.textContent.includes("Courses") &&
+        !potentialHeading.textContent.includes("Colloquim Course") // Edge case.
+      ) {
+        potentialHeading = potentialHeading.previousElementSibling;
+        numElementsTried++;
+      }
+
+      if (
+        potentialHeading &&
+        ((potentialHeading.tagName === "H2" &&
+          potentialHeading.textContent.includes("Courses")) ||
+          potentialHeading.textContent.includes("Colloquim Course"))
+      ) {
+        coursesSectionText += potentialHeading.textContent + "\n\n";
+        // Remove this element from the DOM
+        potentialHeading.remove();
+      }
+
+      coursesSectionText += course.textContent + "\n";
+      coursesSectionText += course.nextElementSibling?.textContent + "\n\n";
+      // Remove these elements from the DOM
+      if (
+        course.previousElementSibling?.tagName === "A" &&
+        !course.previousElementSibling?.textContent.trim()
+      ) {
+        course.previousElementSibling?.remove();
+      }
+      course.nextElementSibling?.remove();
+      course.remove();
+      seenCourses.add(course.textContent);
+    }
+  }
+  return coursesSectionText;
+}
+
+function recursivelyGetTextFromElement(element) {
   if (!element.textContent.trim()) {
     return "";
   }
@@ -366,14 +423,6 @@ function recursivelyGetTextFromElement(
     return element.textContent;
   }
   if (element.tagName === "P" || element.tagName.match(/H\d/)) {
-    // IF element is h3 and has a direct child with class .gdbold, then it is a course, and we should insert it.
-    if (
-      element.tagName === "H3" &&
-      element.querySelector("span.gdbold") &&
-      insertCoursesIfNotPresent
-    ) {
-      return "Lower-Division Courses" + "\n" + element.textContent + "\n";
-    }
     return element.textContent + "\n";
   }
   if (element.tagName === "LI") {

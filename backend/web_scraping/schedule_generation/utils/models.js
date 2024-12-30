@@ -11,13 +11,16 @@ export const UnitRequirement = z
     requirementDescription: z
       .string()
       .describe("A summary/description of the unit requirement"),
-    unitsRequired: z.number().describe("The number of units required"),
+    numUnitsRequired: z.number().describe("The number of units required"),
     typeOfUnits: z.enum(["Any", "Upper Division", "Lower Division"]),
     unitsMustBeFrom: z
-      .enum(["Any", "Any-SCU", "Department"])
+      .enum(["Any", "Department"])
       .describe(
-        "Where the units must come from (either any school, SCU, or a specific department at SCU)",
+        "Where the units must come from (either any school/department, or a specific department)",
       ),
+    numUnitsFromSCU: z
+      .number()
+      .describe("The number of units that must be taken at SCU, if applicable"),
     departmentCode: z
       .string()
       .describe(
@@ -40,7 +43,7 @@ export const OtherRequirement = z.object({
 export const CourseRequirements = z
   .string()
   .describe(
-    "A valid boolean-like expression of sets of courses and/or course ranges, representing the course requirements.",
+    "A valid expression of sets of courses and/or course ranges, with potentially lower/upper bounds and/or department operators, representing the course requirements. Sets can be combined with the & and | operators. MUST ONLY HAVE COURSE CODES AND COURSE RANGES AND NOT anything else, like any natural language (those should go in otherRequirements).",
   );
 
 export const UnitRequirements = z
@@ -52,6 +55,10 @@ export const UnitRequirements = z
 export const OtherRequirements = z
   .array(OtherRequirement)
   .describe("Any other requirements that are not yet covered.");
+
+export const OtherNotes = z
+  .array(z.string())
+  .describe("Any other notes regarding the program.");
 
 export const Emphasis = z.object({
   name: z
@@ -73,9 +80,10 @@ export const Emphasis = z.object({
   departmentCode: z
     .string()
     .describe("The four-letter department code for the emphasis, like CSCI"),
-  courseRequirements: CourseRequirements,
+  courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
   otherRequirements: OtherRequirement,
+  otherNotes: OtherNotes,
 });
 
 export const Minor = z.object({
@@ -84,11 +92,14 @@ export const Minor = z.object({
     .describe("The name of the minor, but should not include the word 'minor"),
   departmentCode: z
     .string()
-    .describe("The four-letter department code for the minor, like CSCI"),
+    .describe(
+      "The four-letter department code for the minor, like CSCI, if applicable.",
+    ),
   description: z.string().describe("A summary/description of the minor"),
-  courseRequirements: CourseRequirements,
+  courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
   otherRequirements: OtherRequirement,
+  otherNotes: OtherNotes,
 });
 
 export const Major = z.object({
@@ -106,9 +117,10 @@ export const Major = z.object({
     .describe(
       "Whether the major requires an emphasis. If true, the student must take an emphasis as part of the major. If false, an emphasis is optional, or there are no emphases available for the major.",
     ),
-  courseRequirements: CourseRequirements,
+  courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
   otherRequirements: OtherRequirement,
+  otherNotes: OtherNotes,
 });
 
 export const Course = z
@@ -120,12 +132,12 @@ export const Course = z
     prerequisites: z
       .string()
       .describe(
-        "A valid boolean-like expression of sets of courses, representing the prerequisites for the course",
+        "A valid boolean-like expression of sets of courses, representing the prerequisites for the course. MUST ONLY HAVE A VALID EXPRESSION OF COURSE CODES AND COURSE RANGES AND NOT anything else, like any natural language (those should go in otherRequirements)",
       ),
     corequisites: z
       .string()
       .describe(
-        "A valid boolean-like expression of sets of courses, representing the corequisites for the course",
+        "A valid boolean-like expression of sets of courses, representing the corequisites for the course. MUST ONLY HAVE A VALID EXPRESSION OF COURSE CODES AND COURSE RANGES AND NOT anything else, like any natural language (those should go in otherRequirements)",
       ),
     otherRequirements: OtherRequirements,
     otherNotes: z.string().describe("Any other notes about the course"),
@@ -148,8 +160,12 @@ export const Course = z
 export const DepartmentInfo = z.object({
   name: z
     .string()
-    .describe("The name of the department, should not include 'department'"),
-  description: z.string().describe("A summary/description of the department"),
+    .describe(
+      "The name of the department or program, should not include 'department' or 'program'",
+    ),
+  description: z
+    .string()
+    .describe("A summary/description of the department or program"),
   majors: z.array(Major),
   minors: z.array(Minor),
   emphases: z.array(Emphasis),
@@ -163,7 +179,7 @@ export const SchoolInfo = z.object({
   description: z
     .string()
     .describe("A summary.description of the school or college."),
-  courseRequirements: CourseRequirements,
+  courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
   otherRequirements: OtherRequirement,
 });
@@ -173,7 +189,7 @@ export const SpecialProgramInfo = z.object({
   description: z
     .string()
     .describe("A summary/description of the special program."),
-  courseRequirements: CourseRequirements,
+  courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
   otherRequirements: OtherRequirement,
 });

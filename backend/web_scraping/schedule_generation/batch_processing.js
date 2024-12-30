@@ -1,10 +1,9 @@
 import OpenAI from "openai";
-import { get_encoding, encoding_for_model } from "tiktoken";
 import fs from "fs";
 
 const universityCatalog = {
   schools: [],
-  depts: [],
+  deptsAndPrograms: [],
   specialPrograms: [],
   courses: [],
   errors: [],
@@ -43,8 +42,8 @@ function mergeBatchResults(batchFilenames) {
           if (result.custom_id.includes("SCHOOL_INFO")) {
             universityCatalog.schools.push(data);
           }
-          if (result.custom_id.includes("DEPARTMENT_INFO")) {
-            universityCatalog.depts.push(data);
+          if (result.custom_id.includes("DEPT_INFO")) {
+            universityCatalog.deptsAndPrograms.push(data);
           }
           if (result.custom_id.includes("SPECIAL_PROGRAM_INFO")) {
             universityCatalog.specialPrograms.push(data);
@@ -60,7 +59,7 @@ function mergeBatchResults(batchFilenames) {
     }
   }
   fs.writeFileSync(
-    "full_university_catalog.json",
+    "./local_data/full_university_catalog.json",
     JSON.stringify(universityCatalog),
   );
 }
