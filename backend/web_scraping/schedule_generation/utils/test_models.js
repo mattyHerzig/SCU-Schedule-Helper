@@ -10,8 +10,17 @@ export const UnitRequirement = z
   .object({
     requirementDescription: z
       .string()
-      .describe("A summary/description of the unit requirement"),
-    numUnitsRequired: z.number().describe("The number of units required"),
+      .describe(
+        `A summary/description of the unit requirement, for example 'All Puppetry majors must take 40 units of upper-division courses from the Puppetry (PTRY) department.'`,
+      ),
+    unitType: z
+      .enum(["Units", "Courses"])
+      .describe("The type of unit requirement"),
+    numUnitsRequired: z
+      .number()
+      .describe(
+        "The number of units required. This is different from the number of courses",
+      ),
     typeOfUnits: z.enum(["Any", "Upper Division", "Lower Division"]),
     unitsMustBeFrom: z
       .enum(["Any", "Department"])
@@ -28,7 +37,7 @@ export const UnitRequirement = z
       ),
   })
   .describe(
-    "A requirement that specifies a number of units that must be taken, and from where",
+    "A requirement that specifies a minimum number of units, or courses, that must be taken, and from where. This is to be used for general requirements, where specific courses that must be taken are not given, only the number of units or courses.",
   );
 
 export const OtherRequirement = z.object({

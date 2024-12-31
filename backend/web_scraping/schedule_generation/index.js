@@ -112,13 +112,9 @@ async function getAndProcessBulletinText(mode) {
       departmentOverviewPages.push(...allLinks.slice(1));
     }
   }
-  schoolOverviewPages = [
-    // "https://www.scu.edu/bulletin/undergraduate/chapter-5-school-of-engineering/undergraduate-degrees.html#54b1f7d6146d",
-  ];
-  departmentOverviewPages = [
-    "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/pre-health-sciences.html#4766d405b29e",
-  ];
-  specialProgramPages = [];
+  // schoolOverviewPages = [];
+  // departmentOverviewPages = [];
+  // specialProgramPages = [];
   for (const schoolPage of schoolOverviewPages) {
     await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode);
   }
@@ -140,7 +136,7 @@ async function getAndProcessBulletinText(mode) {
   if (mode === "batch") {
     await createBatches();
     gpt4oBatchRequestFileStream.end();
-    gpt4oMiniBatchRequestFileStream.end();
+    if (usingGpt4oMini) gpt4oMiniBatchRequestFileStream.end();
   }
 }
 

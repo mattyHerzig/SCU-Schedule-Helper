@@ -193,6 +193,7 @@ ARAB -> Arabic
 ARTH -> Art History
 ARTS -> Studio Art
 ASCI -> Arts and Sciences
+ASIA -> Valid for the Asian Studies Minor
 BIOE -> Bioengineering
 BIOL -> Biology
 BUSN -> Business
@@ -216,8 +217,10 @@ ETHN -> Ethnic Studies
 FNCE -> Finance
 FREN -> French & Francophone Studies
 GERM -> German Studies
+GERO -> Valid for the Gerontology minor
 HIST -> History
 HNRS -> Honors Program
+INTL -> Valid for the international studies minor
 ITAL -> Italian Studies
 JAPN -> Japanese Studies
 LEAD -> Lead Scholars Program
@@ -441,7 +444,7 @@ A course range can be represented with two course codes separated by a dash. For
 
 Sometimes, courses need to be excluded from a set (i.e. not count towards the lower bound), in this case, we can use the exclusion operator (!) at the end of the set to indicate this. If the previous example had said “Two courses from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190, except CSCI 172 and CSCI170, and any course between CSCI 130-135” we could do 2((CSCI183 | CSCI180 | CSCI168 | CSCI100-189) && !(CSCI172 || CSCI170 || CSCI130-135)). Each element in the exclusionary list is separated by a comma. Notice that the lower bound goes on the outer set.
 
-Sometimes, a major might also require an emphasis. In this case, do not include the requirements for the emphasis within the major requirements. Instead, just mark the “requiresEmphasis” field as true, and then declare the requirements in the separate entry for the emphasis.
+Sometimes, a major or a minor might also require an emphasis. In this case, DO NOT include the requirements for the emphasis within the major/minor requirements. Instead, just mark the “requiresEmphasis” field as true, and then declare the requirements in the separate entry for the emphasis.
 
 Sometimes, there are requirements that don’t involve courses, such as attending events or doing community service. For these, you can create an “other requirement” with just a name and a description. These types of requirements should definitely be included too. 
 
@@ -691,6 +694,8 @@ UGST -> Undergraduate Studies
 UNIV -> University Programs
 WGST -> Women's and Gender Studies
 
+If the department code is not within that list, you may make a guess.
+
 The course code should be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
 
 Lower division courses are always numbered 0-99, while upper division courses will always be numbered 100-200.
@@ -699,5 +704,5 @@ The page may include course sequences within a singular entry. These should stil
 
 If there are prerequisites and/or corequisites, these can be represented through expressions that combine sets of courses and/or course ranges, which are similar to boolean expressions. For example, if the course says students are required to take “one of the following courses as a prerequisite: ANTH 111, 112, 115”, this can be represented by the expression (ANTH111 | ANTH112 | ANTH115). Or, if all of the courses were required as prerequisites, it would be (ANTH111 & ANTH112 & ANTH115). Or if it said one could take either ANTH 110 and 111, or ANTH 112 and 115, this could be (ANTH110 & ANTH111) | (ANTH112 & ANTH115). 
 
-Important: the prerequisites and corequisite fields can only contain a valid boolean expression of course codes! If there are other types of requirements, such as a minimum number of units taken prior to taking the course, or a required supplement to the course, those should go in the other requirements section.
+IMPORTANT: the prerequisites and corequisite fields can ONLY contain a valid boolean expression of course codes! If there are other types of requirements, such as a minimum number of units taken prior to taking the course, or a required supplement to the course, those should go in the other requirements section.
 `;
