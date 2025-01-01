@@ -20,35 +20,18 @@ export default function FeedbackButton({ handleActionCompleted }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpen = () => {
-    console.log("Opening feedback dialog");
     setOpen(true);
   };
 
   const handleClose = () => {
-    console.log("Closing feedback dialog");
     setOpen(false);
     setFeedbackText("");
     setSelectedFeedbackType("");
-    setIsSubmitting(false); 
+    setIsSubmitting(false);
   };
 
   async function handleSubmit() {
-    console.log("Starting feedback submission...", {
-      feedbackType: selectedFeedbackType,
-      feedbackText: feedbackText,
-      timestamp: new Date().toLocaleString('en-US', {
-        timeZone: 'America/Los_Angeles',
-        month: 'numeric',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
-    });
-    
     if (!selectedFeedbackType || !feedbackText.trim()) {
-      console.error("Missing required fields");
       handleActionCompleted("Please fill in all required fields.", "error");
       return;
     }
@@ -56,45 +39,26 @@ export default function FeedbackButton({ handleActionCompleted }) {
     setIsSubmitting(true);
 
     try {
-      console.log("Sending message to service worker...");
-      const response = await new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({
-          type: 'SUBMIT_FEEDBACK',
-          data: {
-            feedbackType: selectedFeedbackType,
-            feedbackText: feedbackText.trim(),
-            timestamp: new Date().toLocaleString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              month: 'numeric',
-              day: 'numeric',
-              year: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            })
-          }
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('Chrome runtime error:', chrome.runtime.lastError);
-            reject(chrome.runtime.lastError);
-            return;
-          }
-          resolve(response);
-        });
+      const response = await chrome.runtime.sendMessage({
+        type: "submitFeedback",
+        data: {
+          feedbackType: selectedFeedbackType,
+          feedbackText: feedbackText.trim(),
+          source: "FeedbackForm",
+        },
       });
 
-      console.log("Service worker response:", response);
-
-      if (response?.success) {
-        console.log("Feedback submitted successfully");
-        handleActionCompleted("Feedback submitted successfully!", "success");
-        handleClose();
-      } else {
-        throw new Error(response?.error || "Unknown error occurred");
-      }
+      handleActionCompleted(
+        response.message || "Something went wrong. Please try again later.",
+        response.ok ? "success" : "error",
+      );
+      handleClose();
     } catch (error) {
-      console.error('Submission error:', error);
-      handleActionCompleted(error.message || "Error submitting feedback. Please try again.", "error");
+      console.error("Unknown submission error:", error);
+      handleActionCompleted(
+        "Something went wrong. Please try again later.",
+        "error",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -124,10 +88,10 @@ export default function FeedbackButton({ handleActionCompleted }) {
         {isSubmitting ? "Submitting..." : "Submit Feedback"}
       </Button>
 
-      <Dialog 
-        open={open} 
+      <Dialog
+        open={open}
         onClose={!isSubmitting ? handleClose : undefined}
-        maxWidth="sm" 
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Submit Feedback</DialogTitle>
@@ -142,10 +106,10 @@ export default function FeedbackButton({ handleActionCompleted }) {
                 onChange={(e) => setSelectedFeedbackType(e.target.value)}
                 disabled={isSubmitting}
               >
-                <MenuItem value={"general"}>General</MenuItem>
-                <MenuItem value={"feature request"}>Feature Request</MenuItem>
-                <MenuItem value={"bug report"}>Bug Report</MenuItem>
-                <MenuItem value={"other"}>Other</MenuItem>
+                <MenuItem value={"General"}>General</MenuItem>
+                <MenuItem value={"Feature Request"}>Feature Request</MenuItem>
+                <MenuItem value={"Bug Report"}>Bug Report</MenuItem>
+                <MenuItem value={"Other"}>Other</MenuItem>
               </Select>
             </FormControl>
             <TextField
@@ -162,16 +126,15 @@ export default function FeedbackButton({ handleActionCompleted }) {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ padding: 2 }}>
-          <Button 
-            onClick={handleClose} 
-            disabled={isSubmitting}
-          >
+          <Button onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={!selectedFeedbackType || !feedbackText.trim() || isSubmitting}
+            disabled={
+              !selectedFeedbackType || !feedbackText.trim() || isSubmitting
+            }
             sx={{
               backgroundColor: "#802a25",
               color: "white",
@@ -185,4 +148,3 @@ export default function FeedbackButton({ handleActionCompleted }) {
     </>
   );
 }
-

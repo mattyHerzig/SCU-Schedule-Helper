@@ -4,7 +4,7 @@ async function test() {
   const event = {
     body: JSON.stringify({
       feedbackType: "Feature Request",
-      feedback: "This is a test.",
+      feedbackText: "This is a test.",
       source: "Test",
     }),
   };

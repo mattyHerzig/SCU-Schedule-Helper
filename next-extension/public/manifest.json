@@ -8,14 +8,11 @@
     "storage",
     "identity",
     "notifications",
-    "scripting",
-    "https://tgoa5fcyfb.execute-api.us-west-1.amazonaws.com/prod/*"
+    "scripting"
   ],
   "host_permissions": [
     "https://www.myworkday.com/scu/*",
-    "https://www.ratemyprofessors.com/*",
-    "https://d7o5we7e9g.execute-api.us-west-1.amazonaws.com/*",
-    "https://tgoa5fcyfb.execute-api.us-west-1.amazonaws.com/prod/*"
+    "https://www.ratemyprofessors.com/*"
   ],
   "web_accessible_resources": [
     {

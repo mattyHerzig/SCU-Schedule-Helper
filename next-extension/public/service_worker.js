@@ -1,4 +1,5 @@
 import { signIn, signOut } from "./utils/authorization.js";
+import { prodServerUrl } from "./utils/constants.js";
 import {
   downloadEvals,
   downloadProfessorNameMappings,
@@ -14,9 +15,6 @@ import {
   refreshUserData,
   updateUser,
 } from "./utils/user.js";
-
-console.log('Service Worker Initialized');
-testApiAccess();
 
 chrome.runtime.onInstalled.addListener((object) => {
   let internalUrl = chrome.runtime.getURL("landing_page/index.html");
@@ -57,6 +55,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.type === "queryUserByName") {
     queryUserByName(request.name).then((response) => {
+      sendResponse(response);
+    });
+  }
+
+  if (request.type === "submitFeedback") {
+    handleFeedbackSubmission(request.data).then((response) => {
       sendResponse(response);
     });
   }
@@ -143,102 +147,22 @@ async function runStartupChecks() {
   await refreshInterestedSections();
 }
 
-//feedback functions
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Service worker received message:', request);
-  
-  if (request.type === 'SUBMIT_FEEDBACK') {
-    console.log('Processing feedback submission');
-    
-    handleFeedbackSubmission(request.data)
-      .then(response => {
-        console.log('Feedback submission successful:', response);
-        sendResponse({ success: true, data: response });
-      })
-      .catch(error => {
-        console.error('Feedback submission failed:', error);
-        sendResponse({ 
-          success: false, 
-          error: error.message || 'Failed to submit feedback'
-        });
-      });
-      
-    return true;
-  }
-});
-
 async function handleFeedbackSubmission(data) {
-  console.log('handleFeedbackSubmission started with data:', data);
-  
-  const API_ENDPOINT = 'https://tgoa5fcyfb.execute-api.us-west-1.amazonaws.com/prod/feedback';
-  
   try {
-    console.log('Preparing to send request to:', API_ENDPOINT);
-    
-    // Format the date in PST
-    const date = new Date();
-    const pstDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-    const formattedDate = pstDate.toLocaleString('en-US', {
-      month: 'numeric',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Los_Angeles'
+    const response = await fetch(`${prodServerUrl}/feedback`, {
+      method: "POST",
+      body: JSON.stringify({ ...data }),
     });
-    
-    const innerData = {
-      feedbackType: data.feedbackType,
-      feedbackDate: formattedDate,
-      feedback: data.feedbackText,
-      source: 'feedback form'
-    };
-    const requestBody = {
-      body: JSON.stringify(innerData)
-    };
-
-    console.log('Request body prepared:', requestBody);
-
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Origin': chrome.runtime.getURL('')
-      },
-      body: JSON.stringify(requestBody) 
-    });
-
-    console.log('Received response:', {
-      status: response.status,
-      statusText: response.statusText
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error:', errorText);
-      throw new Error(`Server error: ${response.status} - ${errorText}`);
-    }
-
     const responseData = await response.json();
-    console.log('Successful response data:', responseData);
-    return responseData;
+    return {
+      ok: response.ok,
+      message: responseData.message,
+    };
   } catch (error) {
-    console.error('Error in handleFeedbackSubmission:', error);
-    throw error;
-  }
-}
-
-async function testApiAccess() {
-  console.log('Starting API access test...');
-  try {
-    const response = await fetch('https://tgoa5fcyfb.execute-api.us-west-1.amazonaws.com/prod/feedback', {
-      method: 'OPTIONS'
-    });
-    console.log('API test response:', response);
-    console.log('API is accessible');
-  } catch (error) {
-    console.error('API access test failed:', error);
+    console.error("Error in handleFeedbackSubmission:", error);
+    return {
+      ok: false,
+      message: "An unknown error occurred. Please try again later.",
+    };
   }
 }
