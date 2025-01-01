@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
+import Grid2 from "@mui/material/Grid2";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
@@ -15,6 +15,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import TuneIcon from "@mui/icons-material/Tune";
 import InfoIcon from "@mui/icons-material/Info";
+import CheckIcon from "@mui/icons-material/Check";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
 const theme = createTheme({
@@ -26,28 +27,53 @@ const theme = createTheme({
   },
 });
 
-const LandingPage = () => {
+export default function LandingPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showError, setShowError] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(false);
 
-  const handleAccordionChange = (panel) => (event, isExpanded) => {
-    setExpanded(isExpanded ? panel : false);
-  };
+  useEffect(() => {
+    checkAuthStatus();
+    function authListener(changes, namespace) {
+      if (changes.accessToken) {
+        checkAuthStatus();
+      }
+    }
+    chrome.storage.onChanged.addListener(authListener);
+    return () => {
+      chrome.storage.onChanged.removeListener(authListener);
+    };
+  }, []);
 
-  const handleSignIn = async () => {
+  async function checkAuthStatus() {
+    try {
+      const accessToken = (await chrome.storage.sync.get("accessToken"))
+        .accessToken;
+      setIsLoggedIn(accessToken);
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+      setError(
+        "An unknown error occurred while checking authentication status.",
+      );
+      setShowError(true);
+    }
+  }
+
+  function handleAccordionChange(event, isExpanded, panel) {
+    setExpanded(isExpanded ? panel : false);
+  }
+
+  async function handleSignIn() {
     if (isLoggingIn) return;
     setIsLoggingIn(true);
 
     try {
       const errorMessage = await chrome.runtime.sendMessage("signIn");
-
       if (errorMessage) {
         setError(errorMessage);
         setShowError(true);
-      } else {
-        window.close();
       }
     } catch (error) {
       setError(
@@ -57,11 +83,11 @@ const LandingPage = () => {
     } finally {
       setIsLoggingIn(false);
     }
-  };
+  }
 
-  const handleCloseError = () => {
+  function handleCloseError() {
     setShowError(false);
-  };
+  }
 
   const features = [
     {
@@ -113,54 +139,6 @@ const LandingPage = () => {
           </Typography>
         </Container>
       </Box>
-
-      {/* Extension Pointer */}
-      <Box
-        sx={{
-          position: "fixed",
-          top: 0,
-          right: 50,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          zIndex: 1200,
-          pt: 1,
-        }}
-      >
-        <Box
-          component="svg"
-          sx={{
-            width: 40,
-            height: 40,
-            animation: "bounce 1s infinite",
-            "@keyframes bounce": {
-              "0%, 100%": { transform: "translateY(0)" },
-              "50%": { transform: "translateY(-10px)" },
-            },
-          }}
-          viewBox="0 0 40 40"
-        >
-          <path
-            d="M20 35 L20 5 L10 15 M20 5 L30 15"
-            fill="none"
-            stroke={theme.palette.primary.main}
-            strokeWidth="2"
-          />
-        </Box>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: "bold",
-            color: theme.palette.primary.main,
-            mt: 1,
-            textAlign: "center",
-            maxWidth: "150px",
-            p: 1,
-          }}
-        >
-          Don't forget to pin the extension here!
-        </Typography>
-      </Box>
       <Box
         sx={{
           minHeight: "100vh",
@@ -179,7 +157,7 @@ const LandingPage = () => {
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-            opacity: 0.5,
+            opacity: 0.3,
             zIndex: -1,
           },
         }}
@@ -188,39 +166,67 @@ const LandingPage = () => {
           maxWidth="lg"
           sx={{ py: 4, height: "60vh", display: "flex", alignItems: "center" }}
         >
-          <Box sx={{ ml: 4 }}>
-            <Typography
-              variant="h2"
-              component="h1"
-              gutterBottom
-              sx={{ fontWeight: "bold", mb: 3 }}
-            >
-              Course Registration Made Easier
-            </Typography>
-            <Typography variant="h6" sx={{ mb: 4 }}>
-              Ready to have a better experience registering for courses?
-              <br />
-              Sign in to access the extension
-            </Typography>
-
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <Button
-                variant="contained"
-                onClick={handleSignIn}
-                disabled={isLoggingIn}
-                sx={{ py: 1, px: 3 }}
+          {(!isLoggedIn && (
+            <Box sx={{ ml: 4 }}>
+              <Typography
+                variant="h2"
+                component="h1"
+                gutterBottom
+                sx={{ fontWeight: "bold", mb: 3 }}
               >
-                {isLoggingIn ? "Signing in..." : "Sign In with Google"}
-              </Button>
+                Course Registration Made Easier
+              </Typography>
+              <Typography variant="h6" sx={{ mb: 4 }}>
+                Ready to have a better experience registering for courses?
+                <br />
+                Sign in to access the extension
+              </Typography>
+
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSignIn}
+                  disabled={isLoggingIn}
+                  sx={{ py: 1, px: 3 }}
+                >
+                  {isLoggingIn ? "Signing in..." : "Sign In with Google"}
+                </Button>
+              </Box>
             </Box>
-          </Box>
+          )) || (
+            <Box sx={{ ml: 4 }}>
+              <Typography
+                variant="h2"
+                component="h1"
+                gutterBottom
+                sx={{ fontWeight: "bold", mb: 3 }}
+              >
+                Course Registration Made Easier
+              </Typography>
+
+              <Typography
+                variant="h6"
+                sx={{ mb: 4, display: "flex", alignItems: "center" }}
+              >
+                <CheckIcon
+                  sx={{
+                    fontSize: 50,
+                    color: theme.palette.primary.main,
+                    mr: 2,
+                  }}
+                />
+                You're signed in. Don't forget to pin the extension for easy
+                access!
+              </Typography>
+            </Box>
+          )}
         </Container>
 
         <Box sx={{ backgroundColor: "white", width: "100%", mt: 4 }}>
           <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Grid container spacing={4} sx={{ mb: 6 }}>
+            <Grid2 container spacing={4} sx={{ mb: 6 }}>
               {features.map((feature, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
+                <Grid2 item size={{ xs: 12, sm: 6, md: 3 }} key={index}>
                   <Box
                     sx={{
                       p: 3,
@@ -243,10 +249,9 @@ const LandingPage = () => {
                       {feature.description}
                     </Typography>
                   </Box>
-                </Grid>
+                </Grid2>
               ))}
-            </Grid>
-
+            </Grid2>
             <Box sx={{ mt: 4 }}>
               <Typography
                 variant="h4"
@@ -259,7 +264,10 @@ const LandingPage = () => {
 
               <Accordion
                 expanded={expanded === "panel1"}
-                onChange={handleAccordionChange("panel1")}
+                onChange={(event, isExpanded) =>
+                  handleAccordionChange(event, isExpanded, "panel1")
+                }
+                disableGutters
               >
                 <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
@@ -278,10 +286,12 @@ const LandingPage = () => {
                   </Typography>
                 </AccordionDetails>
               </Accordion>
-
               <Accordion
                 expanded={expanded === "panel2"}
-                onChange={handleAccordionChange("panel2")}
+                onChange={(event, isExpanded) =>
+                  handleAccordionChange(event, isExpanded, "panel2")
+                }
+                disableGutters
               >
                 <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
@@ -304,7 +314,6 @@ const LandingPage = () => {
             </Box>
           </Container>
         </Box>
-
         <Snackbar
           open={showError}
           autoHideDuration={6000}
@@ -322,6 +331,4 @@ const LandingPage = () => {
       </Box>
     </ThemeProvider>
   );
-};
-
-export default LandingPage;
+}

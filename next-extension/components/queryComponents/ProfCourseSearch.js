@@ -2,12 +2,14 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Alert,
   Autocomplete,
+  createFilterOptions,
   TextField,
   Box,
   Typography,
   Button,
   Snackbar,
 } from "@mui/material";
+import { matchSorter } from "match-sorter";
 import ProfCourseCard from "./ProfCourseCard";
 
 export default function ProfCourseSearch({ scrollToTop }) {
@@ -79,9 +81,15 @@ export default function ProfCourseSearch({ scrollToTop }) {
 
       Object.entries(evalsData).forEach(([key, value]) => {
         if (value?.type === "course") {
+          if (!key.match(/([a-zA-Z]{0,5})(\d+[A-Z]*)/)) {
+            console.error("Invalid course key:", key);
+            return;
+          }
+          const [, dept, courseNum] = key.match(/([a-zA-Z]{0,5})(\d+[A-Z]*)/);
+
           options.push({
             id: key,
-            label: `${key} - ${value.courseName || "Unnamed Course"}`,
+            label: `${dept} ${courseNum} - ${value.courseName || "Unnamed Course"}`,
             groupLabel: "Courses",
             type: "course",
             ...value,
@@ -108,6 +116,13 @@ export default function ProfCourseSearch({ scrollToTop }) {
     return allOptions;
   }, [allOptions, searchQuery]);
 
+  function filterOptions(options, { inputValue }) {
+    return matchSorter(options, inputValue, { keys: ["label"] }).slice(
+      0,
+      100,
+    );
+  }
+
   function onPageNavigation(newPageKey) {
     setSelected((prev) => {
       const newPageData = evalsData[newPageKey];
@@ -120,9 +135,10 @@ export default function ProfCourseSearch({ scrollToTop }) {
           ...newPageData,
         };
       } else {
+        const [, dept, courseNum] = newPageKey.match(/([A-Z]{4})(\d+[A-Z]*)/);
         return {
           id: newPageKey,
-          label: `${newPageKey} - ${newPageData.courseName || "Unnamed Course"}`,
+          label: `${dept} ${courseNum} - ${newPageData.courseName || "Unnamed Course"}`,
           groupLabel: "Courses",
           type: "course",
           ...newPageData,
@@ -180,6 +196,8 @@ export default function ProfCourseSearch({ scrollToTop }) {
       <Box sx={{ mb: 2 }}>
         <Autocomplete
           options={searchOptions}
+          filterOptions={filterOptions}
+          autoHighlight={true}
           groupBy={(option) => option.groupLabel}
           value={selected}
           onChange={(event, newValue) => {

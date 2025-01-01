@@ -3,6 +3,7 @@ exclude
 dist
 testing
 persistent_data
+local_data
 out
 .env
 *.zip
