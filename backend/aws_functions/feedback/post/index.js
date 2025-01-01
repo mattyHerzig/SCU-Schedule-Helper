@@ -3,7 +3,11 @@ import { JWT } from "google-auth-library";
 const SPREADSHEET_API_BASE_URL =
   "https://sheets.googleapis.com/v4/spreadsheets";
 const SPREADSHEET_ID = "1evcoFpUFlGCAeGf5HjfQycfmY4X0eCc_7sTSoJcbehQ";
-const FEEDBACK_SHEET_NAME = "Feedback Page";
+
+const sourceToSheetMap = {
+  FeedbackForm: "Feedback Page",
+  UninstallPage: "Uninstall Page",
+};
 
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const client = new JWT({
@@ -37,7 +41,7 @@ export const handler = async (event, context) => {
       hour12: true,
     });
 
-    const appendUrl = `${SPREADSHEET_API_BASE_URL}/${SPREADSHEET_ID}/values/${FEEDBACK_SHEET_NAME}:append?valueInputOption=RAW`;
+    const appendUrl = `${SPREADSHEET_API_BASE_URL}/${SPREADSHEET_ID}/values/${sourceToSheetMap[body.source]}:append?valueInputOption=RAW`;
     const appendRowResponse = await client.request({
       url: appendUrl,
       method: "POST",

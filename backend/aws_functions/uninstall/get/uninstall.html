@@ -69,6 +69,12 @@
         font-weight: bold;
         display: none;
       }
+      #error-message {
+        margin-top: 15px;
+        color: #ff5e52;
+        font-weight: bold;
+        display: none;
+      }
       textarea {
         font-family: Tahoma, sans-serif;
       }
@@ -111,6 +117,10 @@
         <button type="submit">Submit Feedback</button>
       </form>
       <div id="success-message">Feedback submitted successfully.</div>
+      <div id="error-message">
+        An error occurred. Please try again later or email feedback to
+        stephenwdean@gmail.com
+      </div>
     </div>
 
     <script>
@@ -118,29 +128,40 @@
         .getElementById("feedback-form")
         .addEventListener("submit", function (event) {
           event.preventDefault();
-          const successMessage = document.getElementById("success-message");
-          const reasonNodes = document.querySelectorAll('input[name="reason"]');
-          const reasons = Array.from(reasonNodes).map((node) => node.value);
-          fetch(`https://api.scu-schedule-helper.com/feedback`, {
+          fetch(`https://api.scu-schedule-helper.me/feedback`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              type: "uninstall",
-              reasons: document.querySelector('input[name="reason"]:checked')
-                .value,
-              feedback: document.querySelector('textarea[name="feedback"]')
-                .value,
+              source: "UninstallPage",
+              feedbackType: Array.from(
+                document.querySelectorAll('input[name="reason"]:checked'),
+              )
+                .map((node) => node.value)
+                .join(", "),
+              feedbackText:
+                document.querySelector('textarea[name="feedback"]').value ||
+                "No additional feedback.",
             }),
           }).then((response) => {
+            const errorMessage = document.getElementById("error-message");
+            const successMessage = document.getElementById("success-message");
             if (!response.ok) {
-              alert(
-                "Failed to submit feedback. Please try again later or email stephenwdean@gmail.com with your feedback.",
-              );
+              errorMessage.style.display = "block";
+              successMessage.style.display = "none";
               return;
             }
             successMessage.style.display = "block";
+            errorMessage.style.display = "none";
+            // Clear form
+            const reasonNodes = document.querySelectorAll(
+              'input[name="reason"]',
+            );
+            reasonNodes.forEach((node) => {
+              node.checked = false;
+            });
+            document.querySelector('textarea[name="feedback"]').value = "";
           });
         });
     </script>
