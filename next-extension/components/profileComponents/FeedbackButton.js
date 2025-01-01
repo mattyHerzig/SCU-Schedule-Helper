@@ -17,46 +17,79 @@ export default function FeedbackButton({ handleActionCompleted }) {
   const [open, setOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [selectedFeedbackType, setSelectedFeedbackType] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => {
+    console.log("Opening feedback dialog");
+    setOpen(true);
+  };
+
   const handleClose = () => {
+    console.log("Closing feedback dialog");
     setOpen(false);
     setFeedbackText("");
     setSelectedFeedbackType("");
+    setIsSubmitting(false); 
   };
 
   async function handleSubmit() {
-    // TODO: Submit feedback to backend.
-    console.log("Submitting feedback...");
-    setOpen(false);
-    setFeedbackText("");
-    setSelectedFeedbackType("");
-    handleActionCompleted("Feedback submitted successfully!", "success");
+    console.log("Starting feedback submission...", {
+      feedbackType: selectedFeedbackType,
+      feedbackText: feedbackText
+    });
+    
+    if (!selectedFeedbackType || !feedbackText.trim()) {
+      console.error("Missing required fields");
+      handleActionCompleted("Please fill in all required fields.", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      console.log("Sending message to service worker...");
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          type: 'SUBMIT_FEEDBACK',
+          data: {
+            feedbackType: selectedFeedbackType,
+            feedbackText: feedbackText.trim()
+          }
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Chrome runtime error:', chrome.runtime.lastError);
+            reject(chrome.runtime.lastError);
+            return;
+          }
+          resolve(response);
+        });
+      });
+
+      console.log("Service worker response:", response);
+
+      if (response?.success) {
+        console.log("Feedback submitted successfully");
+        handleActionCompleted("Feedback submitted successfully!", "success");
+        handleClose();
+      } else {
+        throw new Error(response?.error || "Unknown error occurred");
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      handleActionCompleted(error.message || "Error submitting feedback. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const customStyles = {
     "& .MuiOutlinedInput-root": {
-      "& fieldset": {
-        borderColor: "#ccc",
-      },
-      "&:hover fieldset": {
-        borderColor: "#ccc",
-      },
-      "&.Mui-focused fieldset": {
-        borderColor: "#703331",
-      },
+      "& fieldset": { borderColor: "#ccc" },
+      "&:hover fieldset": { borderColor: "#ccc" },
+      "&.Mui-focused fieldset": { borderColor: "#703331" },
     },
-    "& .MuiInputLabel-root": {
-      color: "#ccc",
-    },
-    "& .MuiInputLabel-outlined-root": {
-      "&.Mui-focused": {
-        color: "#703331",
-      },
-    },
-    "& .Mui-focused.MuiInputLabel-root": {
-      color: "#703331",
-    },
+    "& .MuiInputLabel-root": { color: "#ccc" },
+    "& .Mui-focused.MuiInputLabel-root": { color: "#703331" },
   };
 
   return (
@@ -65,31 +98,31 @@ export default function FeedbackButton({ handleActionCompleted }) {
         sx={{
           backgroundColor: "#802a25",
           color: "white",
-          "&:hover": {
-            backgroundColor: "#671f1a",
-          },
+          "&:hover": { backgroundColor: "#671f1a" },
         }}
         onClick={handleOpen}
+        disabled={isSubmitting}
       >
-        Submit Feedback
+        {isSubmitting ? "Submitting..." : "Submit Feedback"}
       </Button>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={open} 
+        onClose={!isSubmitting ? handleClose : undefined}
+        maxWidth="sm" 
+        fullWidth
+      >
         <DialogTitle>Submit Feedback</DialogTitle>
-        <DialogContent
-          sx={{
-            paddingBottom: 0,
-          }}
-        >
+        <DialogContent sx={{ paddingBottom: 0 }}>
           <Stack spacing={2} marginTop={2}>
             <FormControl fullWidth sx={customStyles}>
               <InputLabel id="feedback-type-label">Feedback Type</InputLabel>
               <Select
                 labelId="feedback-type-label"
-                id="feedback-type"
                 value={selectedFeedbackType}
                 label="Feedback Type"
                 onChange={(e) => setSelectedFeedbackType(e.target.value)}
+                disabled={isSubmitting}
               >
                 <MenuItem value={"general"}>General</MenuItem>
                 <MenuItem value={"feature request"}>Feature Request</MenuItem>
@@ -106,27 +139,28 @@ export default function FeedbackButton({ handleActionCompleted }) {
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
               sx={customStyles}
+              disabled={isSubmitting}
             />
-
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!selectedFeedbackType || !feedbackText.trim()}
-              sx={{
-                backgroundColor: "#802a25",
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "#671f1a",
-                },
-              }}
-            >
-              Submit Feedback
-            </Button>
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="primary">
+        <DialogActions sx={{ padding: 2 }}>
+          <Button 
+            onClick={handleClose} 
+            disabled={isSubmitting}
+          >
             Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={!selectedFeedbackType || !feedbackText.trim() || isSubmitting}
+            sx={{
+              backgroundColor: "#802a25",
+              color: "white",
+              "&:hover": { backgroundColor: "#671f1a" },
+            }}
+          >
+            {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </DialogActions>
       </Dialog>

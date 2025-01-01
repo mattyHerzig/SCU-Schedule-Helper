@@ -139,3 +139,63 @@ async function runStartupChecks() {
   // Check if we need to expire any interestedSections.
   await refreshInterestedSections();
 }
+
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Service worker received message:', request);
+  
+  if (request.type === 'SUBMIT_FEEDBACK') {
+    console.log('Processing feedback submission');
+    handleFeedbackSubmission(request.data)
+      .then(response => {
+        console.log('Submission successful:', response);
+        sendResponse({ success: true, data: response });
+      })
+      .catch(error => {
+        console.error('Submission failed:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true;
+  }
+});
+
+async function handleFeedbackSubmission(data) {
+  const API_ENDPOINT = 'https://tgoa5fcyfb.execute-api.us-west-1.amazonaws.com/prod/feedback';
+  
+  console.log('Preparing API request:', {
+    endpoint: API_ENDPOINT,
+    data: data
+  });
+
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': chrome.runtime.getURL(''),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        feedbackType: data.feedbackType,
+        feedbackDate: new Date().toISOString(),
+        feedback: data.feedbackText,
+        source: 'chrome_extension'
+      })
+    });
+
+    console.log('Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API error:', errorText);
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const responseData = await response.json();
+    console.log('API response:', responseData);
+    return responseData;
+  } catch (error) {
+    console.error('Submission error:', error);
+    throw new Error('Failed to submit feedback. Please try again.');
+  }
+}
