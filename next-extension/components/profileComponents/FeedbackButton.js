@@ -35,7 +35,16 @@ export default function FeedbackButton({ handleActionCompleted }) {
   async function handleSubmit() {
     console.log("Starting feedback submission...", {
       feedbackType: selectedFeedbackType,
-      feedbackText: feedbackText
+      feedbackText: feedbackText,
+      timestamp: new Date().toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
     });
     
     if (!selectedFeedbackType || !feedbackText.trim()) {
@@ -53,7 +62,16 @@ export default function FeedbackButton({ handleActionCompleted }) {
           type: 'SUBMIT_FEEDBACK',
           data: {
             feedbackType: selectedFeedbackType,
-            feedbackText: feedbackText.trim()
+            feedbackText: feedbackText.trim(),
+            timestamp: new Date().toLocaleString('en-US', {
+              timeZone: 'America/Los_Angeles',
+              month: 'numeric',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            })
           }
         }, (response) => {
           if (chrome.runtime.lastError) {
