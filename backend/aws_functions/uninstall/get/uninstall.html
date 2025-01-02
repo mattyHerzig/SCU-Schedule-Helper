@@ -75,6 +75,12 @@
         font-weight: bold;
         display: none;
       }
+      #validation-error {
+        margin-top: 10px;
+        color: #ff5e52;
+        font-size: 14px;
+        display: none;
+      }
       textarea {
         font-family: Tahoma, sans-serif;
       }
@@ -109,11 +115,15 @@
             />
             Did not work as expected/technical difficulties
           </label>
+          <label>
+            <input type="checkbox" name="reason" value="Other" /> Other
+          </label>
         </div>
         <textarea
           name="feedback"
           placeholder="Additional feedback (optional)..."
         ></textarea>
+        <div id="validation-error">Please select at least one reason.</div>
         <button type="submit">Submit Feedback</button>
       </form>
       <div id="success-message">Feedback submitted successfully.</div>
@@ -128,6 +138,22 @@
         .getElementById("feedback-form")
         .addEventListener("submit", function (event) {
           event.preventDefault();
+
+          const selectedReasons = Array.from(
+            document.querySelectorAll('input[name="reason"]:checked'),
+          );
+          const validationError = document.getElementById("validation-error");
+          validationError.style.display = "none";
+
+          if (selectedReasons.length === 0) {
+            validationError.style.display = "block";
+            return;
+          }
+
+          let feedbackType = selectedReasons
+            .map((node) => node.value)
+            .join(", ");
+
           fetch(`https://api.scu-schedule-helper.me/feedback`, {
             method: "POST",
             headers: {
@@ -135,11 +161,7 @@
             },
             body: JSON.stringify({
               source: "UninstallPage",
-              feedbackType: Array.from(
-                document.querySelectorAll('input[name="reason"]:checked'),
-              )
-                .map((node) => node.value)
-                .join(", "),
+              feedbackType,
               feedbackText:
                 document.querySelector('textarea[name="feedback"]').value ||
                 "No additional feedback.",
@@ -155,12 +177,11 @@
             successMessage.style.display = "block";
             errorMessage.style.display = "none";
             // Clear form
-            const reasonNodes = document.querySelectorAll(
-              'input[name="reason"]',
-            );
-            reasonNodes.forEach((node) => {
-              node.checked = false;
-            });
+            document
+              .querySelectorAll('input[name="reason"]')
+              .forEach((node) => {
+                node.checked = false;
+              });
             document.querySelector('textarea[name="feedback"]').value = "";
           });
         });
