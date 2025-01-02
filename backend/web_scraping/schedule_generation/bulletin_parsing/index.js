@@ -4,17 +4,21 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { get_encoding } from "tiktoken";
 import {
   CourseCatalog,
-  DepartmentInfo,
+  DepartmentOrProgramInfo,
   SchoolInfo,
   SpecialProgramInfo,
-} from "./utils/models.js";
+} from "./utils/test_models.js";
 import fs from "fs";
 import {
   EXTRACT_COURSES_PROMPT,
-  EXTRACT_DEPT_INFO_PROMPT,
+  // EXTRACT_DEPT_INFO_PROMPT,
   EXTRACT_SCHOOL_INFO_PROMPT,
   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
 } from "./utils/prompts.js";
+import {
+  EXTRACT_DEPT_INFO_PROMPT
+} from "./utils/test_prompts.js"
+import { DEPARTMENT_TOOLS } from "./utils/test_models.js";
 
 const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate/";
 const RELEVANT_CHAPTERS = new Set([3, 4, 5, 6]);
@@ -112,9 +116,11 @@ async function getAndProcessBulletinText(mode) {
       departmentOverviewPages.push(...allLinks.slice(1));
     }
   }
-  // schoolOverviewPages = [];
-  // departmentOverviewPages = [];
-  // specialProgramPages = [];
+  schoolOverviewPages = [];
+  departmentOverviewPages = [
+    "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/musical-theatre.html#339634e37c1a",
+  ];
+  specialProgramPages = [];
   for (const schoolPage of schoolOverviewPages) {
     await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode);
   }
@@ -184,17 +190,17 @@ async function processBulletinChapterPage(link, pageType, mode) {
   const courses = divideCourseSectionsText(coursesSectionText);
   if (pageType === PageTypes.DEPARTMENT) {
     const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
-    await extractDataFromPage(
+    await extractDataFromPageWithFunctionCalls(
       batchRequestId,
       mainContentString,
       EXTRACT_DEPT_INFO_PROMPT,
-      zodResponseFormat(DepartmentInfo, "Department_Or_Program_Info"),
+      zodResponseFormat(DepartmentOrProgramInfo, "Department_Or_Program_Info"),
       gpt4oBatchRequestFileStream,
     );
   } else if (pageType === PageTypes.SCHOOL) {
     const batchRequestId =
       (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
-    await extractDataFromPage(
+    await extractDataFromPageWithFunctionCalls(
       batchRequestId,
       mainContentString,
       EXTRACT_SCHOOL_INFO_PROMPT,
@@ -204,7 +210,7 @@ async function processBulletinChapterPage(link, pageType, mode) {
   } else {
     const batchRequestId =
       (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
-    await extractDataFromPage(
+    await extractDataFromPageWithFunctionCalls(
       batchRequestId,
       mainContentString,
       EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
@@ -216,7 +222,7 @@ async function processBulletinChapterPage(link, pageType, mode) {
     const courseSection = courses[i];
     const batchRequestId =
       (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
-    await extractDataFromPage(
+    await extractDataFromPageWithFunctionCalls(
       batchRequestId,
       courseSection,
       EXTRACT_COURSES_PROMPT,
@@ -286,6 +292,91 @@ async function extractDataFromPage(
   if (prompt === EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT) {
     universityCatalog.specialPrograms.push(responseData);
   }
+  await writeCatalog();
+}
+
+// An experimental version to test accuracy when using function calls (tools).
+async function extractDataFromPageWithFunctionCalls(
+  batchRequestId,
+  pageText,
+  prompt,
+  responseFormat,
+  batchFile,
+  model = "gpt-4o",
+) {
+  const messages = [
+    {
+      role: "system",
+      content: prompt,
+    },
+    {
+      role: "user",
+      content: `Here is the page:
+      <page>
+      ${pageText}
+      </page>`,
+    },
+  ];
+  const requestBody = {
+    model,
+    messages,
+    temperature: 0,
+    tools: DEPARTMENT_TOOLS,
+    parallel_tool_calls: false,
+    // top_p: 0.1,
+  };
+
+  if (batchRequestId) {
+    batchFile.write(
+      JSON.stringify({
+        custom_id: batchRequestId,
+        method: "POST",
+        url: "/v1/chat/completions",
+        body: { ...requestBody },
+      }) + "\n",
+    );
+    return;
+  }
+
+  let completion = await openAIClient.chat.completions.create({
+    ...requestBody,
+  });
+
+  console.log(JSON.stringify(completion.choices, null, 2));
+
+  if (
+    !(
+      completion.choices[0].finish_reason === "tool_calls" &&
+      completion.choices[0].message.tool_calls[0].function.name ===
+        "save_department_or_program_info"
+    )
+  ) {
+    // Console log the completion and respond to any tool calls.
+    const toolCall = completion.choices[0].message.tool_calls?.[0];
+    if (toolCall) {
+      console.log(`made request to ${toolCall.function.name}`);
+      console.log(JSON.stringify(toolCall.function, null, 2));
+    }
+  } else {
+    console.log("went directly to save_department_or_program_info");
+  }
+
+  console.log(
+    `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`,
+  );
+
+  // const responseData = completion.choices[0].message.parsed;
+  // universityCatalog.courses.push(...(responseData.courses ?? []));
+  // universityCatalog.errors.push(...(responseData.errors ?? []));
+  // if (prompt === EXTRACT_SCHOOL_INFO_PROMPT) {
+  //   universityCatalog.schools.push(responseData);
+  // }
+  // if (prompt === EXTRACT_DEPT_INFO_PROMPT) {
+  //   universityCatalog.deptsAndPrograms.push(responseData);
+  // }
+  // if (prompt === EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT) {
+  //   universityCatalog.specialPrograms.push(responseData);
+  // }
   await writeCatalog();
 }
 
