@@ -12,6 +12,7 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
+  Divider,
 } from "@mui/material";
 import { Edit, ExpandMore } from "@mui/icons-material";
 import { parseInterestedSections, parseTakenCourses } from "../utils/user.js";
@@ -133,7 +134,7 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
         updateItems.interestedSections = {
           remove: [oldKey],
           add: {
-            [newKey]: daysFromNow(45), // 45 days from now
+            [newKey]: daysFromNow(45),
           },
         };
       } else {
@@ -222,6 +223,22 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
     }
   }
 
+  const EmptyStateMessage = ({ type }) => (
+    <Typography
+      variant="body2"
+      sx={{
+        color: "text.secondary",
+        fontStyle: "italic",
+        my: 2,
+        textAlign: "center",
+      }}
+    >
+      {type === "interested"
+        ? "Create Workday schedules or input interested courses to add to your profile."
+        : "Import or input taken courses to add to your profile."}
+    </Typography>
+  );
+
   return (
     <Box sx={{ width: "100%" }}>
       <Accordion>
@@ -237,28 +254,43 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
           </Stack>
         </AccordionSummary>
         <AccordionDetails>
-          <CourseAccordionSection
-            courseOptions={courseOptions}
-            professorOptions={professorOptions}
-            handleAddCourse={handleAddCourse}
-            handleEditCourse={handleEditCourse}
-            handleRemoveCourseClick={handleRemoveCourseClick}
-            handleDeleteAllCoursesClick={handleDeleteAllCoursesClick}
-            title="Interested Courses"
-            courses={transformedCourses.interested}
-            type="interested"
-          />
-          <CourseAccordionSection
-            courseOptions={courseOptions}
-            professorOptions={professorOptions}
-            handleAddCourse={handleAddCourse}
-            handleEditCourse={handleEditCourse}
-            handleRemoveCourseClick={handleRemoveCourseClick}
-            handleDeleteAllCoursesClick={handleDeleteAllCoursesClick}
-            title="Taken Courses"
-            courses={transformedCourses.taken}
-            type="taken"
-          />
+          <Stack spacing={2}>
+            <Box>
+              <CourseAccordionSection
+                courseOptions={courseOptions}
+                professorOptions={professorOptions}
+                handleAddCourse={handleAddCourse}
+                handleEditCourse={handleEditCourse}
+                handleRemoveCourseClick={handleRemoveCourseClick}
+                handleDeleteAllCoursesClick={handleDeleteAllCoursesClick}
+                title="Interested Courses"
+                courses={transformedCourses.interested}
+                type="interested"
+              />
+              {transformedCourses.interested.length === 0 && (
+                <EmptyStateMessage type="interested" />
+              )}
+            </Box>
+            
+            <Divider sx={{ my: 2, bgcolor: "grey.200" }} />
+            
+            <Box>
+              <CourseAccordionSection
+                courseOptions={courseOptions}
+                professorOptions={professorOptions}
+                handleAddCourse={handleAddCourse}
+                handleEditCourse={handleEditCourse}
+                handleRemoveCourseClick={handleRemoveCourseClick}
+                handleDeleteAllCoursesClick={handleDeleteAllCoursesClick}
+                title="Taken Courses"
+                courses={transformedCourses.taken}
+                type="taken"
+              />
+              {transformedCourses.taken.length === 0 && (
+                <EmptyStateMessage type="taken" />
+              )}
+            </Box>
+          </Stack>
         </AccordionDetails>
       </Accordion>
       <Dialog
