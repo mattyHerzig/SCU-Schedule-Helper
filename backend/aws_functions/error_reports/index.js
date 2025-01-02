@@ -51,11 +51,12 @@ async function getLogsAndPublishToSNS(metricFilterData) {
         for (const event of logData.events) {
           event.logGroupName = metricFilter.logGroupName;
         }
-        logEvents = logEvents.concat(logData.events);
+        logEvents.push(...logData.events);
       }
     }
 
     if (logEvents.length === 0) {
+      console.log("No errors detected.")
       return;
     }
     await snsClient.send(new PublishCommand(generateSNSContent(logEvents)));

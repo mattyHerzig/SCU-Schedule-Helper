@@ -165,7 +165,7 @@ async function deleteNameFromIndex(userId, currentName) {
       throw new Error(`Error updating name index for user ${userId}`);
     }
   } catch (error) {
-    console.error("Error updating name index for user:", error);
+    console.error("INTERNAL: Error updating name index for user:", error);
   }
 }
 
@@ -204,6 +204,6 @@ async function tryNotifyClients(userId, userInfo) {
       );
     }
   } catch (error) {
-    console.error("Error invoking client notifier:", error);
+    console.error("INTERNAL: Error invoking client notifier:", error);
   }
 }

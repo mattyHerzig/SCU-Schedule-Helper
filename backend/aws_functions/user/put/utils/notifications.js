@@ -149,6 +149,6 @@ async function trySendNotification(notificationBody) {
       );
     }
   } catch (error) {
-    console.error("Error invoking client notifier:", error);
+    console.error("INTERNAL: Error invoking client notifier:", error);
   }
 }

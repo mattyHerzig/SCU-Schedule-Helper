@@ -135,14 +135,29 @@ function getAcademicPeriods() {
   ).map((el) => el.parentElement!.nextElementSibling!) as HTMLElement[];
 }
 
+function findIndexOfFirstQuarterBeforeFall2023(academicPeriods: HTMLElement[]) {
+  // Find the index of the first quarter that occured before Fall 2023 (usually Spring 2023).
+  return academicPeriods.findIndex((el) => {
+    const match = el.innerText.match(ACADEMIC_PERIOD_PATTERN);
+    return (
+      match &&
+      ((match[1] !== "Fall" && parseInt(match[2]) == 2023) ||
+        parseInt(match[2]) < 2023)
+    );
+  });
+}
+
 async function processAllTables(incrementProgressNumerator: () => void) {
   const results: CourseData[] = [];
   const scuTables = getScuTables();
   const academicPeriods = getAcademicPeriods();
   const nonScuTables = getNonScuTables();
-  const indexOfSpring2023 = academicPeriods.findIndex((el) =>
-    el.innerText.includes("Spring 2023"),
-  );
+  let indexOfSpring2023 =
+    findIndexOfFirstQuarterBeforeFall2023(academicPeriods);
+  if (indexOfSpring2023 === -1) {
+    indexOfSpring2023 = academicPeriods.length;
+  }
+
   const tablesAfterSpring2023 = scuTables.slice(0, indexOfSpring2023);
   const tablesBeforeAndIncludingSpring2023 = scuTables.slice(indexOfSpring2023);
 
@@ -194,9 +209,9 @@ async function processRelatedActionsButton(
   await waitForSelector("table", popup);
   if (popup) {
     const table = popup.querySelector("table")!;
-    const rows = table.querySelectorAll("td");
-    const courseName = rows[0].innerText.trim();
-    let professor = rows[5].innerText.trim();
+    const cells = table.querySelectorAll("td");
+    const courseName = cells[0].innerText.trim();
+    let professor = cells[5].innerText.trim();
     const profIndexOfPipe = professor.indexOf("|");
     if (profIndexOfPipe !== -1) {
       professor = professor.substring(0, profIndexOfPipe).trim();

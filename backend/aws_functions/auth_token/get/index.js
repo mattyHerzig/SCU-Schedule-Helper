@@ -10,7 +10,7 @@ const ERRORS = {
   NO_HEADER: "no authorization header provided.",
   BAD_HEADER:
     "authorization header must provide an issued refresh token or a Google OAuth token.",
-  GOOGLE_OAUTH_ERROR: "error fetching user info from Google",
+  GOOGLE_OAUTH_ERROR: "error fetching your info from Google",
   BAD_EMAIL: "invalid email (not in scu.edu).",
   EMAIL_NOT_VERIFIED: "invalid email (email is not verified).",
   BAD_REFRESH_TOKEN: "could not verify refresh token",
@@ -59,36 +59,43 @@ async function getUserAuthorization(event) {
 }
 
 async function verifyGoogleOAuthToken(accessToken) {
-  const response = await fetch(
-    "https://www.googleapis.com/oauth2/v3/userinfo",
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+  try {
+    const response = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
-    },
-  );
-  const personInfo = await response.json();
+    );
+    const personInfo = await response.json();
 
-  if (personInfo.error) {
+    if (personInfo.error) {
+      return {
+        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${personInfo.error_description})`,
+      };
+    } else if (personInfo.hd != "scu.edu") {
+      return {
+        authError: ERRORS.BAD_EMAIL,
+      };
+    } else if (!personInfo.email_verified) {
+      return {
+        authError: ERRORS.EMAIL_NOT_VERIFIED,
+      };
+    } else {
+      return {
+        userId: personInfo.email.split("@")[0],
+        oAuthInfo: new OAuthInfo(
+          personInfo.email,
+          personInfo.name,
+          personInfo.picture,
+        ),
+      };
+    }
+  } catch (error) {
+    console.error("INTERNAL: Error fetching Google info:", error);
     return {
-      authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${personInfo.error_description})`,
-    };
-  } else if (personInfo.hd != "scu.edu") {
-    return {
-      authError: ERRORS.BAD_EMAIL,
-    };
-  } else if (!personInfo.email_verified) {
-    return {
-      authError: ERRORS.EMAIL_NOT_VERIFIED,
-    };
-  } else {
-    return {
-      userId: personInfo.email.split("@")[0],
-      oAuthInfo: new OAuthInfo(
-        personInfo.email,
-        personInfo.name,
-        personInfo.picture,
-      ),
+      authError: `${ERRORS.GOOGLE_OAUTH_ERROR}, please try again.`,
     };
   }
 }
@@ -104,7 +111,7 @@ function verifyRefreshToken(refreshToken) {
     return { userId: token.sub };
   } catch (error) {
     return {
-      authError: `${ERRORS.BAD_REFRESH_TOKEN} (${error}).`,
+      authError: `${ERRORS.BAD_REFRESH_TOKEN} (${error.message})`,
     };
   }
 }

@@ -51,7 +51,7 @@ export const handler = async (event, context) => {
     });
 
     if (appendRowResponse.status < 200 || appendRowResponse.status >= 300) {
-      console.error(`Error: ${appendRowResponse.statusText}`);
+      console.error(`INTERNAL: Could not append to Google Sheet: ${appendRowResponse.statusText}`);
       return {
         statusCode: 500,
         body: JSON.stringify({
@@ -67,7 +67,7 @@ export const handler = async (event, context) => {
       }),
     };
   } catch (error) {
-    console.error("Error in feedback submission:", error);
+    console.error("INTERNAL: Error in feedback submission:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({

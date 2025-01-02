@@ -20,9 +20,7 @@ chrome.runtime.onInstalled.addListener((object) => {
   let internalUrl = chrome.runtime.getURL("landing_page/index.html");
 
   if (object.reason === chrome.runtime.OnInstalledReason.INSTALL) {
-    chrome.tabs.create({ url: internalUrl }, function (tab) {
-      console.log("New tab launched with http://yoursite.com/");
-    });
+    chrome.tabs.create({ url: internalUrl }, function (tab) {});
   }
 });
 
