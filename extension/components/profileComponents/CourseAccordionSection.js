@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { Add, Delete, Description, ImportContacts } from "@mui/icons-material";
-import CourseBox from "./CourseBox";
+import CourseBox from "./CourseBox.js";
 import { getRelevantCourseTimes } from "../utils/user.js";
 
 export default function CourseAccordionSection({
