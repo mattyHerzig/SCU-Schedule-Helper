@@ -21,7 +21,7 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
     setPhotoUrl(getUniquePhotoUrl(userInfo?.photoUrl));
   }, [userInfo]);
 
-  async function handlePhotoChange (event) {
+  async function handlePhotoChange(event) {
     if (!userInfo) return;
     const file = event.target.files[0];
     if (!file) return;
@@ -41,9 +41,9 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
       maxHeight: 1000,
     });
     submitPersonal(compressedFile, null);
-  };
+  }
 
-  async function submitPersonal (photoFile, newName) {
+  async function submitPersonal(photoFile, newName) {
     if (!userInfo) return;
 
     const message = {
@@ -78,32 +78,32 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
             "error",
           );
           return;
-        } else setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl));
+        }
       }
       handleActionCompleted("Profile updated successfully.", "success");
       setIsEditingName(false);
     }
-  };
+  }
 
-  function handleNameChange () {
+  function handleNameChange() {
     if (!userInfo) return;
     submitPersonal(null, name);
-  };
+  }
 
-  function cancelEditing () {
+  function cancelEditing() {
     if (!userInfo) return;
     setName(userInfo.name || "");
     setIsEditingName(false);
-  };
+  }
 
-  function handleInputChange (e) {
+  function handleInputChange(e) {
     if (!userInfo) return;
     const newName = e.target.value;
     setName(newName);
     if (newName !== userInfo.name) {
       setIsEditingName(true);
     }
-  };
+  }
 
   if (!userInfo?.id) {
     return (
