@@ -1,198 +1,300 @@
 {
-  "info": {
-    "_postman_id": "14e0d882-6682-462b-81d7-9fbc706a2976",
-    "name": "GitHub Repo",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "32900503",
-    "_collection_link": "https://asdf66-6370.postman.co/workspace/SCU-Schedule-Helper~917e4a71-6203-4151-95c8-4ef919189511/collection/32900503-14e0d882-6682-462b-81d7-9fbc706a2976?action=share&source=collection_link&creator=32900503"
-  },
-  "item": [
-    {
-      "name": "List repo secrets",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/vnd.github+json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer <your github access token>"
-          },
-          {
-            "key": "X-GitHub-Api-Version",
-            "value": "2022-11-28"
-          }
-        ],
-        "url": {
-          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets",
-          "protocol": "https",
-          "host": ["api", "github", "com"],
-          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "secrets"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "List repo variables",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/vnd.github+json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer <your github access token>"
-          },
-          {
-            "key": "X-GitHub-Api-Version",
-            "value": "2022-11-28"
-          }
-        ],
-        "url": {
-          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
-          "protocol": "https",
-          "host": ["api", "github", "com"],
-          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "variables"]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Get repo public key",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/vnd.github+json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer <your github access token>"
-          },
-          {
-            "key": "X-GitHub-Api-Version",
-            "value": "2022-11-28"
-          }
-        ],
-        "url": {
-          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets/public-key",
-          "protocol": "https",
-          "host": ["api", "github", "com"],
-          "path": [
-            "repos",
-            "mattyHerzig",
-            "SCU-Schedule-Helper",
-            "actions",
-            "secrets",
-            "public-key"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Create repo secret",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "exec": [""],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        }
-      ],
-      "request": {
-        "method": "PUT",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/vnd.github+json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer <your github access token>"
-          },
-          {
-            "key": "X-GitHub-Api-Version",
-            "value": "2022-11-28"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n    \"encrypted_value\": \"use backend/helpers/encrypt_secret.js to encrypt your secret, then paste the value here\",\r\n    \"key_id\": \"3380204578043523366\"\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets/secret_name",
-          "protocol": "https",
-          "host": ["api", "github", "com"],
-          "path": [
-            "repos",
-            "mattyHerzig",
-            "SCU-Schedule-Helper",
-            "actions",
-            "secrets",
-            "secret_name"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Create repo variable",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "exec": [""],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/vnd.github+json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer <your github access token>"
-          },
-          {
-            "key": "X-GitHub-Api-Version",
-            "value": "2022-11-28"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n    \"name\": \"VAR_NAME\",\r\n    \"value\": \"VAR_VALUE\"\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
-          "protocol": "https",
-          "host": ["api", "github", "com"],
-          "path": ["repos", "mattyHerzig", "SCU-Schedule-Helper", "actions", "variables"]
-        }
-      },
-      "response": []
-    }
-  ]
+	"info": {
+		"_postman_id": "14e0d882-6682-462b-81d7-9fbc706a2976",
+		"name": "GitHub Repo",
+		"description": "CRUD endpoints for the GitHub repository itself.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32900503",
+		"_collection_link": "https://asdf66-6370.postman.co/workspace/SCU-Schedule-Helper~917e4a71-6203-4151-95c8-4ef919189511/collection/32900503-14e0d882-6682-462b-81d7-9fbc706a2976?action=share&source=collection_link&creator=32900503"
+	},
+	"item": [
+		{
+			"name": "List repo secrets",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/vnd.github+json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{github_access_token}}"
+					},
+					{
+						"key": "X-GitHub-Api-Version",
+						"value": "2022-11-28"
+					}
+				],
+				"url": {
+					"raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets",
+					"protocol": "https",
+					"host": [
+						"api",
+						"github",
+						"com"
+					],
+					"path": [
+						"repos",
+						"mattyHerzig",
+						"SCU-Schedule-Helper",
+						"actions",
+						"secrets"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List repo variables",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/vnd.github+json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{github_access_token}}"
+					},
+					{
+						"key": "X-GitHub-Api-Version",
+						"value": "2022-11-28"
+					}
+				],
+				"url": {
+					"raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
+					"protocol": "https",
+					"host": [
+						"api",
+						"github",
+						"com"
+					],
+					"path": [
+						"repos",
+						"mattyHerzig",
+						"SCU-Schedule-Helper",
+						"actions",
+						"variables"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get repo public key",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/vnd.github+json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{github_access_token}}"
+					},
+					{
+						"key": "X-GitHub-Api-Version",
+						"value": "2022-11-28"
+					}
+				],
+				"url": {
+					"raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets/public-key",
+					"protocol": "https",
+					"host": [
+						"api",
+						"github",
+						"com"
+					],
+					"path": [
+						"repos",
+						"mattyHerzig",
+						"SCU-Schedule-Helper",
+						"actions",
+						"secrets",
+						"public-key"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create repo secret",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/vnd.github+json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{github_access_token}}"
+					},
+					{
+						"key": "X-GitHub-Api-Version",
+						"value": "2022-11-28"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"encrypted_value\": \"<use the encrypt_secret helper>\",\r\n    \"key_id\": \"3380204578043523366\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/secrets/<secret_name>",
+					"protocol": "https",
+					"host": [
+						"api",
+						"github",
+						"com"
+					],
+					"path": [
+						"repos",
+						"mattyHerzig",
+						"SCU-Schedule-Helper",
+						"actions",
+						"secrets",
+						"<secret_name>"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create repo variable",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/vnd.github+json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{github_access_token}}"
+					},
+					{
+						"key": "X-GitHub-Api-Version",
+						"value": "2022-11-28"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"<var name>\",\r\n    \"value\": \"<var value>\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables",
+					"protocol": "https",
+					"host": [
+						"api",
+						"github",
+						"com"
+					],
+					"path": [
+						"repos",
+						"mattyHerzig",
+						"SCU-Schedule-Helper",
+						"actions",
+						"variables"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete repo variable",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/vnd.github+json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{github_access_token}}"
+					},
+					{
+						"key": "X-GitHub-Api-Version",
+						"value": "2022-11-28"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.github.com/repos/mattyHerzig/SCU-Schedule-Helper/actions/variables/<var name>",
+					"protocol": "https",
+					"host": [
+						"api",
+						"github",
+						"com"
+					],
+					"path": [
+						"repos",
+						"mattyHerzig",
+						"SCU-Schedule-Helper",
+						"actions",
+						"variables",
+						"<var name>"
+					]
+				}
+			},
+			"response": []
+		}
+	]
 }

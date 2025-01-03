@@ -1,8 +1,11 @@
-**/.DS_Store
-testing
-dist
-*.zip
-exclude
 node_modules
-.env
+exclude
+dist
+testing
 persistent_data
+local_data
+out
+.env
+*.zip
+*.next
+**/.DS_Store

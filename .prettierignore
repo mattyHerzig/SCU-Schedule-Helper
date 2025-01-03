@@ -1,0 +1,9 @@
+node_modules
+exclude
+dist
+testing
+out
+.env
+*.zip
+*.next
+**/.DS_Store

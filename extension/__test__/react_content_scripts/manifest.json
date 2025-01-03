@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "React Content Script",
+  "version": "1.0.0",
+  "icons": {},
+  "content_scripts": [
+    {
+      "matches": ["https://www.myworkday.com/scu/d/task/2998$28771.htmld"],
+      "js": ["scripts/current_courses.tsx"]
+    },
+    {
+      "matches": ["https://www.myworkday.com/scu/d/task/2998$30300.htmld"],
+      "js": ["scripts/course_history.tsx"]
+    }
+  ]
+}

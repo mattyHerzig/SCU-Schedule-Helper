@@ -1,21 +1,21 @@
 export class GetAuthTokenResponse {
   constructor() {
     this.accessToken = "";
-    this.accessTokenExpirationDate = 0;
+    this.accessTokenExpirationDate = "";
     this.refreshToken = null;
     this.oAuthInfo = null;
   }
 }
 
 export class OAuthInfo {
-  constructor(email, name, picture) {
+  constructor(email, name, photoUrl) {
     this.email = email;
     this.name = name;
-    this.picture = picture;
+    this.photoUrl = photoUrl;
   }
 }
 
-export const validResponse = (response) => {
+export function validResponse(response) {
   return {
     statusCode: 200,
     headers: {
@@ -23,16 +23,16 @@ export const validResponse = (response) => {
     },
     body: JSON.stringify(response),
   };
-};
+}
 
-export const unauthorizedError = (message) => {
+export function unauthorizedError(message) {
   return {
     statusCode: 401,
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: `Could not verify user authorization due to an error: ${message}`,
+      message: `Authorization failed: ${message}`,
     }),
   };
-};
+}

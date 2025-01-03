@@ -1,9 +1,27 @@
-# SCU-Schedule-Helper
+# Tips
+## Important Stuff
+1. The react content scripts are under the /\_\_test__ folder so that they are ignored by Next.js in the build process. This is important, otherwise it will merge the entire /\_\_test__ folder into the /out folder
+    * Basically, just don't rename it unless you find a better solution to ignore the files in the build process.
+## Install Dependencies
+Start by running `npm i`
 
-For now, we only get rating data from Rate My Professors. However, we are planning on integrating official Santa Clara University evaluations from https://evaluations.scu.edu/ (specifically, we’re teaming up with Zach Bellay who made https://www.scu-course-evals.com/).
+## Load the Extension
+1. Go to chrome://extensions
+2. Enable developer mode in top right
+3. Click "load unpacked" in the top left
+4. Select the /out folder inside /extension
 
-## Demo (click)
-[![Setup & Demo Video](https://img.youtube.com/vi/iUMMb2LxTek/0.jpg)](https://youtu.be/iUMMb2LxTek "ChatBuzz Setup & Demo")
+## Helpful Commands
+1. Build the entire chrome extension:
 
-## Screenshots
-<img src="./screenshots/1.jpg" width="129" /> <img src="./screenshots/2.jpg" width="129" /> <img src="./screenshots/3.jpg" width="129" /> <img src="./screenshots/4.jpg" width="129" />
+    `npm run buildall`
+2. Or, to just build the react content scripts (and effectively refresh any changes): 
+    
+    `npm run refreshcs`
+3. Or, to just build the extension without the react content scripts: 
+
+    `npm run build`
+4. Or, to just refresh the service worker and public files: 
+
+    `npm run refreshpb`
+

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help Us Improve</title>
+    <style>
+      body {
+        font-family: Tahoma, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        background: #fff;
+        padding: 20px 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        text-align: center;
+      }
+      h1 {
+        color: #862633;
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+      .checkbox-group {
+        text-align: left;
+        margin-bottom: 15px;
+      }
+      .checkbox-group label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+        min-height: 100px;
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background-color: #862633;
+        color: #fff;
+        border: none;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #54010c;
+      }
+      #success-message {
+        margin-top: 15px;
+        color: #4caf50;
+        font-weight: bold;
+        display: none;
+      }
+      #error-message {
+        margin-top: 15px;
+        color: #ff5e52;
+        font-weight: bold;
+        display: none;
+      }
+      #validation-error {
+        margin-top: 10px;
+        color: #ff5e52;
+        font-size: 14px;
+        display: none;
+      }
+      textarea {
+        font-family: Tahoma, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Help Us Improve</h1>
+      <p>
+        We're sorry to see you uninstall SCU Schedule Helper. Could you tell us
+        why you're leaving? All feedback is anonymous.
+      </p>
+      <form id="feedback-form">
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" name="reason" value="Not useful" /> Not
+            useful
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="reason"
+              value="Slowed down my browser"
+            />
+            Slowed down my browser
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="reason"
+              value="Did not work as expected/technical difficulties"
+            />
+            Did not work as expected/technical difficulties
+          </label>
+          <label>
+            <input type="checkbox" name="reason" value="Other" /> Other
+          </label>
+        </div>
+        <textarea
+          name="feedback"
+          placeholder="Additional feedback (optional)..."
+        ></textarea>
+        <div id="validation-error">Please select at least one reason.</div>
+        <button type="submit">Submit Feedback</button>
+      </form>
+      <div id="success-message">Feedback submitted successfully.</div>
+      <div id="error-message">
+        An error occurred. Please try again later or email feedback to
+        stephenwdean@gmail.com
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("feedback-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const selectedReasons = Array.from(
+            document.querySelectorAll('input[name="reason"]:checked'),
+          );
+          const validationError = document.getElementById("validation-error");
+          validationError.style.display = "none";
+
+          if (selectedReasons.length === 0) {
+            validationError.style.display = "block";
+            return;
+          }
+
+          let feedbackType = selectedReasons
+            .map((node) => node.value)
+            .join(", ");
+
+          fetch(`https://api.scu-schedule-helper.me/feedback`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              source: "UninstallPage",
+              feedbackType,
+              feedbackText:
+                document.querySelector('textarea[name="feedback"]').value ||
+                "No additional feedback.",
+            }),
+          }).then((response) => {
+            const errorMessage = document.getElementById("error-message");
+            const successMessage = document.getElementById("success-message");
+            if (!response.ok) {
+              errorMessage.style.display = "block";
+              successMessage.style.display = "none";
+              return;
+            }
+            successMessage.style.display = "block";
+            errorMessage.style.display = "none";
+            // Clear form
+            document
+              .querySelectorAll('input[name="reason"]')
+              .forEach((node) => {
+                node.checked = false;
+              });
+            document.querySelector('textarea[name="feedback"]').value = "";
+          });
+        });
+    </script>
+  </body>
+</html>
