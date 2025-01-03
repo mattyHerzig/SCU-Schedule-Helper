@@ -8,4 +8,6 @@ npm run buildall
 
 Set-Location -Path "out"
 
-Compress-Archive -Path * -DestinationPath "../../SCU-Schedule-Helper.zip"
+Compress-Archive -Force -Path * -DestinationPath "../../SCU-Schedule-Helper.zip"
+
+Set-Location -Path "../../"
