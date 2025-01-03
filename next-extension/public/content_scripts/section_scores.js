@@ -692,5 +692,5 @@ function bsFind(sortedArray, target) {
 }
 
 function nullOrUndefined(object) {
-  return object === null || object === undefined;
+  return object === null || object === undefined || isNaN(object);
 }

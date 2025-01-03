@@ -25,7 +25,7 @@ export default function Main({}) {
 
   return (
     <AuthWrapper>
-      <Box ref={boxRef} sx={{ padding: 2, overflow: "auto" }}>
+      <Box ref={boxRef} sx={{ padding: 2, overflow: "auto", pb: 0 }}>
         <Box
           sx={{
             mb: 3,
@@ -40,7 +40,7 @@ export default function Main({}) {
               mb: 3,
               alignSelf: "flex-start",
               ml: "1.3rem",
-              fontSize: "1.1rem", 
+              fontSize: "1.1rem",
             }}
             variant="h6"
           >

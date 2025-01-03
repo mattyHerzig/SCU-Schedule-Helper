@@ -223,22 +223,6 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
     }
   }
 
-  const EmptyStateMessage = ({ type }) => (
-    <Typography
-      variant="body2"
-      sx={{
-        color: "text.secondary",
-        fontStyle: "italic",
-        my: 2,
-        textAlign: "center",
-      }}
-    >
-      {type === "interested"
-        ? "Create Workday schedules or input interested courses to add to your profile."
-        : "Import or input taken courses to add to your profile."}
-    </Typography>
-  );
-
   return (
     <Box sx={{ width: "100%" }}>
       <Accordion>
@@ -249,7 +233,7 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
               <Typography>Your Courses</Typography>
             </Stack>
             <Typography variant="body2" color="text.secondary">
-              Edit and import courses to be displayed on your profile.
+              Courses can only be seen by your friends.
             </Typography>
           </Stack>
         </AccordionSummary>
@@ -271,9 +255,9 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
                 <EmptyStateMessage type="interested" />
               )}
             </Box>
-            
+
             <Divider sx={{ my: 2, bgcolor: "grey.200" }} />
-            
+
             <Box>
               <CourseAccordionSection
                 courseOptions={courseOptions}
@@ -331,6 +315,24 @@ export default function CourseAccordion({ userInfo, handleActionCompleted }) {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+function EmptyStateMessage({ type }) {
+  return (
+    <Typography
+      variant="body2"
+      sx={{
+        color: "text.secondary",
+        fontStyle: "italic",
+        my: 2,
+        textAlign: "center",
+      }}
+    >
+      {type === "interested"
+        ? "If automatic course tracking is enabled, courses added to saved schedules in Workday will show up here. Or, add interested sections manually."
+        : "Use the buttons above to import courses from Workday, or add courses manually."}
+    </Typography>
   );
 }
 

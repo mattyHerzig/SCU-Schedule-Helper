@@ -183,6 +183,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     setFriendData({ friendTakenInfos, friendInterestedInfos });
   }
 
+  function getCourseName(courseCode) {
+    return data[courseCode]?.courseName || "";
+  }
+
   if (selected.type === "prof") {
     return (
       <Card sx={{ backgroundColor: "#f0f0f0" }}>
@@ -254,10 +258,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             .map(([courseCode, courseStats], index) => (
               <Box key={courseCode} sx={{ mt: 2 }}>
                 <Typography variant="body1" gutterBottom>
-                  {courseCode}
+                  {`${courseCode} - ${getCourseName(courseCode)}`}
                   <Typography
                     variant="body2"
-                    component="span"
+                    component="p"
                     onClick={() => {
                       onPageNavigation(courseCode);
                     }}
