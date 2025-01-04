@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "SCU Schedule Helper",
   "version": "2.0",
-  "description": "Course/professor rating and color coding for SCU Find Course Sections.",
+  "description": "Course/professor rating to help with SCU schedule planning.",
   "permissions": [
     "activeTab",
     "storage",
