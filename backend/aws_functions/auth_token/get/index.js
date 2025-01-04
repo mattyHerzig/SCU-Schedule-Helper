@@ -27,7 +27,7 @@ export async function handler(event, context) {
     tokenResponse.accessToken = generateDataAccessToken(
       userAuthorization.userId,
     );
-    let tokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+    let tokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 6.5);
     tokenResponse.accessTokenExpirationDate = tokenExpDate.toISOString();
     if (userAuthorization.oAuthInfo != null) {
       tokenResponse.refreshToken = generateRefreshToken(

@@ -84,7 +84,7 @@ export async function updateUser(updateItems, allowLocalOnly = false) {
   });
   if (!response && !allowLocalOnly) {
     return {
-      message: "Error updating user data (are you signed in?)",
+      message: "Error updating user data (you may have been signed out).",
       ok: false,
     };
   }

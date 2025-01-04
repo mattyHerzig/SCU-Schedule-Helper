@@ -78,6 +78,12 @@ export default function ProfileSection({ userInfo, handleActionCompleted }) {
             "error",
           );
           return;
+        } else if (
+          userInfo.photoUrl.startsWith(
+            "https://scu-schedule-helper.s3.amazonaws.com",
+          )
+        ) {
+          setPhotoUrl(getUniquePhotoUrl(userInfo.photoUrl)); // Force refresh.
         }
       }
       handleActionCompleted("Profile updated successfully.", "success");
