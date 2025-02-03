@@ -12,7 +12,7 @@ Easily view professor and course ratings through additions to the course registr
 <img src="./screenshots/2.jpg" width=300> \
 <img src="./screenshots/3.jpg" width=300>
 
-## Developement
+## Development
 
 ### General Notes
 1. We are primarily using Node.js version 22.x for development. Please install it if you don't already have it.
