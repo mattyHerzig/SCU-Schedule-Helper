@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
-    "jsdom": "^25.0.1",
-    "openai": "^4.77.0",
-    "tiktoken": "^1.0.18",
+    "jsdom": "^26.0.0",
+    "openai": "^4.83.0",
+    "tiktoken": "^1.0.20",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.1"
   }
