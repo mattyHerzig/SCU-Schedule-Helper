@@ -1,4 +1,5 @@
 import {
+  courseCodePattern,
   courseTakenPattern,
   interestedSectionPattern,
   prodUserEndpoint,
@@ -263,6 +264,7 @@ export async function updateFriendCourseAndSectionIndexes(
     const courseCode = courseMatch[2]
       .substring(0, courseMatch[2].indexOf("-"))
       .replace(/\s/g, "");
+	if(!courseCode.match(courseCodePattern)) continue;
     const curCourseIndex = friendCoursesTaken[courseCode] || {};
     const curProfIndex = friendCoursesTaken[profName] || {};
     curCourseIndex[friendId] = course; // A friend should only have one course entry per course code.
@@ -438,3 +440,4 @@ async function openTabAndSendMessage(url, message) {
 function getS3PhotoUrl(userId) {
   return `https://scu-schedule-helper.s3.amazonaws.com/u%23${userId}/photo`;
 }
+
