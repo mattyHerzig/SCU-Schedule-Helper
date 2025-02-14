@@ -75,7 +75,7 @@ async function getSchoolsAndTerms() {
   let termElements = doc.querySelector("#term").children;
   let termIds = [];
   let termIdsToTermNames = {};
-  for (let i = 0; i < 44; i++) {
+  for (let i = 0; i < 50; i++) {
     const el = termElements.item(i);
     if (el === null || el.value.trim() === "" || el.textContent.trim() === "")
       continue;
@@ -94,7 +94,7 @@ async function getSchoolsAndTerms() {
   evalsAndTerms.termIdsToTermNames = termIdsToTermNames;
   termsWithinCutoff = new Set(termIds);
   console.log(`Got schools: ${schools}`);
-  console.log(`Using the latest 44 terms: ${termIds}`);
+  console.log(`Using the latest 50 terms: ${termIds}`);
   return { schools, termIds };
 }
 
