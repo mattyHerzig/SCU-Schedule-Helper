@@ -1,28 +1,27 @@
 import { useRef, useState, useEffect } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Box } from "@mui/material";
 import ProfCourseSearch from "../queryComponents/ProfCourseSearch";
 import AuthWrapper from "./authWrapper";
 import QueryDialog from "../queryComponents/QueryDialog";
+import QueryPageTitle from "../queryComponents/QueryTitlePage";
 
 export default function Main({ }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const boxRef = useRef(null);
-  const [selected, setSelected] = useState(null);
+  const [query, setSelected] = useState(null);
   const [stack, setStack] = useState([]);
 
   useEffect(() => {
-    if (selected !== null) {
+    if (query !== null) {
       setStack(prevStack => {
-        if (prevStack[prevStack.length - 1] !== selected) {
-          const newStack = [...prevStack, selected];
+        if (prevStack[prevStack.length - 1] !== query) {
+          const newStack = [...prevStack, query];
           return newStack;
         }
         return prevStack;
       });
     }
-  }, [selected]);
+  }, [query]);
 
   function scrollToTop() {
     if (boxRef.current) {
@@ -36,18 +35,16 @@ export default function Main({ }) {
 
   function handleDialogClose() {
     setDialogOpen(false); seEffect(() => {
-      console.log("useEffect triggered with selected:", selected);
-      if (selected !== null) {
+      if (query !== null) {
         setStack(prevStack => {
-          if (prevStack[prevStack.length - 1] !== selected) {
-            const newStack = [...prevStack, selected];
-            console.log("Updated stack:", newStack);
+          if (prevStack[prevStack.length - 1] !== query) {
+            const newStack = [...prevStack, query];
             return newStack;
           }
           return prevStack;
         });
       }
-    }, [selected]);
+    }, [query]);
   }
 
   function handleBackButton() {
@@ -63,82 +60,9 @@ export default function Main({ }) {
     });
   }
 
-
-  function title() {
-    if (stack.length === 0) {
-      return (
-        <Box sx={{
-          mb: "1rem"
-        }}>
-
-          <Typography
-            sx={{
-              mb: 3,
-              alignSelf: "flex-start",
-              ml: "1.3rem",
-              fontSize: "1rem",
-              margin: "0px 0px 0px 0px",
-            }}
-            variant="h6"
-          >
-            Search Course and Professor Information
-            <IconButton
-              sx={{
-                ml: 0.5,
-              }}
-              onClick={handleDialogOpen}
-              aria-label="info"
-            >
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          </Typography>
-        </Box>
-      );
-    } else {
-      return (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
-            marginBottom: '1rem'
-          }}
-        >
-          <IconButton
-            sx={{
-              alignSelf: "flex-start",
-              mr: "1rem",
-            }}
-            onClick={() => handleBackButton()}
-            aria-label="back"
-          >
-            <ArrowBackIcon fontSize="small" />
-          </IconButton>
-          <Typography
-            sx={{
-              mb: 3,
-              ml: "1.3rem",
-              fontSize: "1rem",
-              margin: "3px 0px 0px 0px",
-            }}
-            variant="h6"
-          >
-            Search Course and Professor Information
-            <IconButton
-              sx={{
-                ml: 0.5,
-              }}
-              onClick={handleDialogOpen}
-              aria-label="info"
-            >
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          </Typography>
-        </Box>
-      );
-    }
+  function onQueryChange(query) {
+    setSelected(query);
   }
-
 
 
   return (
@@ -153,12 +77,12 @@ export default function Main({ }) {
             alignItems: "center",
           }}
         >
-          {title()}
+          <QueryPageTitle handleBackButton={handleBackButton} handleDialogOpen={handleDialogOpen} stack={stack} />
           <Box sx={{ width: "100%", maxWidth: "420px" }}>
             <ProfCourseSearch
               scrollToTop={scrollToTop}
-              selected={selected}
-              setSelected={setSelected}
+              query={query}
+              onQueryChange={onQueryChange}
             />
           </Box>
         </Box>
