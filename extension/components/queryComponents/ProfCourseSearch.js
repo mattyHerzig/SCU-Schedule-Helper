@@ -12,8 +12,7 @@ import {
 import { matchSorter } from "match-sorter";
 import ProfCourseCard from "./ProfCourseCard";
 
-export default function ProfCourseSearch({ scrollToTop }) {
-  const [selected, setSelected] = useState(null);
+export default function ProfCourseSearch({ scrollToTop, selected, setSelected }) {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
