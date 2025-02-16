@@ -83,7 +83,7 @@ async function handleGrid() {
     const pushDown = document.createElement("div");
     pushDown.style.height = "100px";
     courseSectionCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName);
+    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName, false);
     courseSectionCell.removeChild(pushDown);
     mainRow.cells[0].appendChild(document.createElement("br"));
     mainRow.cells[0].appendChild(document.createElement("br"));
@@ -107,7 +107,7 @@ async function handleGridSavedSchedulePage() {
     const pushDown = document.createElement("div");
     pushDown.style.height = "100px";
     courseCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseCell, courseRow, professorName);
+    await displayProfessorDifficulty(courseCell, courseRow, professorName,true);
     courseCell.removeChild(pushDown);
     courseRow.cells[0].appendChild(document.createElement("br"));
     courseRow.cells[0].appendChild(document.createElement("br"));
@@ -119,6 +119,7 @@ async function displayProfessorDifficulty(
   courseSectionCell,
   mainSectionRow,
   professorName,
+  savedSchedule
 ) {
   const difficultyContainer = document.createElement("div");
   difficultyContainer.style.fontSize = "1em";
@@ -156,11 +157,21 @@ async function displayProfessorDifficulty(
       getScuEvalsAvgMetric(evalsData[courseCode]));
   }
 
-  const meetingPattern = mainSectionRow.cells[7].textContent.trim();
-  const timeMatch = meetingPattern.match(/\|\s*([^|]+)$/);
+  // Decide which cell to get meeting pattern from
+  let meetingPattern = null;
+  console.log("Saved Schedule: " + savedSchedule);
+  if (savedSchedule) {
+    meetingPattern = mainSectionRow.cells[9].textContent.trim();
+  } else {
+    meetingPattern = mainSectionRow.cells[7].textContent.trim();
+  }
+  console.log(meetingPattern);
+  
+  const timeMatch = meetingPattern.match(/\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/);
   let timeWithinPreference = false;
   if (timeMatch) {
-    const meetingTime = timeMatch[1];
+
+    const meetingTime = timeMatch[0];
     if (isTimeWithinPreference(meetingTime)) {
       timeWithinPreference = true;
     }
