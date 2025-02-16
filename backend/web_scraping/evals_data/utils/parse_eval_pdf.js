@@ -46,6 +46,7 @@ function extractToJson(rawPdfText, pdfName, term) {
 
   const firstPage = getFirstPage(rawPdfText);
   const lastPage = getLastPage(rawPdfText);
+  const secondPage = getSecondPage(rawPdfText);
   const profName = getProfName(lastPage);
   const deptName = getDeptName(firstPage);
   const courseCode = getCourseCode(firstPage);
@@ -63,14 +64,27 @@ function extractToJson(rawPdfText, pdfName, term) {
     return;
   }
 
-  const qualityRating = getQualityRating(lastPage);
+  const qualityRating = getQualityRating(firstPage);
   if (qualityRating === null) {
     console.error(`Could not find quality rating for eval ${pdfName}`);
     return;
   }
-  const difficultyRating = getDifficultyRating(lastPage);
-  const workloadRating = getWorkloadRating(rawPdfText);
-  if (difficultyRating === null || workloadRating === null) {
+
+  // Decide if the couse uses the new lab format
+  const hasNewFormatPattern = /3\.\s3\./;
+  const isNewFormat = secondPage.match(hasNewFormatPattern) !== null;
+
+  let difficultyRating = null;
+  let workloadRating = null;
+  if (isNewFormat) {
+    difficultyRating = getDifficultyRatingNewFormat(secondPage);
+    workloadRating = getWorkloadRatingNewFormat(secondPage);
+  } else {
+    difficultyRating = getDifficultyRating(lastPage);
+    workloadRating = getWorkloadRating(secondPage);
+  }
+
+  if (difficultyRating == null || workloadRating == null) {
     const hasExtraItems = lastPage.includes("1.11");
     if (!hasExtraItems) {
       console.error(
@@ -101,14 +115,24 @@ function getFirstPage(rawPdfText) {
   return rawPdfText.substring(0, rawPdfText.indexOf(FIRST_PAGE_BREAK));
 }
 
-const pageBreakPattern = /----------------Page \(\d+\) Break----------------/;
+const pageBreakPattern = /----------------Page \(\d+\) Break----------------/g;
 function getLastPage(rawPdfText) {
-  const pageBreaks = rawPdfText.match(new RegExp(pageBreakPattern, "g"));
+  const pageBreaks = rawPdfText.match(pageBreakPattern);
   const lastPageBreak = pageBreaks.pop();
   const secondLastPageBreak = pageBreaks.pop();
   return rawPdfText.substring(
     rawPdfText.indexOf(secondLastPageBreak) + secondLastPageBreak.length,
     rawPdfText.indexOf(lastPageBreak),
+  );
+}
+
+function getSecondPage(rawPdfText) {
+  const pageBreaks = rawPdfText.match(pageBreakPattern);
+  const secondPageBreak = pageBreaks[1];
+  const firstPageBreak = pageBreaks[0];
+  return rawPdfText.substring(
+    rawPdfText.indexOf(firstPageBreak) + firstPageBreak.length,
+    rawPdfText.indexOf(secondPageBreak),
   );
 }
 
@@ -150,78 +174,87 @@ function getCourseName(profName, lastPageText) {
   else return null;
 }
 
-const decimal = /(\d+\.?\d*)/;
-function getQualityRating(lastPageText) {
-  // On the last page, this will be items that have 1.x) and then something.
-  const itemPattern = /1\.\d+\)/g;
-  const qualityItems = lastPageText.match(itemPattern);
-  let countQualityItems = 0;
-  let totalQualityRating = 0;
-  for (const item of qualityItems) {
-    const itemIndex = lastPageText.indexOf(item);
-    const avIndex = lastPageText.indexOf("av.=", itemIndex);
-    const ratingMatch = lastPageText.substring(avIndex).match(decimal);
-    totalQualityRating += parseFloat(ratingMatch[1]);
-    countQualityItems++;
+function getQualityRating(firstPageText) {
+  const pattern = /Items\s*\d+\.\d+\s*-\s*\d+\.\d+av\.\s*=\s*([\d\.]+)/;
+  const match = firstPageText.match(pattern);
+  if (match) {
+    return parseFloat(match[1]);
+  } else {
+    console.error('Quality rating not found');
+    return null;
   }
-  return countQualityItems ? totalQualityRating / countQualityItems : null;
 }
 
+const decimalPattern = /(\d+\.?\d*)/;
 function getDifficultyRating(lastPageText) {
   const difficultyItem = lastPageText.indexOf("2.2)");
   if (difficultyItem == -1) return null;
   const avgIndex = lastPageText.indexOf("av.=", difficultyItem);
   const lastPageFromAvg = lastPageText.substring(avgIndex);
-  const difficultyRating = lastPageFromAvg.match(decimal);
+  const difficultyRating = lastPageFromAvg.match(decimalPattern);
   return difficultyRating ? parseFloat(difficultyRating[1]) : null;
 }
 
-const upTo1HourPattern = /0-1(\d+\.?\d*)%/;
-const between2And3HoursPattern = /2-3(\d+\.?\d*)%/;
-const between4And5HoursPattern = /4-5(\d+\.?\d*)%/;
-const between6And7HoursPattern = /6-7(\d+\.?\d*)%/;
-const between8And10HoursPattern = /8-10(\d+\.?\d*)%/;
-const between11And14HoursPattern = /11-14(\d+\.?\d*)%/;
-const over15HoursPattern = /15\+(\d+\.?\d*)%/;
-
-function getWorkloadRating(rawPdfText) {
-  const percentStudentsUpTo1Hour = rawPdfText.match(upTo1HourPattern);
-  const percentStudentsBetween2And3Hours = rawPdfText.match(
-    between2And3HoursPattern,
-  );
-  const percentStudentsBetween4And5Hours = rawPdfText.match(
-    between4And5HoursPattern,
-  );
-  const percentStudentsBetween6And7Hours = rawPdfText.match(
-    between6And7HoursPattern,
-  );
-  const percentStudentsBetween8And10Hours = rawPdfText.match(
-    between8And10HoursPattern,
-  );
-  const percentStudentsBetween11And14Hours = rawPdfText.match(
-    between11And14HoursPattern,
-  );
-  const percentStudentsOver15Hours = rawPdfText.match(over15HoursPattern);
-
-  if (
-    !percentStudentsUpTo1Hour ||
-    !percentStudentsBetween2And3Hours ||
-    !percentStudentsBetween4And5Hours ||
-    !percentStudentsBetween6And7Hours ||
-    !percentStudentsBetween8And10Hours ||
-    !percentStudentsBetween11And14Hours ||
-    !percentStudentsOver15Hours
-  ) {
-    return null;
+function getWorkloadRating(secondPageText) {
+  const values = { "0-1": 0.5, "2-3": 2.5, "4-5": 4.5, "6-7": 6.5, "8-10": 9, "11-14": 12.5, "15+": 15 };
+  const pattern = /(0-1|2-3|4-5|6-7|8-10|11-14|15\+)\s*(\d+\.?\d*)%/g;
+  const matches = Array.from(secondPageText.matchAll(pattern));
+  const result = [];
+  for (const match of matches) {
+    const [_, textValue, percentage] = match;
+    if (!values[textValue] || parseFloat(percentage) === NaN) {
+      console.error(`Workload pattern contains invalid text or percentage: "${textValue}"`);
+      return null;
+    }
+    result.push({ value: values[textValue], ratio: parseFloat(percentage)/100 });
   }
+  let expectedValue = 0;
+  for (let i = 0; i < result.length; i++) {
+    const curr = result[i];
+    expectedValue += curr.value * curr.ratio;
+  }
+  return expectedValue;
+}
 
-  let avgHours = (0.5 * parseFloat(percentStudentsUpTo1Hour[1])) / 100;
-  avgHours += (2.5 * parseFloat(percentStudentsBetween2And3Hours[1])) / 100;
-  avgHours += (4.5 * parseFloat(percentStudentsBetween4And5Hours[1])) / 100;
-  avgHours += (6.5 * parseFloat(percentStudentsBetween6And7Hours[1])) / 100;
-  avgHours += (9 * parseFloat(percentStudentsBetween8And10Hours[1])) / 100;
-  avgHours += (12.5 * parseFloat(percentStudentsBetween11And14Hours[1])) / 100;
-  avgHours += (15 * parseFloat(percentStudentsOver15Hours[1])) / 100;
+function getDifficultyRatingNewFormat(secondPageText){
+  const values = { "Never": 5, "Rarely": 4, "A Few times": 3, "Often": 2, "Every lab": 1 };
+  const pattern = /(Never|Rarely|A Few times|Often|Every lab)\s*(\d+\.?\d*)%/g;
+  let matches = Array.from(secondPageText.matchAll(pattern));
+  matches = matches.slice(0, 5);
+  const result = [];
+  for (const match of matches) {
+    const [_, textValue, percentage] = match;
+    if (!values[textValue] || parseFloat(percentage) === NaN) {
+      console.error(`Difficulty pattern contains invalid text or percentage: "${textValue}"`);
+      return null;
+    }
+    result.push({ value: values[textValue], ratio: parseFloat(percentage)/100 });
+  }
+  let expectedValue = 0;
+  for (let i = 0; i < result.length; i++) {
+    const curr = result[i];
+    expectedValue += curr.value * curr.ratio;
+  }
+  return expectedValue;
+}
 
-  return avgHours;
+function getWorkloadRatingNewFormat(secondPageText){
+  const values = { "< 2.0": 1, "2.0": 2, "2.5": 2.5, "3.0": 3, "> 3.0": 4 };
+  const pattern = /(< 2.0|2.0|2.5|3.0|> 3.0)\s*(\d+\.?\d*)%/g;
+  const matches = Array.from(secondPageText.matchAll(pattern));
+  const result = [];
+  for (const match of matches) {// On the first page, this will be items that have 1.x) and then something.
+    const [_, textValue, percentage] = match;
+    if (!values[textValue] || parseFloat(percentage) === NaN) {
+      console.error(`Workload pattern contains invalid text or percentage: "${textValue}"`);
+      return null;
+    }
+    result.push({ value: values[textValue], ratio: parseFloat(percentage)/100 });
+  }
+  let expectedValue = 0;
+  for (let i = 0; i < result.length; i++) {
+    const curr = result[i];
+    expectedValue += curr.value * curr.ratio;
+  }
+  return expectedValue;
 }
