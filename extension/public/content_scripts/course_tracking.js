@@ -15,8 +15,8 @@ const checkForInterestedSections = function (mutationsList) {
           '[data-automation-id="pageHeaderTitleText"]',
         );
         if (
-          element &&
-          element.textContent === "Add Course Section to Saved Schedule"
+          element?.textContent === "Add Course Section to Saved Schedule" ||
+          element?.textContent === "Add Course Sections to Saved Schedule"
         ) {
           const tables = document.querySelectorAll("table");
           if (tables.length !== 1) return;

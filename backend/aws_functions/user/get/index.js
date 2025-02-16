@@ -143,9 +143,8 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
       )
         break;
       for (const section in item.sections.M) {
-        userProfile.interestedSections[section] = parseInt(
-          item.sections.M[section].N,
-        );
+        userProfile.interestedSections[section] =
+          item.sections.M[section].S;
       }
       break;
     case `info#personal`:
