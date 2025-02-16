@@ -11,16 +11,13 @@ const checkForInterestedSections = function (mutationsList) {
   debounceTimer = setTimeout(() => {
     for (const mutation of mutationsList) {
       if (mutation.type === "childList") {
-        // console.log("A child node has been added or removed.");
         const element = document.querySelector(
           '[data-automation-id="pageHeaderTitleText"]',
         );
-        // console.log(element);
         if (
-          element &&
-          element.textContent === "Add Course Section to Saved Schedule"
+          element?.textContent === "Add Course Section to Saved Schedule" ||
+          element?.textContent === "Add Course Sections to Saved Schedule"
         ) {
-          // console.log("Found course section page");
           const tables = document.querySelectorAll("table");
           if (tables.length !== 1) return;
           const table = tables[0];
