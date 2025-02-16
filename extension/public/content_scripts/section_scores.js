@@ -58,13 +58,13 @@ async function checkForGrid() {
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
   const rivaWidget = document.querySelector('[data-automation-id="rivaWidget"]'); // Saved Schedule Page
   if (visibleGrid) {
-    await handleGrid();
+    await handleFindSectionsGrid();
   } else if (rivaWidget) {
-    await handleGridSavedSchedulePage();
+    await handleSavedSchedulePageGrid();
   }
 }
 
-async function handleGrid() {
+async function handleFindSectionsGrid() {
   const courseSectionRows = document.querySelectorAll(
     "table.lockedTable tbody tr",
   );
@@ -91,7 +91,7 @@ async function handleGrid() {
   }
 }
 
-async function handleGridSavedSchedulePage() {
+async function handleSavedSchedulePageGrid() {
   const courses = document.querySelectorAll(
     '[data-testid="table"] tbody tr',
   );
