@@ -55,8 +55,12 @@ chrome.storage.local.get(
 );
 
 async function checkForGrid() {
-  if (document.querySelector('[data-automation-id="VisibleGrid"]')) {
+  const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
+  const rivaWidget = document.querySelector('[data-automation-id="rivaWidget"]'); // Saved Schedule Page
+  if (visibleGrid) {
     await handleGrid();
+  } else if (rivaWidget) {
+    await handleGridSavedSchedulePage();
   }
 }
 
@@ -84,6 +88,30 @@ async function handleGrid() {
     mainRow.cells[0].appendChild(document.createElement("br"));
     mainRow.cells[0].appendChild(document.createElement("br"));
     mainRow.cells[0].appendChild(document.createElement("br"));
+  }
+}
+
+async function handleGridSavedSchedulePage() {
+  const courses = document.querySelectorAll(
+    '[data-testid="table"] tbody tr',
+  );
+  for (let i = 0; i < courses.length; i++) {
+    const courseRow = courses[i];
+    const courseCell = courseRow.cells[0];
+    let courseText = courseCell.innerText.trim();
+    if (courseText === "") continue;
+    if (courseCell.hasAttribute("has-ratings")) continue;
+    courseCell.setAttribute("has-ratings", "true");
+    const instructorCell = courseRow.cells[6];
+    let professorName = instructorCell.innerText.trim().split("\n")[0];
+    const pushDown = document.createElement("div");
+    pushDown.style.height = "100px";
+    courseCell.appendChild(pushDown);
+    await displayProfessorDifficulty(courseCell, courseRow, professorName);
+    courseCell.removeChild(pushDown);
+    courseRow.cells[0].appendChild(document.createElement("br"));
+    courseRow.cells[0].appendChild(document.createElement("br"));
+    courseRow.cells[0].appendChild(document.createElement("br"));
   }
 }
 
@@ -502,10 +530,11 @@ function createRatingToolTip(ratingInfo) {
           <!-- Add invisible padding wrapper that maintains absolute positioning -->
           <div style="
             position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            
             background-color: transparent;
             pointer-events: auto;
           "></div>
