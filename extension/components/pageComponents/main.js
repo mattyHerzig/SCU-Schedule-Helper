@@ -6,23 +6,21 @@ import ProfCourseSearch from "../queryComponents/ProfCourseSearch";
 import AuthWrapper from "./authWrapper";
 import QueryDialog from "../queryComponents/QueryDialog";
 
-export default function Main({}) {
+export default function Main({ }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const boxRef = useRef(null);
   const [selected, setSelected] = useState(null);
   const [stack, setStack] = useState([]);
 
   useEffect(() => {
-    console.log("useEffect triggered with selected:", selected);
     if (selected !== null) {
-        setStack(prevStack => {
-            if (prevStack[prevStack.length - 1] !== selected) {
-                const newStack = [...prevStack, selected];
-                console.log("Updated stack:", newStack);
-                return newStack;
-            }
-            return prevStack;
-        });
+      setStack(prevStack => {
+        if (prevStack[prevStack.length - 1] !== selected) {
+          const newStack = [...prevStack, selected];
+          return newStack;
+        }
+        return prevStack;
+      });
     }
   }, [selected]);
 
@@ -37,61 +35,64 @@ export default function Main({}) {
   }
 
   function handleDialogClose() {
-    setDialogOpen(false);seEffect(() => {
+    setDialogOpen(false); seEffect(() => {
       console.log("useEffect triggered with selected:", selected);
       if (selected !== null) {
-          setStack(prevStack => {
-              if (prevStack[prevStack.length - 1] !== selected) {
-                  const newStack = [...prevStack, selected];
-                  console.log("Updated stack:", newStack);
-                  return newStack;
-              }
-              return prevStack;
-          });
+        setStack(prevStack => {
+          if (prevStack[prevStack.length - 1] !== selected) {
+            const newStack = [...prevStack, selected];
+            console.log("Updated stack:", newStack);
+            return newStack;
+          }
+          return prevStack;
+        });
       }
     }, [selected]);
   }
 
   function handleBackButton() {
     setStack(prevStack => {
-        const newStack = [...prevStack];
-        newStack.pop();
-        if (newStack.length === 0) {
-            setSelected(null);
-        } else {
-            setSelected(newStack[newStack.length - 1]);
-        }
-        return newStack;
+      const newStack = [...prevStack];
+      newStack.pop();
+      if (newStack.length === 0) {
+        setSelected(null);
+      } else {
+        setSelected(newStack[newStack.length - 1]);
+      }
+      return newStack;
     });
-    console.log(stack);
   }
 
 
-  function title(){
-    if(stack.length === 0){
-    console.log("Stack Length: ", stack.length);
-    return (
-      <Typography
-        sx={{
-          mb: 3,
-          alignSelf: "flex-start",
-          ml: "1.3rem",
-          fontSize: "1rem",
-          margin: "0px 0px 0px 0px",
-        }}
-        variant="h6"
-      >
-        Search Course and Professor Information
-        <IconButton
-          sx={{
-            ml: 0.5,
-          }}
-          onClick={handleDialogOpen}
-          aria-label="info"
-        >
-          <InfoIcon fontSize="small" />
-        </IconButton>
-      </Typography>
+  function title() {
+    if (stack.length === 0) {
+      return (
+        <Box sx={{
+          mb: "1rem"
+        }}>
+
+          <Typography
+            sx={{
+              mb: 3,
+              alignSelf: "flex-start",
+              ml: "1.3rem",
+              fontSize: "1rem",
+              margin: "0px 0px 0px 0px",
+            }}
+            variant="h6"
+          >
+            Search Course and Professor Information
+            <IconButton
+              sx={{
+                ml: 0.5,
+              }}
+              onClick={handleDialogOpen}
+              aria-label="info"
+            >
+              <InfoIcon fontSize="small" />
+            </IconButton>
+          </Typography>
+        </Box>
       );
     } else {
       return (
@@ -99,7 +100,6 @@ export default function Main({}) {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             width: '100%',
             marginBottom: '1rem'
           }}
@@ -107,7 +107,7 @@ export default function Main({}) {
           <IconButton
             sx={{
               alignSelf: "flex-start",
-              mr: "auto",
+              mr: "1rem",
             }}
             onClick={() => handleBackButton()}
             aria-label="back"
@@ -117,10 +117,9 @@ export default function Main({}) {
           <Typography
             sx={{
               mb: 3,
-              alignSelf: "flex-end",
               ml: "1.3rem",
               fontSize: "1rem",
-              margin: "0px 0px 0px 0px",
+              margin: "3px 0px 0px 0px",
             }}
             variant="h6"
           >
@@ -156,11 +155,11 @@ export default function Main({}) {
         >
           {title()}
           <Box sx={{ width: "100%", maxWidth: "420px" }}>
-          <ProfCourseSearch
-            scrollToTop={scrollToTop}
-            selected={selected}
-            setSelected={setSelected}
-          />
+            <ProfCourseSearch
+              scrollToTop={scrollToTop}
+              selected={selected}
+              setSelected={setSelected}
+            />
           </Box>
         </Box>
       </Box>
