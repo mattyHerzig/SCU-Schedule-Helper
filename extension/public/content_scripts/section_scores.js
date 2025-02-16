@@ -576,6 +576,10 @@ function createRatingToolTip(ratingInfo) {
             </div>
             
             <div style="display: flex; gap: 20px; margin: 8px 0;">
+            ${!userInfo.id &&
+    `<div style="white-space: normal; width: 180px;">You must be signed in to view SCU evals data. Sign-in with the extension popup. </div>`
+    ||
+    `
               <div>
                 <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${scuEvalsQuality?.toFixed(2) || "N/A"}</span>
                 <span style="color: #666;"> / 5</span>
@@ -590,6 +594,7 @@ function createRatingToolTip(ratingInfo) {
                 <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${scuEvalsWorkload?.toFixed(2) || "N/A"}</span>
                 <div style="color: #666; font-size: 12px;">hrs / wk</div>
               </div>
+              `}
             </div>
           </div>
         </div>
