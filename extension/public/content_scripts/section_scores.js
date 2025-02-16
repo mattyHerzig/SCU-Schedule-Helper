@@ -119,7 +119,7 @@ async function displayProfessorDifficulty(
   courseSectionCell,
   mainSectionRow,
   professorName,
-  savedSchedule
+  isSavedSchedulePage
 ) {
   const difficultyContainer = document.createElement("div");
   difficultyContainer.style.fontSize = "1em";
@@ -159,13 +159,11 @@ async function displayProfessorDifficulty(
 
   // Decide which cell to get meeting pattern from
   let meetingPattern = null;
-  console.log("Saved Schedule: " + savedSchedule);
-  if (savedSchedule) {
+  if (isSavedSchedulePage) {
     meetingPattern = mainSectionRow.cells[9].textContent.trim();
   } else {
     meetingPattern = mainSectionRow.cells[7].textContent.trim();
   }
-  console.log(meetingPattern);
   
   const timeMatch = meetingPattern.match(/\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/);
   let timeWithinPreference = false;
