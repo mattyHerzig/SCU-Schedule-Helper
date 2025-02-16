@@ -123,7 +123,7 @@ export async function getRmpRatings(rawProfName, debuggingEnabled = false) {
   // Therefore, we only query by the first first name and the last last name.
   let nameMappings = (await chrome.storage.local.get("professorNameMappings"))
     .professorNameMappings;
-  if (nameMappings[profName]) {
+  if (nameMappings?.[profName]) { 
     profName = nameMappings[profName];
   }
   let realFirstName = profName

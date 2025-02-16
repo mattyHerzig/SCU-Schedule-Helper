@@ -129,9 +129,9 @@ async function displayProfessorDifficulty(
     type: "getRmpRatings",
     profName: professorName,
   });
-  let courseEvalQuality = null;
-  let courseEvalDifficulty = null;
-  let courseEvalWorkload = null;
+  let scuEvalsQuality = null;
+  let scuEvalsDifficulty = null;
+  let scuEvalsWorkload = null;
   let rmpLink = `https://www.ratemyprofessors.com/search/professors?q=${getProfName(professorName, true)}`;
   if (rmpResponse && rmpResponse.legacyId)
     rmpLink = `https://www.ratemyprofessors.com/professor/${rmpResponse.legacyId}`;
@@ -143,17 +143,17 @@ async function displayProfessorDifficulty(
     .replace(/\s/g, "");
   const department = courseText.substring(0, courseText.indexOf(" "));
   if (evalsData[prof]?.[courseCode]) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[prof][courseCode]));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[prof][courseCode]));
   } else if (evalsData[prof]?.[department]) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[prof][department]));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[prof][department]));
   } else if (evalsData[prof]?.overall) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[prof].overall));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[prof].overall));
   } else if (evalsData[courseCode]) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[courseCode]));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[courseCode]));
   }
 
   const meetingPattern = mainSectionRow.cells[7].textContent.trim();
@@ -198,26 +198,37 @@ async function displayProfessorDifficulty(
   const workloadAvgs =
     evalsData.departmentStatistics?.[department]?.workloadAvgs;
 
+  // Edge case: course eval data is available, but percentile is not.
+  let scuEvalsQualityPercentile = getPercentile(scuEvalsQuality, qualityAvgs);
+  if (scuEvalsQuality && !scuEvalsQualityPercentile) {
+    scuEvalsQualityPercentile = (scuEvalsQuality - 1) / 4;
+  }
+  let scuEvalsDifficultyPercentile = getPercentile(scuEvalsDifficulty, difficultyAvgs);
+  if (scuEvalsDifficulty && !scuEvalsDifficultyPercentile) {
+    scuEvalsDifficultyPercentile = (scuEvalsDifficulty - 1) / 4;
+  }
+  let scuEvalsWorkloadPercentile = getPercentile(scuEvalsWorkload, workloadAvgs);
+  if (scuEvalsWorkload && !scuEvalsWorkloadPercentile) {
+    scuEvalsWorkloadPercentile = scuEvalsWorkload / 15.0;
+  }
+
   appendRatingInfoToCell(courseSectionCell, {
     rmpLink,
     rmpQuality: rmpResponse?.avgRating,
     rmpDifficulty: rmpResponse?.avgDifficulty,
-    scuEvalsQuality: courseEvalQuality,
-    scuEvalsDifficulty: courseEvalDifficulty,
-    scuEvalsWorkload: courseEvalWorkload,
-    scuEvalsQualityPercentile: getPercentile(courseEvalQuality, qualityAvgs),
-    scuEvalsDifficultyPercentile: getPercentile(
-      courseEvalDifficulty,
-      difficultyAvgs,
-    ),
-    scuEvalsWorkloadPercentile: getPercentile(courseEvalWorkload, workloadAvgs),
+    scuEvalsQuality,
+    scuEvalsDifficulty,
+    scuEvalsWorkload,
+    scuEvalsQualityPercentile,
+    scuEvalsDifficultyPercentile,
+    scuEvalsWorkloadPercentile,
     matchesTimePreference: timeWithinPreference,
     friendsTaken,
     friendsInterested,
   });
 }
 
-function getCourseEvalAvgMetric(rating) {
+function getScuEvalsAvgMetric(rating) {
   if (
     !rating ||
     !rating.qualityTotal ||
@@ -229,14 +240,14 @@ function getCourseEvalAvgMetric(rating) {
   )
     return null;
   return {
-    courseEvalQuality: rating.qualityTotal / rating.qualityCount,
-    courseEvalDifficulty: rating.difficultyTotal / rating.difficultyCount,
-    courseEvalWorkload: rating.workloadTotal / rating.workloadCount,
+    scuEvalsQuality: rating.qualityTotal / rating.qualityCount,
+    scuEvalsDifficulty: rating.difficultyTotal / rating.difficultyCount,
+    scuEvalsWorkload: rating.workloadTotal / rating.workloadCount,
   };
 }
 
 function calcOverallScore(scores) {
-  let { scuEvals = 50, rmp = 50 } = userInfo.preferences.scoreWeighting || {};
+  let { scuEvals = 50, rmp = 50 } = userInfo?.preferences?.scoreWeighting || {};
   let {
     rmpQuality,
     rmpDifficulty,
@@ -273,7 +284,7 @@ function calcOverallScore(scores) {
       scuEvalsDifficultyPercentile,
       scuEvalsWorkloadPercentile,
     ) *
-      (scuEvals / 100) +
+    (scuEvals / 100) +
     rmpScore(rmpQuality, rmpDifficulty) * (rmp / 100)
   );
 }
@@ -496,7 +507,7 @@ function createRatingToolTip(ratingInfo) {
   );
   const scuEvalsDifficultyScore = scuEvalsDifficultyPercentile
     ? Math.abs(preferredDifficultyPercentile - scuEvalsDifficultyPercentile) *
-      100
+    100
     : undefined;
   const scuEvalsDifficultyColor = getRatingColor(
     scuEvalsDifficultyScore,
@@ -613,10 +624,10 @@ function createFriendsToolTip(friendsTakenOrInterested) {
           "></div>
           <div style="position: relative; pointer-events: auto; width:max-content">
           ${friendsTakenOrInterested.reduce((acc, friend) => {
-            return (
-              acc + `<div style="color: #666; font-size:14px">${friend}</div>`
-            );
-          }, "")}
+    return (
+      acc + `<div style="color: #666; font-size:14px">${friend}</div>`
+    );
+  }, "")}
           </div>
         </div>
       `;
