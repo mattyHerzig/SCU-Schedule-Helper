@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Alert,
   Autocomplete,
-  createFilterOptions,
   TextField,
   Box,
   Typography,
@@ -12,8 +11,7 @@ import {
 import { matchSorter } from "match-sorter";
 import ProfCourseCard from "./ProfCourseCard";
 
-export default function ProfCourseSearch({ scrollToTop }) {
-  const [selected, setSelected] = useState(null);
+export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -124,7 +122,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
   }
 
   function onPageNavigation(newPageKey) {
-    setSelected((prev) => {
+    onQueryChange((prev) => {
       const newPageData = evalsData[newPageKey];
       if (newPageData.type === "prof") {
         return {
@@ -199,9 +197,9 @@ export default function ProfCourseSearch({ scrollToTop }) {
           filterOptions={filterOptions}
           autoHighlight={true}
           groupBy={(option) => option.groupLabel}
-          value={selected}
+          value={query}
           onChange={(event, newValue) => {
-            setSelected(newValue);
+            onQueryChange(newValue);
           }}
           renderInput={(params) => (
             <TextField
@@ -240,7 +238,7 @@ export default function ProfCourseSearch({ scrollToTop }) {
       </Box>
 
       <ProfCourseCard
-        selected={selected}
+        selected={query}
         data={evalsData}
         onPageNavigation={onPageNavigation}
       />
