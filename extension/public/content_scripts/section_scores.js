@@ -99,7 +99,7 @@ async function handleSavedSchedulePageGrid() {
     const courseRow = courses[i];
     const courseCell = courseRow.cells[0];
     let courseText = courseCell.innerText.trim();
-    if (courseText === "") continue;
+    if (courseText === "" || courseRow.cells.length < 10) continue;
     if (courseCell.hasAttribute("has-ratings")) continue;
     courseCell.setAttribute("has-ratings", "true");
     const instructorCell = courseRow.cells[6];
