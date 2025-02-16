@@ -55,12 +55,16 @@ chrome.storage.local.get(
 );
 
 async function checkForGrid() {
-  if (document.querySelector('[data-automation-id="VisibleGrid"]')) {
-    await handleGrid();
+  const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
+  const rivaWidget = document.querySelector('[data-automation-id="rivaWidget"]'); // Saved Schedule Page
+  if (visibleGrid) {
+    await handleFindSectionsGrid();
+  } else if (rivaWidget) {
+    await handleSavedSchedulePageGrid();
   }
 }
 
-async function handleGrid() {
+async function handleFindSectionsGrid() {
   const courseSectionRows = document.querySelectorAll(
     "table.lockedTable tbody tr",
   );
@@ -79,7 +83,7 @@ async function handleGrid() {
     const pushDown = document.createElement("div");
     pushDown.style.height = "100px";
     courseSectionCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName);
+    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName, false);
     courseSectionCell.removeChild(pushDown);
     mainRow.cells[0].appendChild(document.createElement("br"));
     mainRow.cells[0].appendChild(document.createElement("br"));
@@ -87,10 +91,35 @@ async function handleGrid() {
   }
 }
 
+async function handleSavedSchedulePageGrid() {
+  const courses = document.querySelectorAll(
+    '[data-testid="table"] tbody tr',
+  );
+  for (let i = 0; i < courses.length; i++) {
+    const courseRow = courses[i];
+    const courseCell = courseRow.cells[0];
+    let courseText = courseCell.innerText.trim();
+    if (courseText === "") continue;
+    if (courseCell.hasAttribute("has-ratings")) continue;
+    courseCell.setAttribute("has-ratings", "true");
+    const instructorCell = courseRow.cells[6];
+    let professorName = instructorCell.innerText.trim().split("\n")[0];
+    const pushDown = document.createElement("div");
+    pushDown.style.height = "100px";
+    courseCell.appendChild(pushDown);
+    await displayProfessorDifficulty(courseCell, courseRow, professorName,true);
+    courseCell.removeChild(pushDown);
+    courseRow.cells[0].appendChild(document.createElement("br"));
+    courseRow.cells[0].appendChild(document.createElement("br"));
+    courseRow.cells[0].appendChild(document.createElement("br"));
+  }
+}
+
 async function displayProfessorDifficulty(
   courseSectionCell,
   mainSectionRow,
   professorName,
+  isSavedSchedulePage
 ) {
   const difficultyContainer = document.createElement("div");
   difficultyContainer.style.fontSize = "1em";
@@ -101,9 +130,9 @@ async function displayProfessorDifficulty(
     type: "getRmpRatings",
     profName: professorName,
   });
-  let courseEvalQuality = null;
-  let courseEvalDifficulty = null;
-  let courseEvalWorkload = null;
+  let scuEvalsQuality = null;
+  let scuEvalsDifficulty = null;
+  let scuEvalsWorkload = null;
   let rmpLink = `https://www.ratemyprofessors.com/search/professors?q=${getProfName(professorName, true)}`;
   if (rmpResponse && rmpResponse.legacyId)
     rmpLink = `https://www.ratemyprofessors.com/professor/${rmpResponse.legacyId}`;
@@ -115,24 +144,32 @@ async function displayProfessorDifficulty(
     .replace(/\s/g, "");
   const department = courseText.substring(0, courseText.indexOf(" "));
   if (evalsData[prof]?.[courseCode]) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[prof][courseCode]));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[prof][courseCode]));
   } else if (evalsData[prof]?.[department]) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[prof][department]));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[prof][department]));
   } else if (evalsData[prof]?.overall) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[prof].overall));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[prof].overall));
   } else if (evalsData[courseCode]) {
-    ({ courseEvalQuality, courseEvalDifficulty, courseEvalWorkload } =
-      getCourseEvalAvgMetric(evalsData[courseCode]));
+    ({ scuEvalsQuality, scuEvalsDifficulty, scuEvalsWorkload } =
+      getScuEvalsAvgMetric(evalsData[courseCode]));
   }
 
-  const meetingPattern = mainSectionRow.cells[7].textContent.trim();
-  const timeMatch = meetingPattern.match(/\|\s*([^|]+)$/);
+  // Decide which cell to get meeting pattern from
+  let meetingPattern = null;
+  if (isSavedSchedulePage) {
+    meetingPattern = mainSectionRow.cells[9].textContent.trim();
+  } else {
+    meetingPattern = mainSectionRow.cells[7].textContent.trim();
+  }
+  
+  const timeMatch = meetingPattern.match(/\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/);
   let timeWithinPreference = false;
   if (timeMatch) {
-    const meetingTime = timeMatch[1];
+
+    const meetingTime = timeMatch[0];
     if (isTimeWithinPreference(meetingTime)) {
       timeWithinPreference = true;
     }
@@ -170,26 +207,37 @@ async function displayProfessorDifficulty(
   const workloadAvgs =
     evalsData.departmentStatistics?.[department]?.workloadAvgs;
 
+  // Edge case: course eval data is available, but percentile is not.
+  let scuEvalsQualityPercentile = getPercentile(scuEvalsQuality, qualityAvgs);
+  if (scuEvalsQuality && !scuEvalsQualityPercentile) {
+    scuEvalsQualityPercentile = (scuEvalsQuality - 1) / 4;
+  }
+  let scuEvalsDifficultyPercentile = getPercentile(scuEvalsDifficulty, difficultyAvgs);
+  if (scuEvalsDifficulty && !scuEvalsDifficultyPercentile) {
+    scuEvalsDifficultyPercentile = (scuEvalsDifficulty - 1) / 4;
+  }
+  let scuEvalsWorkloadPercentile = getPercentile(scuEvalsWorkload, workloadAvgs);
+  if (scuEvalsWorkload && !scuEvalsWorkloadPercentile) {
+    scuEvalsWorkloadPercentile = scuEvalsWorkload / 15.0;
+  }
+
   appendRatingInfoToCell(courseSectionCell, {
     rmpLink,
     rmpQuality: rmpResponse?.avgRating,
     rmpDifficulty: rmpResponse?.avgDifficulty,
-    scuEvalsQuality: courseEvalQuality,
-    scuEvalsDifficulty: courseEvalDifficulty,
-    scuEvalsWorkload: courseEvalWorkload,
-    scuEvalsQualityPercentile: getPercentile(courseEvalQuality, qualityAvgs),
-    scuEvalsDifficultyPercentile: getPercentile(
-      courseEvalDifficulty,
-      difficultyAvgs,
-    ),
-    scuEvalsWorkloadPercentile: getPercentile(courseEvalWorkload, workloadAvgs),
+    scuEvalsQuality,
+    scuEvalsDifficulty,
+    scuEvalsWorkload,
+    scuEvalsQualityPercentile,
+    scuEvalsDifficultyPercentile,
+    scuEvalsWorkloadPercentile,
     matchesTimePreference: timeWithinPreference,
     friendsTaken,
     friendsInterested,
   });
 }
 
-function getCourseEvalAvgMetric(rating) {
+function getScuEvalsAvgMetric(rating) {
   if (
     !rating ||
     !rating.qualityTotal ||
@@ -201,14 +249,14 @@ function getCourseEvalAvgMetric(rating) {
   )
     return null;
   return {
-    courseEvalQuality: rating.qualityTotal / rating.qualityCount,
-    courseEvalDifficulty: rating.difficultyTotal / rating.difficultyCount,
-    courseEvalWorkload: rating.workloadTotal / rating.workloadCount,
+    scuEvalsQuality: rating.qualityTotal / rating.qualityCount,
+    scuEvalsDifficulty: rating.difficultyTotal / rating.difficultyCount,
+    scuEvalsWorkload: rating.workloadTotal / rating.workloadCount,
   };
 }
 
 function calcOverallScore(scores) {
-  let { scuEvals = 50, rmp = 50 } = userInfo.preferences.scoreWeighting || {};
+  let { scuEvals = 50, rmp = 50 } = userInfo?.preferences?.scoreWeighting || {};
   let {
     rmpQuality,
     rmpDifficulty,
@@ -245,7 +293,7 @@ function calcOverallScore(scores) {
       scuEvalsDifficultyPercentile,
       scuEvalsWorkloadPercentile,
     ) *
-      (scuEvals / 100) +
+    (scuEvals / 100) +
     rmpScore(rmpQuality, rmpDifficulty) * (rmp / 100)
   );
 }
@@ -468,7 +516,7 @@ function createRatingToolTip(ratingInfo) {
   );
   const scuEvalsDifficultyScore = scuEvalsDifficultyPercentile
     ? Math.abs(preferredDifficultyPercentile - scuEvalsDifficultyPercentile) *
-      100
+    100
     : undefined;
   const scuEvalsDifficultyColor = getRatingColor(
     scuEvalsDifficultyScore,
@@ -502,10 +550,11 @@ function createRatingToolTip(ratingInfo) {
           <!-- Add invisible padding wrapper that maintains absolute positioning -->
           <div style="
             position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            
             background-color: transparent;
             pointer-events: auto;
           "></div>
@@ -536,6 +585,10 @@ function createRatingToolTip(ratingInfo) {
             </div>
             
             <div style="display: flex; gap: 20px; margin: 8px 0;">
+            ${!userInfo.id &&
+    `<div style="white-space: normal; width: 180px;">You must be signed in to view SCU evals data. Sign-in with the extension popup. </div>`
+    ||
+    `
               <div>
                 <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${scuEvalsQuality?.toFixed(2) || "N/A"}</span>
                 <span style="color: #666;"> / 5</span>
@@ -550,6 +603,7 @@ function createRatingToolTip(ratingInfo) {
                 <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${scuEvalsWorkload?.toFixed(2) || "N/A"}</span>
                 <div style="color: #666; font-size: 12px;">hrs / wk</div>
               </div>
+              `}
             </div>
           </div>
         </div>
@@ -584,10 +638,10 @@ function createFriendsToolTip(friendsTakenOrInterested) {
           "></div>
           <div style="position: relative; pointer-events: auto; width:max-content">
           ${friendsTakenOrInterested.reduce((acc, friend) => {
-            return (
-              acc + `<div style="color: #666; font-size:14px">${friend}</div>`
-            );
-          }, "")}
+    return (
+      acc + `<div style="color: #666; font-size:14px">${friend}</div>`
+    );
+  }, "")}
           </div>
         </div>
       `;

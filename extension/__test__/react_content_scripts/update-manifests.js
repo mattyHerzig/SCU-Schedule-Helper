@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
-const __dirname = import.meta.dirname;
+let __dirname = import.meta.dirname;
 
 function updateManifests() {
   try {
+    __dirname = __dirname ?? "";
     const manifestPath = path.join(__dirname, "dist", "manifest.json");
     const manifest = fs.readFileSync(manifestPath, "utf8");
     const updatedManifest = manifest.replace(
