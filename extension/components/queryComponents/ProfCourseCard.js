@@ -21,6 +21,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
   const [friendData, setFriendData] = useState(null);
   const [profDepts, setProfDepts] = useState([]);
+  const [sortingToggle, setSortingToggle] = useState(0); 
+
   const [profDeptAvgs, setProfDeptAvgs] = useState({
     quality: [],
     difficulty: [],
@@ -31,6 +33,13 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     difficulty: 0,
     workload: 0,
   });
+  const [sortedProfessors, setSortedProfessors] = useState([]);
+
+  useEffect(() => {
+    if (selected?.professors) {
+      setSortedProfessors(sortByScore(selected.professors, data, selected.id));
+    }
+  }, [selected, data]);
 
   useEffect(() => {
     async function getPrefferedPercentiles() {
@@ -189,15 +198,145 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   }
 
   function extractTerms(recentTerms) {
-    console.log(recentTerms);
     const termPattern = /(Spring|Summer|Fall|Winter)/gi;
     const simplifiedTerms = recentTerms
       .map(term => term.match(termPattern))
       .flat()
       .filter(Boolean);
     const uniqueTerms = [...new Set(simplifiedTerms)];
-    console.log(uniqueTerms);
     return uniqueTerms;
+  }
+
+  const handleSortByQuality = () => {
+    setSortedProfessors(sortByQuality(selected.professors, data, selected.id));
+  };
+
+  const handleSortByDifficulty = () => {
+    setSortedProfessors(sortByDifficulty(selected.professors, data, selected.id));
+  };
+
+  const hangleSortByWorkload = () => {
+    setSortedProfessors(sortByWorkload(selected.professors, data, selected.id));
+  };
+
+  const handleOverallSort = () => {
+    setSortedProfessors(sortByScore(selected.professors, data, selected.id));
+  };
+
+  function sortByScore(professors, data, selectedId) {
+    let isdescending = true;
+    if (sortingToggle == 6){
+      isdescending = true;
+      setSortingToggle(7);
+    } else if (sortingToggle == 7){
+      isdescending = false;
+      setSortingToggle(6);
+    } else {
+      setSortingToggle(7);
+    }
+    return professors
+      .map((profName) => [profName, data[profName][selectedId]])
+      .sort((objA, objB) => {
+        const ratingA = objA[1];
+        ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+        ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
+        ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
+        const ratingB = objB[1];
+        ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+        ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
+        ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
+        const scoreA =
+          ratingA.qualityAvg +
+          (5 - ratingA.difficultyAvg) +
+          (15 - ratingA.workloadAvg);
+        const scoreB =
+          ratingB.qualityAvg +
+          (5 - ratingB.difficultyAvg) +
+          (15 - ratingB.workloadAvg);
+        if (isdescending) {
+          return scoreB - scoreA; // Sort by descending score.
+        } else {
+          return scoreA - scoreB; // Sort by ascending score.
+        }
+      });
+  }
+  
+  function sortByQuality(professors, data, selectedId) {
+    let isdescending = true;
+    if (sortingToggle == 0){
+      isdescending = true;
+      setSortingToggle(1);
+    } else if (sortingToggle == 1){
+      isdescending = false;
+      setSortingToggle(0);
+    } else {
+      setSortingToggle(1);
+    }
+    return professors
+      .map((profName) => [profName, data[profName][selectedId]])
+      .sort((objA, objB) => {
+        const ratingA = objA[1];
+        ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+        const ratingB = objB[1];
+        ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+        if (isdescending) {
+          return ratingB.qualityAvg - ratingA.qualityAvg; // Sort by descending quality.
+        } else {
+          return ratingA.qualityAvg - ratingB.qualityAvg; // Sort by ascending quality.
+        }
+      });
+  }
+  
+  function sortByDifficulty(professors, data, selectedId) {
+    let isdescending = true;
+    if (sortingToggle == 2){
+      isdescending = true;
+      setSortingToggle(3);
+    } else if (sortingToggle == 3){
+      isdescending = false;
+      setSortingToggle(2);
+    } else {
+      setSortingToggle(3);
+    }
+    return professors
+      .map((profName) => [profName, data[profName][selectedId]])
+      .sort((objA, objB) => {
+        const ratingA = objA[1];
+        ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
+        const ratingB = objB[1];
+        ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
+        if (isdescending) {
+          return ratingB.difficultyAvg - ratingA.difficultyAvg; // Sort by descending difficulty.
+        } else {
+          return ratingA.difficultyAvg - ratingB.difficultyAvg; // Sort by ascending difficulty.
+        }
+      });
+  }
+
+  function sortByWorkload(professors, data, selectedId) {
+    let isdescending = true;
+    if (sortingToggle == 4){
+      isdescending = true;
+      setSortingToggle(5);
+    } else if (sortingToggle == 5){
+      isdescending = false;
+      setSortingToggle(4);
+    } else {
+      setSortingToggle(5);
+    }
+    return professors
+      .map((profName) => [profName, data[profName][selectedId]])
+      .sort((objA, objB) => {
+      const ratingA = objA[1];
+      ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
+      const ratingB = objB[1];
+      ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
+      if (isdescending) {
+        return ratingB.workloadAvg - ratingA.workloadAvg; // Sort by descending workload.
+      } else {
+        return ratingA.workloadAvg - ratingB.workloadAvg; // Sort by ascending workload.
+      }
+      });
   }
 
   if (selected.type === "prof") {
@@ -346,8 +485,6 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   }
 
   if (selected.type === "course") {
-    // 
-
     return (
       <Card sx={{ backgroundColor: "#f0f0f0" }}>
         <CardContent>
@@ -381,6 +518,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             preferredPercentiles={preferredPercentiles}
           />
           <hr sx={{ mt: 2 }} />
+          
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -389,69 +527,103 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Statistics by Professor
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignContent: "right",
-              width: "170px",
-              marginLeft: "auto",
-            }}
-          >
+  
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignContent: "right",
+                width: "260px",
+                marginLeft: "auto",
+              }}
+            >
               <Typography
                 variant="body5"
                 color="text.secondary"
                 textAlign={"center"}
+                onClick={handleOverallSort}
+                sx={{ cursor: "pointer" }}
+                title={sortingToggle == 7 || sortingToggle == 6 ? "" : "Sort by Overall Score"}
               >
-                Quality
-                <br />
-                (1-5)
+                {sortingToggle === 6 || sortingToggle === 7 ? (
+                  <>
+                    <u><b>Overall Score</b></u>
+                  </>
+                ) : (
+                  <>
+                    Overall Score
+                  </>
+                )}
               </Typography>
-            <Typography
-              variant="body5"
-              color="text.secondary"
-              textAlign={"center"}
-            >
-              Difficulty
-              <br />
-              (1-5)
-            </Typography>
-            <Typography
-            variant="body5"
-            color="text.secondary"
-            textAlign={"center"}
-            >
-              Workload 
-              <br />
-              (hrs/week)
-            </Typography>
-          </Box>
+                <Typography
+                variant="body5"
+                color="text.secondary"
+                textAlign={"center"}
+                onClick={handleSortByQuality}
+                sx={{ cursor: "pointer" }}
+                title={sortingToggle == 1 || sortingToggle == 0 ? "" : "Sort by Quality"}
+              >
+                {sortingToggle === 0 || sortingToggle === 1 ? (
+                  <>
+                    <u><b>Quality</b></u>
+                    <br />
+                    <b>(1-5)</b>
+                  </>
+                ) : (
+                  <>
+                    Quality
+                    <br />
+                    (1-5)
+                  </>
+                )}
+              </Typography>
+              <Typography
+                variant="body5"
+                color="text.secondary"
+                textAlign={"center"}
+                onClick={handleSortByDifficulty}
+                sx={{ cursor: "pointer" }}
+                title={sortingToggle == 3 || sortingToggle == 2 ? "" : "Sort by Difficulty"}
+              >
+                {sortingToggle === 2 || sortingToggle === 3 ? (
+                  <>
+                    <u><b>Difficulty</b></u>
+                    <br />
+                    <b>(1-5)</b>
+                  </>
+                ) : (
+                  <>
+                    Difficulty
+                    <br />
+                    (1-5)
+                  </>
+                )}
+              </Typography>
+              <Typography
+                variant="body5"
+                color="text.secondary"
+                textAlign={"center"}
+                onClick={hangleSortByWorkload}
+                sx={{ cursor: "pointer" }}
+                title={sortingToggle == 5 || sortingToggle == 4 ? "" : "Sort by Workload"}
+              >
+                {sortingToggle === 4 || sortingToggle === 5 ? (
+                  <>
+                    <u><b>Workload</b></u>
+                    <br />
+                    <b>(hrs/week)</b>
+                  </>
+                ) : (
+                  <>
+                    Workload
+                    <br />
+                    (hrs/week)
+                  </>
+                )}
+              </Typography>
+            </Box>
 
-          {selected.professors
-            .map((profName) => [profName, data[profName][selected.id]])
-            .sort((objA, objB) => {
-              const ratingA = objA[1];
-              ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
-              ratingA.difficultyAvg =
-                ratingA.difficultyTotal / ratingA.difficultyCount;
-              ratingA.workloadAvg =
-                ratingA.workloadTotal / ratingA.workloadCount;
-              const ratingB = objB[1];
-              ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
-              ratingB.difficultyAvg =
-                ratingB.difficultyTotal / ratingB.difficultyCount;
-              ratingB.workloadAvg =
-                ratingB.workloadTotal / ratingB.workloadCount;
-              const scoreA =
-                ratingA.qualityAvg +
-                (5 - ratingA.difficultyAvg) +
-                (15 - ratingA.workloadAvg);
-              const scoreB =
-                ratingB.qualityAvg +
-                (5 - ratingB.difficultyAvg) +
-                (15 - ratingB.workloadAvg);
-              return scoreB - scoreA; // Sort by descending score.
-            })
+          {sortedProfessors.length > 0 && sortedProfessors
             .map(([profName, profCourseStats], index) => {
               return (
                 <Box key={profName} sx={{ mt: 2 }}>
