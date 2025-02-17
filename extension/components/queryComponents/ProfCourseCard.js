@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
 import EvalStats from "./EvalStats";
+import StatsWithLessFormatting from "./StatsWithLessFormatting";
 import RmpStats from "./RmpStats";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
@@ -187,6 +188,18 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     return data[courseCode]?.courseName || "";
   }
 
+  function extractTerms(recentTerms) {
+    console.log(recentTerms);
+    const termPattern = /(Spring|Summer|Fall|Winter)/gi;
+    const simplifiedTerms = recentTerms
+      .map(term => term.match(termPattern))
+      .flat()
+      .filter(Boolean);
+    const uniqueTerms = [...new Set(simplifiedTerms)];
+    console.log(uniqueTerms);
+    return uniqueTerms;
+  }
+
   if (selected.type === "prof") {
     return (
       <Card sx={{ backgroundColor: "#f0f0f0" }}>
@@ -238,6 +251,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             profName={selected.id}
             preferredPercentiles={preferredPercentiles}
           />
+          <hr />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -293,6 +307,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     1 && <Divider sx={{ my: 2 }} />}
               </Box>
             ))}
+          <hr />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -331,6 +346,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   }
 
   if (selected.type === "course") {
+    // 
+
     return (
       <Card sx={{ backgroundColor: "#f0f0f0" }}>
         <CardContent>
@@ -338,8 +355,14 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             {selected.courseName} ({selected.id})
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Recent Terms: {selected.recentTerms.join(", ")}
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            gutterBottom 
+          >
+            <span title={selected.recentTerms.join(", ")}>
+              <b>Previously Offered: </b> {extractTerms(selected.recentTerms).join(", ")}
+            </span>
           </Typography>
 
           <FriendCoursesTooltip friendData={friendData} />
@@ -357,6 +380,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             deptStats={data.departmentStatistics[selected.id.substring(0, 4)]}
             preferredPercentiles={preferredPercentiles}
           />
+          <hr sx={{ mt: 2 }} />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -365,6 +389,43 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Statistics by Professor
           </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignContent: "right",
+              width: "170px",
+              marginLeft: "auto",
+            }}
+          >
+              <Typography
+                variant="body5"
+                color="text.secondary"
+                textAlign={"center"}
+              >
+                Quality
+                <br />
+                (1-5)
+              </Typography>
+            <Typography
+              variant="body5"
+              color="text.secondary"
+              textAlign={"center"}
+            >
+              Difficulty
+              <br />
+              (1-5)
+            </Typography>
+            <Typography
+            variant="body5"
+            color="text.secondary"
+            textAlign={"center"}
+            >
+              Workload 
+              <br />
+              (hrs/week)
+            </Typography>
+          </Box>
 
           {selected.professors
             .map((profName) => [profName, data[profName][selected.id]])
@@ -394,33 +455,37 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             .map(([profName, profCourseStats], index) => {
               return (
                 <Box key={profName} sx={{ mt: 2 }}>
-                  <Typography variant="body1" gutterBottom>
-                    {profName}
-                    <Typography
-                      variant="body2"
-                      component="span"
-                      onClick={() => {
-                        onPageNavigation(profName);
-                      }}
-                      sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
+                  <Box display="flex" 
+                  alignItems="center" 
+                  flexDirection="row" 
+                  justifyContent="space-between">
+                    <Typography 
+                    variant="body1" 
+                    gutterBottom
+                    component={"span"}
+                    onClick={() => {
+                      onPageNavigation(profName);
+                    }}
+                    sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
                     >
-                      Go to prof. page
+                      {profName}
                     </Typography>
-                  </Typography>
+                    <StatsWithLessFormatting
+                      stats={profCourseStats}
+                      deptStats={data.departmentStatistics[selected.id.substring(0, 4)]}
+                      preferredPercentiles={preferredPercentiles}
+                    />
+                  </Box>
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ px: 2, mt: 1, mb: 2 }}
+                    margin="-5px 9px 16px"
+                    sx={{ margin: "-5px 9px 16px" }}
                   >
-                    Quarters Taught: {profCourseStats.recentTerms.join(", ")}
+                    <span title={profCourseStats.recentTerms.join(", ")}>
+                      {extractTerms(profCourseStats.recentTerms).join(", ")}
+                    </span>
                   </Typography>
-                  <EvalStats
-                    stats={profCourseStats}
-                    deptStats={
-                      data.departmentStatistics[selected.id.substring(0, 4)]
-                    }
-                    preferredPercentiles={preferredPercentiles}
-                  />
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}
@@ -433,3 +498,4 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   }
   return null;
 }
+
