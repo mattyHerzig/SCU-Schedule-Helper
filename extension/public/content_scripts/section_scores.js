@@ -330,7 +330,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
   // Create score text
   const scoreText = document.createElement("div");
   scoreText.innerHTML = `
-        <span style="font-size: 24px; font-weight: bold; color: ${getRatingColor(overallScore, 0, 10, true)};">${overallScore?.toFixed(2) || "N/A"}</span>
+        <span style="font-size: 24px; font-weight: bold; color: ${getRatingColor(overallScore, 0, 10, true)}; ">${overallScore?.toFixed(2) || "N/A"}</span>
         <span style="color: #6c757d; font-size: 16px;">/ 10</span>
       `;
 
