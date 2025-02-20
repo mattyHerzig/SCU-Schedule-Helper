@@ -480,9 +480,9 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       )}
                     </Box>
                     <Box display="flex" flexDirection={"column"} alignItems={"center"} justifyContent={"space-around"}>
-                      {sortingToggle === toggle[1] ? (
+                      {sortingToggle === toggle[0] ? (
                         <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem'}} />
-                      ) : sortingToggle === toggle[0] ? (
+                      ) : sortingToggle === toggle[1] ? (
                         <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
                       ) : (
                         <>
@@ -509,12 +509,13 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     gutterBottom
                     onClick={() => {onPageNavigation(courseCode);}}
                     sx={{ 
-                      ml: 1, 
+                      ml: 1,
                       color: "#802a25", 
                       cursor: "pointer", 
                       "&:hover": {
                         textDecoration: "underline",
-                      }
+                      },
+                      margin: "0px 0px 0px",
                     }}
                     title={getCourseName(courseCode)}
                   >
@@ -531,7 +532,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     variant="body2"
                     color="text.secondary"
                     width={"150px"}
-                    sx={{ margin: "0px 9px 5px" }}
+                    sx={{ margin: "0px 0px 16px" }}
                     >
                       <span title={courseStats.recentTerms.join(", ")}>
                         {extractTerms(courseStats.recentTerms).join(", ")}
@@ -666,9 +667,9 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     )}
                   </Box>
                   <Box display="flex" flexDirection={"column"} alignItems={"center"} justifyContent={"space-around"}>
-                    {sortingToggle === toggle[1] ? (
+                    {sortingToggle === toggle[0] ? (
                       <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem'}} />
-                    ) : sortingToggle === toggle[0] ? (
+                    ) : sortingToggle === toggle[1] ? (
                       <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
                     ) : (
                       <>
@@ -700,7 +701,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     sx={{ 
                       ml: 1,
                       color: "#802a25",
-                      margin: "-5px 9px 16px",
+                      margin: "0px 0px 0px",
                       cursor: "pointer",
                       "&:hover": {
                         textDecoration: "underline",
@@ -719,7 +720,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     variant="body2"
                     color="text.secondary"
                     width={"150px"}
-                    sx={{ margin: "0px 9px 5px" }}
+                    sx={{ margin: "0px 0px 16x" }}
                   >
                     <span title={profCourseStats.recentTerms.join(", ")}>
                       {extractTerms(profCourseStats.recentTerms).join(", ")}
