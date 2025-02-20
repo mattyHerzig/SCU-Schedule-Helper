@@ -36,6 +36,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     workload: 0,
   });
   const [sortedProfessors, setSortedProfessors] = useState([]);
+  const [sortedCourses, setSortedCourses] = useState([]);
 
   useEffect(() => {
     if (selected?.professors) {
@@ -89,6 +90,12 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     }
 
     if (selected.type === "prof") {
+      const courses = Object.entries(data[selected.id]).filter(
+        ([key, value]) => key !== "overall" && key.length > 4,
+      );
+      console.log("Courses: ", courses)
+      setSortedCourses(sortByScore(courses, data, selected.id, true));
+      console.log(sortedCourses);
       const profDepts = Object.keys(data[selected.id]).filter(
         (key) => key !== "type" && key.length === 4,
       );
@@ -209,79 +216,70 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     return uniqueTerms;
   }
 
-  const handleSortByQuality = () => {
-    setSortedProfessors(sortByQuality(selected.professors, data, selected.id));
-  };
-
-  const handleSortByDifficulty = () => {
-    setSortedProfessors(sortByDifficulty(selected.professors, data, selected.id));
-  };
-
-  const hangleSortByWorkload = () => {
-    setSortedProfessors(sortByWorkload(selected.professors, data, selected.id));
-  };
-
-  const handleOverallSort = () => {
-    setSortedProfessors(sortByScore(selected.professors, data, selected.id));
-  };
-
-  function sortByScore(professors, data, selectedId) {
-    let isdescending = true;
-    if (sortingToggle == 6){
-      isdescending = true;
-      setSortingToggle(7);
-    } else if (sortingToggle == 7){
-      isdescending = false;
-      setSortingToggle(6);
+  function sortByScore(items, data, selectedId, isCourse = false) {
+    let isDescending = true;
+    if (sortingToggle == 6) {
+        isDescending = true;
+        setSortingToggle(7);
+    } else if (sortingToggle == 7) {
+        isDescending = false;
+        setSortingToggle(6);
     } else {
-      setSortingToggle(7);
+        setSortingToggle(7);
     }
-    return professors
-      .map((profName) => [profName, data[profName][selectedId]])
-      .sort((objA, objB) => {
-        const ratingA = objA[1];
-        ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
-        ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
-        ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
-        const ratingB = objB[1];
-        ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
-        ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
-        ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
-        const scoreA =
-          ratingA.qualityAvg +
-          (5 - ratingA.difficultyAvg) +
-          (15 - ratingA.workloadAvg);
-        const scoreB =
-          ratingB.qualityAvg +
-          (5 - ratingB.difficultyAvg) +
-          (15 - ratingB.workloadAvg);
-        if (isdescending) {
-          return scoreB - scoreA; // Sort by descending score.
-        } else {
-          return scoreA - scoreB; // Sort by ascending score.
-        }
-      });
+
+    const mappedItems = items.map((item) => {
+      const rating = isCourse ? item[1]: data[item][selectedId];
+      return [isCourse ? item[0] : item, rating];
+    });
+
+    return mappedItems.sort((objA, objB) => {
+            const ratingA = objA[1];
+            ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+            ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
+            ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
+            const ratingB = objB[1];
+            ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+            ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
+            ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
+            const scoreA =
+                ratingA.qualityAvg +
+                (5 - ratingA.difficultyAvg) +
+                (15 - ratingA.workloadAvg);
+            const scoreB =
+                ratingB.qualityAvg +
+                (5 - ratingB.difficultyAvg) +
+                (15 - ratingB.workloadAvg);
+            if (isDescending) {
+                return scoreB - scoreA; // Sort by descending score.
+            } else {
+                return scoreA - scoreB; // Sort by ascending score.
+            }
+        });
   }
   
-  function sortByQuality(professors, data, selectedId) {
-    let isdescending = true;
-    if (sortingToggle == 0){
-      isdescending = true;
+  function sortByQuality(items, data, selectedId, isCourse = false) {
+    let isDescending = true;
+    if (sortingToggle == 0) {
+      isDescending = true;
       setSortingToggle(1);
-    } else if (sortingToggle == 1){
-      isdescending = false;
+    } else if (sortingToggle == 1) {
+      isDescending = false;
       setSortingToggle(0);
     } else {
       setSortingToggle(1);
     }
-    return professors
-      .map((profName) => [profName, data[profName][selectedId]])
-      .sort((objA, objB) => {
+    const mappedItems = items.map((item) => {
+      const rating = isCourse ? item[1]: data[item][selectedId];
+      return [isCourse ? item[0] : item, rating];
+    });
+
+    return mappedItems.sort((objA, objB) => {
         const ratingA = objA[1];
         ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
         const ratingB = objB[1];
         ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
-        if (isdescending) {
+        if (isDescending) {
           return ratingB.qualityAvg - ratingA.qualityAvg; // Sort by descending quality.
         } else {
           return ratingA.qualityAvg - ratingB.qualityAvg; // Sort by ascending quality.
@@ -289,57 +287,99 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       });
   }
   
-  function sortByDifficulty(professors, data, selectedId) {
-    let isdescending = true;
-    if (sortingToggle == 2){
-      isdescending = true;
+  function sortByDifficulty(items, data, selectedId, isCourse = false) {
+    let isDescending = true;
+    if (sortingToggle == 2) {
+      isDescending = true;
       setSortingToggle(3);
-    } else if (sortingToggle == 3){
-      isdescending = false;
+    } else if (sortingToggle == 3) {
+      isDescending = false;
       setSortingToggle(2);
     } else {
       setSortingToggle(3);
     }
-    return professors
-      .map((profName) => [profName, data[profName][selectedId]])
-      .sort((objA, objB) => {
+
+    const mappedItems = items.map((item) => {
+      const rating = isCourse ? item[1]: data[item][selectedId];
+      return [isCourse ? item[0] : item, rating];
+    });
+
+    return mappedItems.sort((objA, objB) => {
         const ratingA = objA[1];
         ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
         const ratingB = objB[1];
         ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
-        if (isdescending) {
+        if (isDescending) {
           return ratingB.difficultyAvg - ratingA.difficultyAvg; // Sort by descending difficulty.
         } else {
           return ratingA.difficultyAvg - ratingB.difficultyAvg; // Sort by ascending difficulty.
         }
       });
   }
-
-  function sortByWorkload(professors, data, selectedId) {
-    let isdescending = true;
-    if (sortingToggle == 4){
-      isdescending = true;
+  
+  function sortByWorkload(items, data, selectedId, isCourse = false) {
+    let isDescending = true;
+    if (sortingToggle == 4) {
+      isDescending = true;
       setSortingToggle(5);
-    } else if (sortingToggle == 5){
-      isdescending = false;
+    } else if (sortingToggle == 5) {
+      isDescending = false;
       setSortingToggle(4);
     } else {
       setSortingToggle(5);
     }
-    return professors
-      .map((profName) => [profName, data[profName][selectedId]])
-      .sort((objA, objB) => {
+    
+    const mappedItems = items.map((item) => {
+      const rating = isCourse ? item[1]: data[item][selectedId];
+      return [isCourse ? item[0] : item, rating];
+    });
+
+    return mappedItems.sort((objA, objB) => {
       const ratingA = objA[1];
       ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
       const ratingB = objB[1];
       ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
-      if (isdescending) {
+      if (isDescending) {
         return ratingB.workloadAvg - ratingA.workloadAvg; // Sort by descending workload.
       } else {
         return ratingA.workloadAvg - ratingB.workloadAvg; // Sort by ascending workload.
       }
       });
   }
+  
+  const handleSortByQuality = () => {
+    if (selected.type === "course") {
+      setSortedProfessors(sortByQuality(selected.professors, data, selected.id));
+    } else {
+      setSortedCourses(sortByQuality(sortedCourses, data, selected.id, true));
+    }
+  };
+  
+  const handleSortByDifficulty = () => {
+    if (selected.type === "course") {
+      setSortedProfessors(sortByDifficulty(selected.professors, data, selected.id));
+    } else {
+      setSortedCourses(sortByDifficulty(sortedCourses, data, selected.id, true));
+    }
+  };
+  
+  const handleSortByWorkload = () => {
+    if (selected.type === "course") {
+      setSortedProfessors(sortByWorkload(selected.professors, data, selected.id));
+    } else {
+      setSortedCourses(sortByWorkload(sortedCourses, data, selected.id, true));
+      console.log(sortedCourses);
+    }
+  };
+  
+  const handleOverallSort = () => {
+    if (selected.type === "course") {
+      setSortedProfessors(sortByScore(selected.professors, data, selected.id));
+    } else {
+      setSortedCourses(sortByScore(sortedCourses, data, selected.id, true));
+      console.log(sortedCourses);
+    }
+  };
 
   if (selected.type === "prof") {
     return (
@@ -401,46 +441,103 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             gutterBottom
           >
             Statistics by Course
+            <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignContent: "right",
+              width: "275px",
+              marginLeft: "auto",
+            }}
+            >
+              {[
+                { label: "Overall", subLabel: "Rank", toggle: [6, 7], handler: handleOverallSort },
+                { label: "Quality", subLabel: "(1-5)", toggle: [0, 1], handler: handleSortByQuality },
+                { label: "Difficulty", subLabel: "(1-5)", toggle: [2, 3], handler: handleSortByDifficulty },
+                { label: "Workload", subLabel: "(hrs/week)", toggle: [4, 5], handler: handleSortByWorkload },
+              ].map(({ label, subLabel, toggle, handler }, index) => (
+                <Typography
+                  key={index}
+                  variant="body2"
+                  color="text.secondary"
+                  textAlign={"center"}
+                  onClick={handler}
+                  sx={{ cursor: "pointer", fontSize: '0.70rem' }}
+                  title={sortingToggle === toggle[0] || sortingToggle === toggle[1] ? "" : `Sort by ${label}`}
+                >
+                  <Box display="flex" flexDirection={"row"} alignItems={"center"}>
+                    <Box textAlign="center">
+                      {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
+                        <u><b>{label}</b></u>
+                      ) : (
+                        label
+                      )}
+                      <br />
+                      {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
+                        <u><b>{subLabel}</b></u>
+                      ) : (
+                        subLabel
+                      )}
+                    </Box>
+                    <Box display="flex" flexDirection={"column"} alignItems={"center"} justifyContent={"space-around"}>
+                      {sortingToggle === toggle[1] ? (
+                        <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem'}} />
+                      ) : sortingToggle === toggle[0] ? (
+                        <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                      ) : (
+                        <>
+                          <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem' }} />
+                          <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                        </>
+                      )}
+                    </Box>
+                  </Box>
+                </Typography>
+              ))}
+            </Box>
           </Typography>
-          {Object.entries(selected)
-            .filter(
-              ([key, value]) =>
-                typeof value === "object" &&
-                value.qualityTotal !== undefined &&
-                key !== "overall" &&
-                key.length > 4,
-            )
+          {sortedCourses.length > 0 && sortedCourses
             .map(([courseCode, courseStats], index) => (
               <Box key={courseCode} sx={{ mt: 2 }}>
-                <Typography variant="body1" gutterBottom>
-                  {`${courseCode} - ${getCourseName(courseCode)}`}
-                  <Typography
-                    variant="body2"
-                    component="p"
-                    onClick={() => {
-                      onPageNavigation(courseCode);
+                <Box display="flex" 
+                alignItems="center" 
+                flexDirection="row" 
+                justifyContent="space-between"
+                >
+                  <Typography 
+                    variant="body1" 
+                    gutterBottom
+                    onClick={() => {onPageNavigation(courseCode);}}
+                    sx={{ 
+                      ml: 1, 
+                      color: "#802a25", 
+                      cursor: "pointer", 
+                      "&:hover": {
+                        textDecoration: "underline",
+                      }
                     }}
-                    sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
+                    title={getCourseName(courseCode)}
                   >
-                    Go to course page
+                    {`${courseCode.substring(0, 4)} ${courseCode.substring(4)}`}
                   </Typography>
-                </Typography>
+                  <StatsWithLessFormatting
+                    stats={courseStats}
+                    deptStats={data.departmentStatistics[courseCode.substring(0, 4)]}
+                    preferredPercentiles={preferredPercentiles}
+                  />
+                </Box>
                 {courseStats.recentTerms && (
-                  <Typography
+                    <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ px: 2, mt: 1, mb: 2 }}
-                  >
-                    Quarters Taught: {courseStats.recentTerms.join(", ")}
-                  </Typography>
-                )}
-                <EvalStats
-                  stats={courseStats}
-                  deptStats={
-                    data.departmentStatistics[courseCode.substring(0, 4)]
-                  }
-                  preferredPercentiles={preferredPercentiles}
-                />
+                    width={"150px"}
+                    sx={{ margin: "-5px 9px 16px" }}
+                    >
+                      <span title={courseStats.recentTerms.join(", ")}>
+                        {extractTerms(courseStats.recentTerms).join(", ")}
+                      </span>
+                    </Typography>
+                  )}
                 {index <
                   Object.keys(selected).filter((key) =>
                     key.match(/[A-Z]{4}\d+/),
@@ -543,7 +640,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
               { label: "Overall", subLabel: "Rank", toggle: [6, 7], handler: handleOverallSort },
               { label: "Quality", subLabel: "(1-5)", toggle: [0, 1], handler: handleSortByQuality },
               { label: "Difficulty", subLabel: "(1-5)", toggle: [2, 3], handler: handleSortByDifficulty },
-              { label: "Workload", subLabel: "(hrs/week)", toggle: [4, 5], handler: hangleSortByWorkload },
+              { label: "Workload", subLabel: "(hrs/week)", toggle: [4, 5], handler: handleSortByWorkload },
             ].map(({ label, subLabel, toggle, handler }, index) => (
               <Typography
                 key={index}
@@ -600,9 +697,17 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     onClick={() => {
                       onPageNavigation(profName);
                     }}
-                    sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
+                    sx={{ 
+                      ml: 1,
+                      color: "#802a25",
+                      margin: "-5px 9px 16px",
+                      cursor: "pointer",
+                      "&:hover": {
+                        textDecoration: "underline",
+                      }
+                    }}
                     >
-                      {profName}
+                      <u>{profName}</u>
                     </Typography>
                     <StatsWithLessFormatting
                       stats={profCourseStats}

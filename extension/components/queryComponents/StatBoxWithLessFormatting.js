@@ -41,7 +41,7 @@ function getRatingColor(rating, ratingMin, ratingMax, goodValuesAreHigher) {
   if (rating < ratingMin) rating = ratingMin;
   if (rating > ratingMax) rating = ratingMax;
   const greenShade = [66, 134, 67];
-  const yellowShade = [255, 234, 0];
+  const yellowShade = [255, 165, 0];
   const redShade = [194, 59, 34];
   const ratingMid = ratingMin + (ratingMax - ratingMin) / 2;
   if (rating <= ratingMid && goodValuesAreHigher) {
