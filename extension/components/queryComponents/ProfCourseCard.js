@@ -707,7 +707,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       }
                     }}
                     >
-                      <u>{profName}</u>
+                      {profName}
                     </Typography>
                     <StatsWithLessFormatting
                       stats={profCourseStats}
