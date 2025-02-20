@@ -55,6 +55,7 @@ export default function Preferences() {
         setUserPrefs(userInfo.preferences);
         shouldSendUpdate.current = false;
       } else {
+        console.log("This is running");
         setUserPrefs({
           difficulty: 0,
           preferredSectionTimeRange: {

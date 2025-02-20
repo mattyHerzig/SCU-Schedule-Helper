@@ -19,9 +19,10 @@ export default function StatsWithLessFormatting({ stats, deptStats, preferredPer
     <Box
       sx={{
         display: "flex",
-        gap: 4,
+        gap: "49px",
         justifyContent: "space-between",
-        px: 2,
+        pr: "20px",
+        pl: "5px",
         alignContent: "right",
       }}
     >

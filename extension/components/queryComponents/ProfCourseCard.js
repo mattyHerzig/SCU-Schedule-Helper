@@ -11,6 +11,8 @@ import FriendCoursesTooltip from "./FriendCoursesTooltip";
 import EvalStats from "./EvalStats";
 import StatsWithLessFormatting from "./StatsWithLessFormatting";
 import RmpStats from "./RmpStats";
+import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 export const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
@@ -528,100 +530,60 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             Statistics by Professor
           </Typography>
   
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignContent: "right",
-                width: "260px",
-                marginLeft: "auto",
-              }}
-            >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignContent: "right",
+              width: "275px",
+              marginLeft: "auto",
+            }}
+          >
+            {[
+              { label: "Overall", subLabel: "Rank", toggle: [6, 7], handler: handleOverallSort },
+              { label: "Quality", subLabel: "(1-5)", toggle: [0, 1], handler: handleSortByQuality },
+              { label: "Difficulty", subLabel: "(1-5)", toggle: [2, 3], handler: handleSortByDifficulty },
+              { label: "Workload", subLabel: "(hrs/week)", toggle: [4, 5], handler: hangleSortByWorkload },
+            ].map(({ label, subLabel, toggle, handler }, index) => (
               <Typography
-                variant="body5"
+                key={index}
+                variant="body2"
                 color="text.secondary"
                 textAlign={"center"}
-                onClick={handleOverallSort}
-                sx={{ cursor: "pointer" }}
-                title={sortingToggle == 7 || sortingToggle == 6 ? "" : "Sort by Overall Score"}
+                onClick={handler}
+                sx={{ cursor: "pointer", fontSize: '0.70rem' }}
+                title={sortingToggle === toggle[0] || sortingToggle === toggle[1] ? "" : `Sort by ${label}`}
               >
-                {sortingToggle === 6 || sortingToggle === 7 ? (
-                  <>
-                    <u><b>Overall Score</b></u>
-                  </>
-                ) : (
-                  <>
-                    Overall Score
-                  </>
-                )}
+                <Box display="flex" flexDirection={"row"} alignItems={"center"}>
+                  <Box textAlign="center">
+                    {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
+                      <u><b>{label}</b></u>
+                    ) : (
+                      label
+                    )}
+                    <br />
+                    {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
+                      <u><b>{subLabel}</b></u>
+                    ) : (
+                      subLabel
+                    )}
+                  </Box>
+                  <Box display="flex" flexDirection={"column"} alignItems={"center"} justifyContent={"space-around"}>
+                    {sortingToggle === toggle[1] ? (
+                      <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem'}} />
+                    ) : sortingToggle === toggle[0] ? (
+                      <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                    ) : (
+                      <>
+                        <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem' }} />
+                        <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                      </>
+                    )}
+                  </Box>
+                </Box>
               </Typography>
-                <Typography
-                variant="body5"
-                color="text.secondary"
-                textAlign={"center"}
-                onClick={handleSortByQuality}
-                sx={{ cursor: "pointer" }}
-                title={sortingToggle == 1 || sortingToggle == 0 ? "" : "Sort by Quality"}
-              >
-                {sortingToggle === 0 || sortingToggle === 1 ? (
-                  <>
-                    <u><b>Quality</b></u>
-                    <br />
-                    <b>(1-5)</b>
-                  </>
-                ) : (
-                  <>
-                    Quality
-                    <br />
-                    (1-5)
-                  </>
-                )}
-              </Typography>
-              <Typography
-                variant="body5"
-                color="text.secondary"
-                textAlign={"center"}
-                onClick={handleSortByDifficulty}
-                sx={{ cursor: "pointer" }}
-                title={sortingToggle == 3 || sortingToggle == 2 ? "" : "Sort by Difficulty"}
-              >
-                {sortingToggle === 2 || sortingToggle === 3 ? (
-                  <>
-                    <u><b>Difficulty</b></u>
-                    <br />
-                    <b>(1-5)</b>
-                  </>
-                ) : (
-                  <>
-                    Difficulty
-                    <br />
-                    (1-5)
-                  </>
-                )}
-              </Typography>
-              <Typography
-                variant="body5"
-                color="text.secondary"
-                textAlign={"center"}
-                onClick={hangleSortByWorkload}
-                sx={{ cursor: "pointer" }}
-                title={sortingToggle == 5 || sortingToggle == 4 ? "" : "Sort by Workload"}
-              >
-                {sortingToggle === 4 || sortingToggle === 5 ? (
-                  <>
-                    <u><b>Workload</b></u>
-                    <br />
-                    <b>(hrs/week)</b>
-                  </>
-                ) : (
-                  <>
-                    Workload
-                    <br />
-                    (hrs/week)
-                  </>
-                )}
-              </Typography>
-            </Box>
+            ))}
+          </Box>
 
           {sortedProfessors.length > 0 && sortedProfessors
             .map(([profName, profCourseStats], index) => {
@@ -651,7 +613,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    margin="-5px 9px 16px"
+                    width={"150px"}
                     sx={{ margin: "-5px 9px 16px" }}
                   >
                     <span title={profCourseStats.recentTerms.join(", ")}>
