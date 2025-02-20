@@ -531,7 +531,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     variant="body2"
                     color="text.secondary"
                     width={"150px"}
-                    sx={{ margin: "-5px 9px 16px" }}
+                    sx={{ margin: "0px 9px 5px" }}
                     >
                       <span title={courseStats.recentTerms.join(", ")}>
                         {extractTerms(courseStats.recentTerms).join(", ")}
@@ -719,7 +719,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     variant="body2"
                     color="text.secondary"
                     width={"150px"}
-                    sx={{ margin: "-5px 9px 16px" }}
+                    sx={{ margin: "0px 9px 5px" }}
                   >
                     <span title={profCourseStats.recentTerms.join(", ")}>
                       {extractTerms(profCourseStats.recentTerms).join(", ")}
