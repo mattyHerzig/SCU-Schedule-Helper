@@ -1,4 +1,8 @@
-import { signIn, signOut } from "./utils/authorization.js";
+import {
+  signIn,
+  signOut,
+  updateSubscriptionAndRefreshUserData,
+} from "./utils/authorization.js";
 import { prodServerUrl } from "./utils/constants.js";
 import {
   downloadEvals,
@@ -16,11 +20,23 @@ import {
   updateUser,
 } from "./utils/user.js";
 
-chrome.runtime.onInstalled.addListener((object) => {
+chrome.runtime.onInstalled.addListener(async (object) => {
   let internalUrl = chrome.runtime.getURL("landing_page/index.html");
 
   if (object.reason === chrome.runtime.OnInstalledReason.INSTALL) {
-    chrome.tabs.create({ url: internalUrl }, function (tab) {});
+    const accessToken = (await chrome.storage.sync.get("accessToken"))
+      .accessToken;
+    if (accessToken) {
+      const subscription = await subscribe();
+      downloadEvals();
+      downloadProfessorNameMappings();
+      const refreshError = await updateSubscriptionAndRefreshUserData(
+        JSON.stringify(subscription)
+      );
+      if (refreshError) {
+        chrome.tabs.create({ url: internalUrl }, function (tab) {});
+      }
+    } else chrome.tabs.create({ url: internalUrl }, function (tab) {});
   }
 });
 
@@ -36,7 +52,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     updateUser(request.updateItems, request.allowLocalOnly || false).then(
       (response) => {
         sendResponse(response);
-      },
+      }
     );
   }
 
@@ -108,7 +124,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 self.addEventListener("push", function (event) {
   console.log(
-    `Push had this data: "${JSON.stringify(event.data.json(), null, 2)}"`,
+    `Push had this data: "${JSON.stringify(event.data.json(), null, 2)}"`
   );
   handleNotification(event.data.json());
 });
@@ -117,7 +133,7 @@ self.addEventListener("activate", async (event) => {
   // Set refresh date to 4 days from now.
   await chrome.storage.local.set({
     refreshSelfDataDate: new Date(
-      Date.now() + 4 * 24 * 60 * 60 * 1000,
+      Date.now() + 4 * 24 * 60 * 60 * 1000
     ).getTime(),
   });
   await subscribe();
@@ -134,7 +150,7 @@ async function runStartupChecks() {
     await refreshUserData();
     await chrome.storage.local.set({
       refreshSelfDataDate: new Date(
-        Date.now() + 4 * 24 * 60 * 60 * 1000,
+        Date.now() + 4 * 24 * 60 * 60 * 1000
       ).getTime(),
     });
   }
