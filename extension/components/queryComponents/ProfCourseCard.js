@@ -13,6 +13,8 @@ import StatsWithLessFormatting from "./StatsWithLessFormatting";
 import RmpStats from "./RmpStats";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import RecentTermsToolTip from "./recentTermsToolTip";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 export const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
@@ -528,16 +530,17 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   />
                 </Box>
                 {courseStats.recentTerms && (
+                  <RecentTermsToolTip recentTerms={courseStats.recentTerms} >
                     <Typography
                     variant="body2"
                     color="text.secondary"
                     width={"150px"}
                     sx={{ margin: "0px 0px 16px" }}
                     >
-                      <span title={courseStats.recentTerms.join(", ")}>
+                      <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "#4a90e2" , marginBottom: "0px", fontSize: "16px" }} />
                         {extractTerms(courseStats.recentTerms).join(", ")}
-                      </span>
                     </Typography>
+                  </RecentTermsToolTip>
                   )}
                 {index <
                   Object.keys(selected).filter((key) =>
@@ -591,16 +594,15 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           <Typography variant="h6" fontWeight="bold">
             {selected.courseName} ({selected.id})
           </Typography>
-
-          <Typography 
-            variant="body2" 
-            color="text.secondary" 
-            gutterBottom 
-          >
-            <span title={selected.recentTerms.join(", ")}>
-              <b>Previously Offered: </b> {extractTerms(selected.recentTerms).join(", ")}
-            </span>
-          </Typography>
+          <RecentTermsToolTip recentTerms={selected.recentTerms} >
+            <Typography 
+              variant="body2" 
+              color="text.secondary" 
+              gutterBottom 
+            >
+                <b>Previously Offered: </b> {extractTerms(selected.recentTerms).join(", ")}
+            </Typography>
+          </RecentTermsToolTip>
 
           <FriendCoursesTooltip friendData={friendData} />
 
@@ -716,16 +718,17 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       preferredPercentiles={preferredPercentiles}
                     />
                   </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    width={"150px"}
-                    sx={{ margin: "0px 0px 16x" }}
-                  >
-                    <span title={profCourseStats.recentTerms.join(", ")}>
-                      {extractTerms(profCourseStats.recentTerms).join(", ")}
-                    </span>
-                  </Typography>
+                    <RecentTermsToolTip recentTerms={profCourseStats.recentTerms} >
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        width={"150px"}
+                        sx={{ margin: "0px 0px 16px" }}
+                      >
+                        <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "#4a90e2", marginBottom: "-2px", fontSize: "16px" }} />
+                        <span marginBottom="2px">{extractTerms(profCourseStats.recentTerms).join(", ")}</span>
+                      </Typography>
+                    </RecentTermsToolTip>
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}
