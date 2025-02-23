@@ -34,6 +34,7 @@ chrome.runtime.onInstalled.addListener(async (object) => {
         JSON.stringify(subscription)
       );
       if (refreshError) {
+        await signOut();
         chrome.tabs.create({ url: internalUrl }, function (tab) {});
       }
     } else chrome.tabs.create({ url: internalUrl }, function (tab) {});
