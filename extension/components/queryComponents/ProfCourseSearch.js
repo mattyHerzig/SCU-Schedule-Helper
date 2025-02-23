@@ -4,14 +4,19 @@ import {
   Autocomplete,
   TextField,
   Box,
-  Typography,
   Button,
+  CircularProgress,
+  Typography,
   Snackbar,
 } from "@mui/material";
 import { matchSorter } from "match-sorter";
 import ProfCourseCard from "./ProfCourseCard";
 
-export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) {
+export default function ProfCourseSearch({
+  scrollToTop,
+  query,
+  onQueryChange,
+}) {
   const [evalsData, setEvalsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,7 +92,9 @@ export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) 
 
           options.push({
             id: key,
-            label: `${dept} ${courseNum} - ${value.courseName || "Unnamed Course"}`,
+            label: `${dept} ${courseNum} - ${
+              value.courseName || "Unnamed Course"
+            }`,
             groupLabel: "Courses",
             type: "course",
             ...value,
@@ -115,10 +122,7 @@ export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) 
   }, [allOptions, searchQuery]);
 
   function filterOptions(options, { inputValue }) {
-    return matchSorter(options, inputValue, { keys: ["label"] }).slice(
-      0,
-      100,
-    );
+    return matchSorter(options, inputValue, { keys: ["label"] }).slice(0, 100);
   }
 
   function onPageNavigation(newPageKey) {
@@ -136,7 +140,9 @@ export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) 
         const [, dept, courseNum] = newPageKey.match(/([A-Z]{4})(\d+[A-Z]*)/);
         return {
           id: newPageKey,
-          label: `${dept} ${courseNum} - ${newPageData.courseName || "Unnamed Course"}`,
+          label: `${dept} ${courseNum} - ${
+            newPageData.courseName || "Unnamed Course"
+          }`,
           groupLabel: "Courses",
           type: "course",
           ...newPageData,
@@ -146,19 +152,11 @@ export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) 
     scrollToTop();
   }
 
-  if (isLoading) {
-    return (
-      <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
-        <Typography variant="h6">Loading course evaluations...</Typography>
-      </Box>
-    );
-  }
-
   function handleSearchChange(event) {
     setSearchQuery(event.target.value);
   }
 
-  if (!evalsData || Object.keys(evalsData).length === 0) {
+  if (!isLoading && (!evalsData || Object.keys(evalsData).length === 0)) {
     return (
       <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
         <Typography variant="h6" color="text.secondary">
@@ -198,6 +196,7 @@ export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) 
           autoHighlight={true}
           groupBy={(option) => option.groupLabel}
           value={query}
+          loading={isLoading}
           onChange={(event, newValue) => {
             onQueryChange(newValue);
           }}
@@ -207,6 +206,19 @@ export default function ProfCourseSearch({ scrollToTop, query, onQueryChange }) 
               label="Search Courses and Professors"
               variant="outlined"
               size="small"
+              slotProps={{
+                input: {
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {isLoading ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                },
+              }}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   "& fieldset": {
