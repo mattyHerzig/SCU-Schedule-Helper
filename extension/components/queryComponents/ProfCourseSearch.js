@@ -196,6 +196,7 @@ export default function ProfCourseSearch({
           autoHighlight={true}
           groupBy={(option) => option.groupLabel}
           value={query}
+          loading={isLoading}
           onChange={(event, newValue) => {
             onQueryChange(newValue);
           }}
