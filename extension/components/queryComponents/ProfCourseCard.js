@@ -657,6 +657,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           </Typography>
           {sortedCourses.length > 0 &&
             sortedCourses.map(([courseCode, courseStats], index) => (
+              <Box>
               <Box key={courseCode} sx={{ mt: 2 }}
               display={"flex"}
               flexDirection={"row"}
@@ -721,6 +722,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       preferredPercentiles={preferredPercentiles}
                     />
                   </Box>
+              </Box>
                 {index <
                   Object.keys(selected).filter((key) =>
                     key.match(/[A-Z]{4}\d+/)
@@ -911,6 +913,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           {sortedProfessors.length > 0 &&
             sortedProfessors.map(([profName, profCourseStats], index) => {
               return (
+                <Box>
                 <Box key={profName} sx={{ mt: 2 }}
                 display={"flex"}
                 flexDirection={"row"}
@@ -975,9 +978,11 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                         preferredPercentiles={preferredPercentiles}
                       />
                   </Box>
-                  {index < selected.professors.length - 1 && (
-                    <Divider sx={{ my: 2 }} />
-                  )}
+                </Box>
+                
+                {index < selected.professors.length - 1 && (
+                  <Divider sx={{ my: 2 }} />
+                )}
                 </Box>
               );
             })}
