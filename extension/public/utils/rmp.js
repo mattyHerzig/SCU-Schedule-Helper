@@ -60,6 +60,10 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
     [profId]: { teacherData, exp: Date.now() + 86400000 },
   });
   if (debuggingEnabled) console.log(teacherData);
+  if (teacherData.firstName)
+    teacherData.firstName = teacherData.firstName.toLowerCase().trim();
+  if (teacherData.lastName)
+    teacherData.lastName = teacherData.lastName.toLowerCase().trim();
   return teacherData;
 }
 
@@ -111,13 +115,7 @@ async function scrapeRmpRatings(profName, debuggingEnabled = false) {
         debuggingEnabled
       );
     }
-    if (teacherData.numRatings > 0) {
-      if (teacherData.firstName)
-        teacherData.firstName = teacherData.firstName.toLowerCase().trim();
-      if (teacherData.lastName)
-        teacherData.lastName = teacherData.lastName.toLowerCase().trim();
-      teachers.push(teacherData);
-    }
+    if (teacherData.numRatings > 0) teachers.push(teacherData);
     // Find next teacher.
     indexOfTeacher = html.indexOf('"__typename":"Teacher"', indexOfTeacher + 1);
   }
