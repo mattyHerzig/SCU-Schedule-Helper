@@ -422,7 +422,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
 
     if (differenceInDays <= 365) {
       return {
-        label: "Taught in last 1yr",
+        label: "Taught Within 1yr",
         icon: (
           <CheckIcon
             fontSize="small"
@@ -430,45 +430,29 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
               marginRight: "2px",
               color: "black",
               marginBottom: "0px",
-              fontSize: "16px",
+              fontSize: "15px",
             }}
             color="success"
           />
         ),
       }; // Green
-    } else if (differenceInDays <= 365 * 2) {
+    } else{
       return {
-        label: "Taught in last 2y",
+        label: `Lastest: ${lastSeason} ${lastYear}`,
         icon: (
           <WarningIcon
-            fontSize="small"
-            sx={{
-              marginRight: "2px",
-              color: "black",
-              marginBottom: "0px",
-              fontSize: "16px",
-            }}
-            color="warning"
+        fontSize="small"
+        sx={{
+          marginRight: "2px",
+          color: "black",
+          marginBottom: "0px",
+          fontSize: "15px",
+        }}
+        color="warning"
           />
         ),
       }; // Yellow
-    } else {
-      return {
-        label: "Hasn't taught in 2+ yr",
-        icon: (
-          <CloseIcon
-            fontSize="small"
-            sx={{
-              marginRight: "2px",
-              color: "black",
-              marginBottom: "0px",
-              fontSize: "16px",
-            }}
-            color="error"
-          />
-        ),
-      }; // Red
-    }
+    } 
   }
 
   function ProfessorRecency({ lastTaughtQuarter, currentQuarter }) {
@@ -479,7 +463,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
         variant="body2"
         color="text.secondary"
         width={"150px"}
-        sx={{ margin: "0px 0px 16px", display: "flex", alignItems: "center" }}
+        sx={{ margin: "0px 0px 0x", display: "flex", alignItems: "center" }}
       >
         {recency.icon}
         <Typography variant="body2" fontSize="0.8rem">
@@ -707,11 +691,11 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       />
                       {extractTerms(courseStats.recentTerms).join(", ")}
                     </Typography>
+                    <ProfessorRecency
+                      lastTaughtQuarter={courseStats.recentTerms[0]}
+                    ></ProfessorRecency>
                   </RecentTermsToolTip>
                 )}
-                <ProfessorRecency
-                  lastTaughtQuarter={courseStats.recentTerms[0]}
-                ></ProfessorRecency>
                   </Box>
                   <Box display="flex" flexDirection="column" justifyContent="center">
                     <StatsWithLessFormatting
@@ -964,10 +948,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                         {extractTerms(profCourseStats.recentTerms).join(", ")}
                       </span>
                     </Typography>
+                    <ProfessorRecency
+                      lastTaughtQuarter={profCourseStats.recentTerms[0]}
+                    ></ProfessorRecency>
                   </RecentTermsToolTip>
-                  <ProfessorRecency
-                  lastTaughtQuarter={profCourseStats.recentTerms[0]}
-                  ></ProfessorRecency>
                   </Box>
                   <Box display="flex" flexDirection="column" justifyContent="center">
                     <StatsWithLessFormatting
