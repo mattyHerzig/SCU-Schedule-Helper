@@ -422,7 +422,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
 
     if (differenceInDays <= 365) {
       return {
-        label: "Taught in Last 1yr",
+        label: "Taught in last 1yr",
         icon: (
           <CheckIcon
             fontSize="small"
@@ -438,7 +438,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       }; // Green
     } else if (differenceInDays <= 365 * 2) {
       return {
-        label: "Taught in Last 2y",
+        label: "Taught in last 2y",
         icon: (
           <WarningIcon
             fontSize="small"
@@ -454,7 +454,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       }; // Yellow
     } else {
       return {
-        label: "Hasn't Taught in 2+ yr",
+        label: "Hasn't taught in 2+ yr",
         icon: (
           <CloseIcon
             fontSize="small"
@@ -479,12 +479,12 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
         variant="body2"
         color="text.secondary"
         width={"150px"}
-        sx={{ margin: "0px 0px 16px" }}
+        sx={{ margin: "0px 0px 16px", display: "flex", alignItems: "center" }}
       >
         {recency.icon}
-        <span>
+        <Typography variant="body2" fontSize="0.8rem">
         {recency.label}
-        </span>
+        </Typography>
       </Typography>
     );
   }
