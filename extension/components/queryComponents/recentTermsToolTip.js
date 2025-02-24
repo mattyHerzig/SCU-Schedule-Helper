@@ -1,9 +1,7 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import { Typography, Box } from '@mui/material';
+import { Tooltip } from '@mui/material';
 
 const RecentTermsToolTip = ({ recentTerms, children }) => {
-
   function cleanYearsAndTerms(recentTerms) {
     const termPattern = /(Spring|Summer|Fall|Winter)/gi;
     const yearPattern = /\d{4}/gi;
@@ -26,56 +24,32 @@ const RecentTermsToolTip = ({ recentTerms, children }) => {
     });
 
     return Object.entries(result).map(([term, years]) => (
-        <Typography key={term} variant="body2" component="div">
-          <b>{term}:</b> {years.join(", ")}
-        </Typography>
-      ));
+      <div key={term} style={{ fontSize: '0.875rem', lineHeight: '1.25rem' }}>
+        <strong>{term}:</strong> {years.join(", ")}
+      </div>
+    ));
   }
 
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        display: 'inline-block',
-        '&:hover .tooltip-content': {
-          visibility: 'visible',
-          opacity: 1,
+    <Tooltip
+      title={<div>{cleanYearsAndTerms(recentTerms)}</div>}
+      placement="bottom-start"
+      PopperProps={{
+        sx: {
+          '& .MuiTooltip-tooltip': {
+            backgroundColor: 'white',
+            color: 'black',
+            border: '1px solid #ddd',
+            maxWidth: '380px',
+            padding: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }
         }
       }}
     >
       {children}
-
-      <Box
-        className="tooltip-content"
-        sx={{
-          visibility: 'hidden',
-          opacity: 0,
-          position: 'absolute',
-          bottom: '0',
-          left: '0',
-          backgroundColor: 'white',
-          color: 'black',
-          padding: '8px',
-          borderRadius: '4px',
-          border: '1px solid #ddd',
-          boxShadow: 2,
-          transition: 'opacity 0.3s',
-          whiteSpace: 'pre-line',
-          width: 'max-content',
-          maxWidth: '380px',
-          transform: 'translateY(100%)',
-          zIndex: 1,
-        }}
-      >
-        {cleanYearsAndTerms(recentTerms)}
-      </Box>
-    </Box>
+    </Tooltip>
   );
-};
-
-RecentTermsToolTip.propTypes = {
-  recentTerms: PropTypes.arrayOf(PropTypes.string).isRequired,
-  children: PropTypes.node.isRequired,
 };
 
 export default RecentTermsToolTip;

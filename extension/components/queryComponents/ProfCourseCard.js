@@ -537,7 +537,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     width={"150px"}
                     sx={{ margin: "0px 0px 16px" }}
                     >
-                      <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "#4a90e2" , marginBottom: "0px", fontSize: "16px" }} />
+                      <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "black" , marginBottom: "0px", fontSize: "16px" }} />
                         {extractTerms(courseStats.recentTerms).join(", ")}
                     </Typography>
                   </RecentTermsToolTip>
@@ -725,7 +725,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                         width={"150px"}
                         sx={{ margin: "0px 0px 16px" }}
                       >
-                        <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "#4a90e2", marginBottom: "-2px", fontSize: "16px" }} />
+                        <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "black", marginBottom: "-2px", fontSize: "16px" }} />
                         <span marginBottom="2px">{extractTerms(profCourseStats.recentTerms).join(", ")}</span>
                       </Typography>
                     </RecentTermsToolTip>
