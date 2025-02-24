@@ -54,7 +54,6 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
     openingBraceIndex,
     closingBraceIndex + 1
   );
-  console.log(teacherInfoString);
   let teacherData = JSON.parse(teacherInfoString);
   chrome.storage.local.set({
     [profId]: { teacherData, exp: Date.now() + 86400000 },
