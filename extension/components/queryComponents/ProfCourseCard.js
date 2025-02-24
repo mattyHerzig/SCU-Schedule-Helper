@@ -657,11 +657,15 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           </Typography>
           {sortedCourses.length > 0 &&
             sortedCourses.map(([courseCode, courseStats], index) => (
-              <Box key={courseCode} sx={{ mt: 2 }}>
+              <Box key={courseCode} sx={{ mt: 2 }}
+              display={"flex"}
+              flexDirection={"row"}
+              justifyContent={"space-between"}
+              >
                 <Box
                   display="flex"
-                  alignItems="center"
-                  flexDirection="row"
+                  alignItems="left"
+                  flexDirection="column"
                   justifyContent="space-between"
                 >
                   <Typography
@@ -683,15 +687,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   >
                     {`${courseCode.substring(0, 4)} ${courseCode.substring(4)}`}
                   </Typography>
-                  <StatsWithLessFormatting
-                    stats={courseStats}
-                    deptStats={
-                      data.departmentStatistics[courseCode.substring(0, 4)]
-                    }
-                    preferredPercentiles={preferredPercentiles}
-                  />
-                </Box>
-                {courseStats.recentTerms && (
+                  {courseStats.recentTerms && (
                   <RecentTermsToolTip recentTerms={courseStats.recentTerms}>
                     <Typography
                       variant="body2"
@@ -715,6 +711,16 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 <ProfessorRecency
                   lastTaughtQuarter={courseStats.recentTerms[0]}
                 ></ProfessorRecency>
+                  </Box>
+                  <Box display="flex" flexDirection="column" justifyContent="center">
+                    <StatsWithLessFormatting
+                      stats={courseStats}
+                      deptStats={
+                        data.departmentStatistics[courseCode.substring(0, 4)]
+                      }
+                      preferredPercentiles={preferredPercentiles}
+                    />
+                  </Box>
                 {index <
                   Object.keys(selected).filter((key) =>
                     key.match(/[A-Z]{4}\d+/)
@@ -905,11 +911,15 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           {sortedProfessors.length > 0 &&
             sortedProfessors.map(([profName, profCourseStats], index) => {
               return (
-                <Box key={profName} sx={{ mt: 2 }}>
+                <Box key={profName} sx={{ mt: 2 }}
+                display={"flex"}
+                flexDirection={"row"}
+                justifyContent={"space-between"}
+                >
                   <Box
                     display="flex"
-                    alignItems="center"
-                    flexDirection="row"
+                    alignItems="left"
+                    flexDirection="column"
                     justifyContent="space-between"
                   >
                     <Typography
@@ -931,15 +941,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     >
                       {profName}
                     </Typography>
-                    <StatsWithLessFormatting
-                      stats={profCourseStats}
-                      deptStats={
-                        data.departmentStatistics[selected.id.substring(0, 4)]
-                      }
-                      preferredPercentiles={preferredPercentiles}
-                    />
-                  </Box>
-                  <RecentTermsToolTip recentTerms={profCourseStats.recentTerms}>
+                    <RecentTermsToolTip recentTerms={profCourseStats.recentTerms}>
                     <Typography
                       variant="body2"
                       color="text.secondary"
@@ -961,8 +963,18 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     </Typography>
                   </RecentTermsToolTip>
                   <ProfessorRecency
-                    lastTaughtQuarter={profCourseStats.recentTerms[0]}
+                  lastTaughtQuarter={profCourseStats.recentTerms[0]}
                   ></ProfessorRecency>
+                  </Box>
+                  <Box display="flex" flexDirection="column" justifyContent="center">
+                    <StatsWithLessFormatting
+                        stats={profCourseStats}
+                        deptStats={
+                          data.departmentStatistics[selected.id.substring(0, 4)]
+                        }
+                        preferredPercentiles={preferredPercentiles}
+                      />
+                  </Box>
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}

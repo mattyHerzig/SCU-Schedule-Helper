@@ -23,9 +23,6 @@ export default function StatsWithLessFormatting({ stats, deptStats, preferredPer
         justifyContent: "space-between",
         pr: "20px",
         pl: "5px",
-        mt: "20px",
-        position: "absolute",
-        marginLeft: "168px",
       }}
     >
       <StatBoxWithLessFormatting
