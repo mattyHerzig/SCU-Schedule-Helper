@@ -59,22 +59,15 @@ export default function RmpStats({
   }
   return (
     <>
-      <Typography variant="h6" fontSize={"1.15rem"} gutterBottom sx={{ mt: 2 }}>
-        RateMyProfessor Statistics
-        <Typography
-          variant="body2"
-          component="span"
-          sx={{ ml: 1, color: "text.secondary" }}
-        >
+      <Typography variant="h6" fontSize={"1.15rem"} gutterBottom sx={{ mt: 2 } } >
           <a
             href={getRmpLink()}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "#802a25" }}
           >
-            View Profile
+            RateMyProfessor Statistics
           </a>
-        </Typography>
       </Typography>
       <Box
         sx={{
