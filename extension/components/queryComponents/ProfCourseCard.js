@@ -14,6 +14,9 @@ import RmpStats from "./RmpStats";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import CheckIcon from "@mui/icons-material/Check";
+import WarningIcon from "@mui/icons-material/Warning";
+import CloseIcon from "@mui/icons-material/Close";
 import RecentTermsToolTip from "./recentTermsToolTip";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
@@ -414,21 +417,76 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
         : 12;
     const lastTaughtQuarterDate = new Date(`${lastYear}-${lastSeasonMonth}-01`);
     const currentQuarterDate = new Date();
-    const differenceInDays = (currentQuarterDate - lastTaughtQuarterDate) / 86400000;
+    const differenceInDays =
+      (currentQuarterDate - lastTaughtQuarterDate) / 86400000;
 
     if (differenceInDays <= 365) {
-      return { label: "Taught in Last 1yr", color: "success" }; // Green
+      return {
+        label: "Taught in Last 1yr",
+        icon: (
+          <CheckIcon
+            fontSize="small"
+            sx={{
+              marginRight: "2px",
+              color: "black",
+              marginBottom: "0px",
+              fontSize: "16px",
+            }}
+            color="success"
+          />
+        ),
+      }; // Green
     } else if (differenceInDays <= 365 * 2) {
-      return { label: "Taught in Last 2y", color: "warning" }; // Yellow
+      return {
+        label: "Taught in Last 2y",
+        icon: (
+          <WarningIcon
+            fontSize="small"
+            sx={{
+              marginRight: "2px",
+              color: "black",
+              marginBottom: "0px",
+              fontSize: "16px",
+            }}
+            color="warning"
+          />
+        ),
+      }; // Yellow
     } else {
-      return { label: "Hasn't Taught in 2+ yr", color: "error" }; // Red
+      return {
+        label: "Hasn't Taught in 2+ yr",
+        icon: (
+          <CloseIcon
+            fontSize="small"
+            sx={{
+              marginRight: "2px",
+              color: "black",
+              marginBottom: "0px",
+              fontSize: "16px",
+            }}
+            color="error"
+          />
+        ),
+      }; // Red
     }
   }
 
   function ProfessorRecency({ lastTaughtQuarter, currentQuarter }) {
     const recency = getRecencyIndicator(lastTaughtQuarter, currentQuarter);
 
-    return <Chip size="small" label={recency.label} color={recency.color} />;
+    return (
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        width={"150px"}
+        sx={{ margin: "0px 0px 16px" }}
+      >
+        {recency.icon}
+        <span>
+        {recency.label}
+        </span>
+      </Typography>
+    );
   }
 
   if (selected.type === "prof") {
@@ -639,7 +697,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       variant="body2"
                       color="text.secondary"
                       width={"150px"}
-                      sx={{ margin: "0px 0px 16px" }}
+                      sx={{ margin: "0px 0px 0px" }}
                     >
                       <CalendarMonthIcon
                         fontSize="small"
@@ -886,7 +944,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       variant="body2"
                       color="text.secondary"
                       width={"150px"}
-                      sx={{ margin: "0px 0px 16px" }}
+                      sx={{ margin: "0px 0px 0px" }}
                     >
                       <CalendarMonthIcon
                         fontSize="small"
@@ -903,8 +961,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     </Typography>
                   </RecentTermsToolTip>
                   <ProfessorRecency
-                  lastTaughtQuarter={profCourseStats.recentTerms[0]}
-                ></ProfessorRecency>
+                    lastTaughtQuarter={profCourseStats.recentTerms[0]}
+                  ></ProfessorRecency>
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}
