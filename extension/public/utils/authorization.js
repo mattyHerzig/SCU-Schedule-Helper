@@ -129,7 +129,7 @@ export async function signIn() {
   return null;
 }
 
-async function updateSubscriptionAndRefreshUserData(subscription) {
+export async function updateSubscriptionAndRefreshUserData(subscription) {
   const response = await fetchWithAuth(`${prodUserEndpoint}`, {
     method: "PUT",
     body: JSON.stringify({
