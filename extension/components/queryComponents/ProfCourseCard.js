@@ -4,7 +4,7 @@ import {
   CardContent,
   Typography,
   Box,
-  CircularProgress,
+  Chip,
   Divider,
 } from "@mui/material";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
@@ -13,7 +13,7 @@ import StatsWithLessFormatting from "./StatsWithLessFormatting";
 import RmpStats from "./RmpStats";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import RecentTermsToolTip from "./recentTermsToolTip";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
@@ -25,7 +25,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
   const [friendData, setFriendData] = useState(null);
   const [profDepts, setProfDepts] = useState([]);
-  const [sortingToggle, setSortingToggle] = useState(0); 
+  const [sortingToggle, setSortingToggle] = useState(0);
 
   const [profDeptAvgs, setProfDeptAvgs] = useState({
     quality: [],
@@ -93,13 +93,13 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
 
     if (selected.type === "prof") {
       const courses = Object.entries(data[selected.id]).filter(
-        ([key, value]) => key !== "overall" && key.length > 4,
+        ([key, value]) => key !== "overall" && key.length > 4
       );
-      console.log("Courses: ", courses)
+      console.log("Courses: ", courses);
       setSortedCourses(sortByScore(courses, data, selected.id, true));
       console.log(sortedCourses);
       const profDepts = Object.keys(data[selected.id]).filter(
-        (key) => key !== "type" && key.length === 4,
+        (key) => key !== "type" && key.length === 4
       );
       setProfDepts(profDepts);
       setProfDeptAvgs({
@@ -161,12 +161,17 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           const match = section.match(interestedSectionPattern);
           if (!match) continue;
           const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
-          const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+          const meetingPattern = `${
+            meetingPatternMatch[1]
+          } at ${meetingPatternMatch[2]
+            .replaceAll(" ", "")
+            .replaceAll(":00", "")
+            .toLowerCase()}`;
           const courseCode = match[2]
             .substring(0, match[2].indexOf("-"))
             .replace(" ", "");
           friendInterestedInfos.push(
-            `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
+            `${friendName} wants to take for ${courseCode} on ${meetingPattern}`
           );
         }
       }
@@ -182,7 +187,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           continue;
         }
         friendTakenInfos.push(
-          `${friendName} took with ${match[1] || "unknown prof"}`,
+          `${friendName} took with ${match[1] || "unknown prof"}`
         );
       }
       for (const friendId in friendData.friendInterestedSections?.[
@@ -194,9 +199,14 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
         const match = course.match(interestedSectionPattern);
         if (!match) continue;
         const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
-        const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+        const meetingPattern = `${
+          meetingPatternMatch[1]
+        } at ${meetingPatternMatch[2]
+          .replaceAll(" ", "")
+          .replaceAll(":00", "")
+          .toLowerCase()}`;
         friendInterestedInfos.push(
-          `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
+          `${friendName} wants to take with ${match[1]} on ${meetingPattern}`
         );
       }
     }
@@ -211,7 +221,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   function extractTerms(recentTerms) {
     const termPattern = /(Spring|Summer|Fall|Winter)/gi;
     const simplifiedTerms = recentTerms
-      .map(term => term.match(termPattern))
+      .map((term) => term.match(termPattern))
       .flat()
       .filter(Boolean);
     const uniqueTerms = [...new Set(simplifiedTerms)];
@@ -221,45 +231,45 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   function sortByScore(items, data, selectedId, isCourse = false) {
     let isDescending = true;
     if (sortingToggle == 6) {
-        isDescending = true;
-        setSortingToggle(7);
+      isDescending = true;
+      setSortingToggle(7);
     } else if (sortingToggle == 7) {
-        isDescending = false;
-        setSortingToggle(6);
+      isDescending = false;
+      setSortingToggle(6);
     } else {
-        setSortingToggle(7);
+      setSortingToggle(7);
     }
 
     const mappedItems = items.map((item) => {
-      const rating = isCourse ? item[1]: data[item][selectedId];
+      const rating = isCourse ? item[1] : data[item][selectedId];
       return [isCourse ? item[0] : item, rating];
     });
 
     return mappedItems.sort((objA, objB) => {
-            const ratingA = objA[1];
-            ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
-            ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
-            ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
-            const ratingB = objB[1];
-            ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
-            ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
-            ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
-            const scoreA =
-                ratingA.qualityAvg +
-                (5 - ratingA.difficultyAvg) +
-                (15 - ratingA.workloadAvg);
-            const scoreB =
-                ratingB.qualityAvg +
-                (5 - ratingB.difficultyAvg) +
-                (15 - ratingB.workloadAvg);
-            if (isDescending) {
-                return scoreB - scoreA; // Sort by descending score.
-            } else {
-                return scoreA - scoreB; // Sort by ascending score.
-            }
-        });
+      const ratingA = objA[1];
+      ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+      ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
+      ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
+      const ratingB = objB[1];
+      ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+      ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
+      ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
+      const scoreA =
+        ratingA.qualityAvg +
+        (5 - ratingA.difficultyAvg) +
+        (15 - ratingA.workloadAvg);
+      const scoreB =
+        ratingB.qualityAvg +
+        (5 - ratingB.difficultyAvg) +
+        (15 - ratingB.workloadAvg);
+      if (isDescending) {
+        return scoreB - scoreA; // Sort by descending score.
+      } else {
+        return scoreA - scoreB; // Sort by ascending score.
+      }
+    });
   }
-  
+
   function sortByQuality(items, data, selectedId, isCourse = false) {
     let isDescending = true;
     if (sortingToggle == 0) {
@@ -272,23 +282,23 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       setSortingToggle(1);
     }
     const mappedItems = items.map((item) => {
-      const rating = isCourse ? item[1]: data[item][selectedId];
+      const rating = isCourse ? item[1] : data[item][selectedId];
       return [isCourse ? item[0] : item, rating];
     });
 
     return mappedItems.sort((objA, objB) => {
-        const ratingA = objA[1];
-        ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
-        const ratingB = objB[1];
-        ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
-        if (isDescending) {
-          return ratingB.qualityAvg - ratingA.qualityAvg; // Sort by descending quality.
-        } else {
-          return ratingA.qualityAvg - ratingB.qualityAvg; // Sort by ascending quality.
-        }
-      });
+      const ratingA = objA[1];
+      ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+      const ratingB = objB[1];
+      ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+      if (isDescending) {
+        return ratingB.qualityAvg - ratingA.qualityAvg; // Sort by descending quality.
+      } else {
+        return ratingA.qualityAvg - ratingB.qualityAvg; // Sort by ascending quality.
+      }
+    });
   }
-  
+
   function sortByDifficulty(items, data, selectedId, isCourse = false) {
     let isDescending = true;
     if (sortingToggle == 2) {
@@ -302,23 +312,23 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     }
 
     const mappedItems = items.map((item) => {
-      const rating = isCourse ? item[1]: data[item][selectedId];
+      const rating = isCourse ? item[1] : data[item][selectedId];
       return [isCourse ? item[0] : item, rating];
     });
 
     return mappedItems.sort((objA, objB) => {
-        const ratingA = objA[1];
-        ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
-        const ratingB = objB[1];
-        ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
-        if (isDescending) {
-          return ratingB.difficultyAvg - ratingA.difficultyAvg; // Sort by descending difficulty.
-        } else {
-          return ratingA.difficultyAvg - ratingB.difficultyAvg; // Sort by ascending difficulty.
-        }
-      });
+      const ratingA = objA[1];
+      ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
+      const ratingB = objB[1];
+      ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
+      if (isDescending) {
+        return ratingB.difficultyAvg - ratingA.difficultyAvg; // Sort by descending difficulty.
+      } else {
+        return ratingA.difficultyAvg - ratingB.difficultyAvg; // Sort by ascending difficulty.
+      }
+    });
   }
-  
+
   function sortByWorkload(items, data, selectedId, isCourse = false) {
     let isDescending = true;
     if (sortingToggle == 4) {
@@ -330,9 +340,9 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     } else {
       setSortingToggle(5);
     }
-    
+
     const mappedItems = items.map((item) => {
-      const rating = isCourse ? item[1]: data[item][selectedId];
+      const rating = isCourse ? item[1] : data[item][selectedId];
       return [isCourse ? item[0] : item, rating];
     });
 
@@ -346,34 +356,42 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       } else {
         return ratingA.workloadAvg - ratingB.workloadAvg; // Sort by ascending workload.
       }
-      });
+    });
   }
-  
+
   const handleSortByQuality = () => {
     if (selected.type === "course") {
-      setSortedProfessors(sortByQuality(selected.professors, data, selected.id));
+      setSortedProfessors(
+        sortByQuality(selected.professors, data, selected.id)
+      );
     } else {
       setSortedCourses(sortByQuality(sortedCourses, data, selected.id, true));
     }
   };
-  
+
   const handleSortByDifficulty = () => {
     if (selected.type === "course") {
-      setSortedProfessors(sortByDifficulty(selected.professors, data, selected.id));
+      setSortedProfessors(
+        sortByDifficulty(selected.professors, data, selected.id)
+      );
     } else {
-      setSortedCourses(sortByDifficulty(sortedCourses, data, selected.id, true));
+      setSortedCourses(
+        sortByDifficulty(sortedCourses, data, selected.id, true)
+      );
     }
   };
-  
+
   const handleSortByWorkload = () => {
     if (selected.type === "course") {
-      setSortedProfessors(sortByWorkload(selected.professors, data, selected.id));
+      setSortedProfessors(
+        sortByWorkload(selected.professors, data, selected.id)
+      );
     } else {
       setSortedCourses(sortByWorkload(sortedCourses, data, selected.id, true));
       console.log(sortedCourses);
     }
   };
-  
+
   const handleOverallSort = () => {
     if (selected.type === "course") {
       setSortedProfessors(sortByScore(selected.professors, data, selected.id));
@@ -382,6 +400,36 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       console.log(sortedCourses);
     }
   };
+
+  function getRecencyIndicator(lastTaughtQuarter) {
+    const lastSeason = lastTaughtQuarter.split(" ")[0];
+    const lastYear = parseInt(lastTaughtQuarter.split(" ")[1]);
+    const lastSeasonMonth =
+      lastSeason === "Winter"
+        ? 3
+        : lastSeason === "Spring"
+        ? 6
+        : lastSeason === "Summer"
+        ? 8
+        : 12;
+    const lastTaughtQuarterDate = new Date(`${lastYear}-${lastSeasonMonth}-01`);
+    const currentQuarterDate = new Date();
+    const differenceInDays = (currentQuarterDate - lastTaughtQuarterDate) / 86400000;
+
+    if (differenceInDays <= 365) {
+      return { label: "Taught in Last 1yr", color: "success" }; // Green
+    } else if (differenceInDays <= 365 * 2) {
+      return { label: "Taught in Last 2y", color: "warning" }; // Yellow
+    } else {
+      return { label: "Hasn't Taught in 2+ yr", color: "error" }; // Red
+    }
+  }
+
+  function ProfessorRecency({ lastTaughtQuarter, currentQuarter }) {
+    const recency = getRecencyIndicator(lastTaughtQuarter, currentQuarter);
+
+    return <Chip size="small" label={recency.label} color={recency.color} />;
+  }
 
   if (selected.type === "prof") {
     return (
@@ -444,19 +492,39 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Statistics by Course
             <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignContent: "right",
-              width: "275px",
-              marginLeft: "auto",
-            }}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignContent: "right",
+                width: "275px",
+                marginLeft: "auto",
+              }}
             >
               {[
-                { label: "Overall", subLabel: "Rank", toggle: [6, 7], handler: handleOverallSort },
-                { label: "Quality", subLabel: "(1-5)", toggle: [0, 1], handler: handleSortByQuality },
-                { label: "Difficulty", subLabel: "(1-5)", toggle: [2, 3], handler: handleSortByDifficulty },
-                { label: "Workload", subLabel: "(hrs/week)", toggle: [4, 5], handler: handleSortByWorkload },
+                {
+                  label: "Overall",
+                  subLabel: "Rank",
+                  toggle: [6, 7],
+                  handler: handleOverallSort,
+                },
+                {
+                  label: "Quality",
+                  subLabel: "(1-5)",
+                  toggle: [0, 1],
+                  handler: handleSortByQuality,
+                },
+                {
+                  label: "Difficulty",
+                  subLabel: "(1-5)",
+                  toggle: [2, 3],
+                  handler: handleSortByDifficulty,
+                },
+                {
+                  label: "Workload",
+                  subLabel: "(hrs/week)",
+                  toggle: [4, 5],
+                  handler: handleSortByWorkload,
+                },
               ].map(({ label, subLabel, toggle, handler }, index) => (
                 <Typography
                   key={index}
@@ -464,32 +532,63 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   color="text.secondary"
                   textAlign={"center"}
                   onClick={handler}
-                  sx={{ cursor: "pointer", fontSize: '0.70rem' }}
-                  title={sortingToggle === toggle[0] || sortingToggle === toggle[1] ? "" : `Sort by ${label}`}
+                  sx={{ cursor: "pointer", fontSize: "0.70rem" }}
+                  title={
+                    sortingToggle === toggle[0] || sortingToggle === toggle[1]
+                      ? ""
+                      : `Sort by ${label}`
+                  }
                 >
-                  <Box display="flex" flexDirection={"row"} alignItems={"center"}>
+                  <Box
+                    display="flex"
+                    flexDirection={"row"}
+                    alignItems={"center"}
+                  >
                     <Box textAlign="center">
-                      {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
-                        <u><b>{label}</b></u>
+                      {sortingToggle === toggle[0] ||
+                      sortingToggle === toggle[1] ? (
+                        <u>
+                          <b>{label}</b>
+                        </u>
                       ) : (
                         label
                       )}
                       <br />
-                      {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
-                        <u><b>{subLabel}</b></u>
+                      {sortingToggle === toggle[0] ||
+                      sortingToggle === toggle[1] ? (
+                        <u>
+                          <b>{subLabel}</b>
+                        </u>
                       ) : (
                         subLabel
                       )}
                     </Box>
-                    <Box display="flex" flexDirection={"column"} alignItems={"center"} justifyContent={"space-around"}>
+                    <Box
+                      display="flex"
+                      flexDirection={"column"}
+                      alignItems={"center"}
+                      justifyContent={"space-around"}
+                    >
                       {sortingToggle === toggle[0] ? (
-                        <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem'}} />
+                        <KeyboardArrowUp
+                          fontSize="small"
+                          sx={{ marginBottom: "-5px", fontSize: "1rem" }}
+                        />
                       ) : sortingToggle === toggle[1] ? (
-                        <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                        <KeyboardArrowDown
+                          fontSize="small"
+                          sx={{ marginTop: "-5px", fontSize: "1rem" }}
+                        />
                       ) : (
                         <>
-                          <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem' }} />
-                          <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                          <KeyboardArrowUp
+                            fontSize="small"
+                            sx={{ marginBottom: "-5px", fontSize: "1rem" }}
+                          />
+                          <KeyboardArrowDown
+                            fontSize="small"
+                            sx={{ marginTop: "-5px", fontSize: "1rem" }}
+                          />
                         </>
                       )}
                     </Box>
@@ -498,22 +597,25 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
               ))}
             </Box>
           </Typography>
-          {sortedCourses.length > 0 && sortedCourses
-            .map(([courseCode, courseStats], index) => (
+          {sortedCourses.length > 0 &&
+            sortedCourses.map(([courseCode, courseStats], index) => (
               <Box key={courseCode} sx={{ mt: 2 }}>
-                <Box display="flex" 
-                alignItems="center" 
-                flexDirection="row" 
-                justifyContent="space-between"
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  flexDirection="row"
+                  justifyContent="space-between"
                 >
-                  <Typography 
-                    variant="body1" 
+                  <Typography
+                    variant="body1"
                     gutterBottom
-                    onClick={() => {onPageNavigation(courseCode);}}
-                    sx={{ 
+                    onClick={() => {
+                      onPageNavigation(courseCode);
+                    }}
+                    sx={{
                       ml: 1,
-                      color: "#802a25", 
-                      cursor: "pointer", 
+                      color: "#802a25",
+                      cursor: "pointer",
                       "&:hover": {
                         textDecoration: "underline",
                       },
@@ -525,26 +627,39 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   </Typography>
                   <StatsWithLessFormatting
                     stats={courseStats}
-                    deptStats={data.departmentStatistics[courseCode.substring(0, 4)]}
+                    deptStats={
+                      data.departmentStatistics[courseCode.substring(0, 4)]
+                    }
                     preferredPercentiles={preferredPercentiles}
                   />
                 </Box>
                 {courseStats.recentTerms && (
-                  <RecentTermsToolTip recentTerms={courseStats.recentTerms} >
+                  <RecentTermsToolTip recentTerms={courseStats.recentTerms}>
                     <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    width={"150px"}
-                    sx={{ margin: "0px 0px 16px" }}
+                      variant="body2"
+                      color="text.secondary"
+                      width={"150px"}
+                      sx={{ margin: "0px 0px 16px" }}
                     >
-                      <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "black" , marginBottom: "0px", fontSize: "16px" }} />
-                        {extractTerms(courseStats.recentTerms).join(", ")}
+                      <CalendarMonthIcon
+                        fontSize="small"
+                        sx={{
+                          marginRight: "2px",
+                          color: "black",
+                          marginBottom: "0px",
+                          fontSize: "16px",
+                        }}
+                      />
+                      {extractTerms(courseStats.recentTerms).join(", ")}
                     </Typography>
                   </RecentTermsToolTip>
-                  )}
+                )}
+                <ProfessorRecency
+                  lastTaughtQuarter={courseStats.recentTerms[0]}
+                ></ProfessorRecency>
                 {index <
                   Object.keys(selected).filter((key) =>
-                    key.match(/[A-Z]{4}\d+/),
+                    key.match(/[A-Z]{4}\d+/)
                   ).length -
                     1 && <Divider sx={{ my: 2 }} />}
               </Box>
@@ -564,7 +679,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 typeof value === "object" &&
                 value.qualityTotal !== undefined &&
                 key !== "overall" &&
-                key.length === 4,
+                key.length === 4
             )
             .map(([dept, stats], index) => (
               <Box key={dept} sx={{ mt: 2 }}>
@@ -594,13 +709,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           <Typography variant="h6" fontWeight="bold">
             {selected.courseName} ({selected.id})
           </Typography>
-          <RecentTermsToolTip recentTerms={selected.recentTerms} >
-            <Typography 
-              variant="body2" 
-              color="text.secondary" 
-              gutterBottom 
-            >
-                <b>Previously Offered: </b> {extractTerms(selected.recentTerms).join(", ")}
+          <RecentTermsToolTip recentTerms={selected.recentTerms}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              <b>Previously Offered: </b>{" "}
+              {extractTerms(selected.recentTerms).join(", ")}
             </Typography>
           </RecentTermsToolTip>
 
@@ -620,7 +732,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             preferredPercentiles={preferredPercentiles}
           />
           <hr sx={{ mt: 2 }} />
-          
+
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -629,7 +741,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Statistics by Professor
           </Typography>
-  
+
           <Box
             sx={{
               display: "flex",
@@ -640,10 +752,30 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             }}
           >
             {[
-              { label: "Overall", subLabel: "Rank", toggle: [6, 7], handler: handleOverallSort },
-              { label: "Quality", subLabel: "(1-5)", toggle: [0, 1], handler: handleSortByQuality },
-              { label: "Difficulty", subLabel: "(1-5)", toggle: [2, 3], handler: handleSortByDifficulty },
-              { label: "Workload", subLabel: "(hrs/week)", toggle: [4, 5], handler: handleSortByWorkload },
+              {
+                label: "Overall",
+                subLabel: "Rank",
+                toggle: [6, 7],
+                handler: handleOverallSort,
+              },
+              {
+                label: "Quality",
+                subLabel: "(1-5)",
+                toggle: [0, 1],
+                handler: handleSortByQuality,
+              },
+              {
+                label: "Difficulty",
+                subLabel: "(1-5)",
+                toggle: [2, 3],
+                handler: handleSortByDifficulty,
+              },
+              {
+                label: "Workload",
+                subLabel: "(hrs/week)",
+                toggle: [4, 5],
+                handler: handleSortByWorkload,
+              },
             ].map(({ label, subLabel, toggle, handler }, index) => (
               <Typography
                 key={index}
@@ -651,32 +783,59 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 color="text.secondary"
                 textAlign={"center"}
                 onClick={handler}
-                sx={{ cursor: "pointer", fontSize: '0.70rem' }}
-                title={sortingToggle === toggle[0] || sortingToggle === toggle[1] ? "" : `Sort by ${label}`}
+                sx={{ cursor: "pointer", fontSize: "0.70rem" }}
+                title={
+                  sortingToggle === toggle[0] || sortingToggle === toggle[1]
+                    ? ""
+                    : `Sort by ${label}`
+                }
               >
                 <Box display="flex" flexDirection={"row"} alignItems={"center"}>
                   <Box textAlign="center">
-                    {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
-                      <u><b>{label}</b></u>
+                    {sortingToggle === toggle[0] ||
+                    sortingToggle === toggle[1] ? (
+                      <u>
+                        <b>{label}</b>
+                      </u>
                     ) : (
                       label
                     )}
                     <br />
-                    {sortingToggle === toggle[0] || sortingToggle === toggle[1] ? (
-                      <u><b>{subLabel}</b></u>
+                    {sortingToggle === toggle[0] ||
+                    sortingToggle === toggle[1] ? (
+                      <u>
+                        <b>{subLabel}</b>
+                      </u>
                     ) : (
                       subLabel
                     )}
                   </Box>
-                  <Box display="flex" flexDirection={"column"} alignItems={"center"} justifyContent={"space-around"}>
+                  <Box
+                    display="flex"
+                    flexDirection={"column"}
+                    alignItems={"center"}
+                    justifyContent={"space-around"}
+                  >
                     {sortingToggle === toggle[0] ? (
-                      <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem'}} />
+                      <KeyboardArrowUp
+                        fontSize="small"
+                        sx={{ marginBottom: "-5px", fontSize: "1rem" }}
+                      />
                     ) : sortingToggle === toggle[1] ? (
-                      <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                      <KeyboardArrowDown
+                        fontSize="small"
+                        sx={{ marginTop: "-5px", fontSize: "1rem" }}
+                      />
                     ) : (
                       <>
-                        <KeyboardArrowUp fontSize="small" sx={{ marginBottom: "-5px", fontSize: '1rem' }} />
-                        <KeyboardArrowDown fontSize="small" sx={{ marginTop: "-5px", fontSize: '1rem' }} />
+                        <KeyboardArrowUp
+                          fontSize="small"
+                          sx={{ marginBottom: "-5px", fontSize: "1rem" }}
+                        />
+                        <KeyboardArrowDown
+                          fontSize="small"
+                          sx={{ marginTop: "-5px", fontSize: "1rem" }}
+                        />
                       </>
                     )}
                   </Box>
@@ -685,50 +844,67 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             ))}
           </Box>
 
-          {sortedProfessors.length > 0 && sortedProfessors
-            .map(([profName, profCourseStats], index) => {
+          {sortedProfessors.length > 0 &&
+            sortedProfessors.map(([profName, profCourseStats], index) => {
               return (
                 <Box key={profName} sx={{ mt: 2 }}>
-                  <Box display="flex" 
-                  alignItems="center" 
-                  flexDirection="row" 
-                  justifyContent="space-between">
-                    <Typography 
-                    variant="body1" 
-                    gutterBottom
-                    component={"span"}
-                    onClick={() => {
-                      onPageNavigation(profName);
-                    }}
-                    sx={{ 
-                      ml: 1,
-                      color: "#802a25",
-                      margin: "0px 0px 0px",
-                      cursor: "pointer",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      }
-                    }}
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    flexDirection="row"
+                    justifyContent="space-between"
+                  >
+                    <Typography
+                      variant="body1"
+                      gutterBottom
+                      component={"span"}
+                      onClick={() => {
+                        onPageNavigation(profName);
+                      }}
+                      sx={{
+                        ml: 1,
+                        color: "#802a25",
+                        margin: "0px 0px 0px",
+                        cursor: "pointer",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
                     >
                       {profName}
                     </Typography>
                     <StatsWithLessFormatting
                       stats={profCourseStats}
-                      deptStats={data.departmentStatistics[selected.id.substring(0, 4)]}
+                      deptStats={
+                        data.departmentStatistics[selected.id.substring(0, 4)]
+                      }
                       preferredPercentiles={preferredPercentiles}
                     />
                   </Box>
-                    <RecentTermsToolTip recentTerms={profCourseStats.recentTerms} >
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        width={"150px"}
-                        sx={{ margin: "0px 0px 16px" }}
-                      >
-                        <CalendarMonthIcon fontSize="small" sx={{ marginRight: "2px", color: "black", marginBottom: "-2px", fontSize: "16px" }} />
-                        <span marginBottom="2px">{extractTerms(profCourseStats.recentTerms).join(", ")}</span>
-                      </Typography>
-                    </RecentTermsToolTip>
+                  <RecentTermsToolTip recentTerms={profCourseStats.recentTerms}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      width={"150px"}
+                      sx={{ margin: "0px 0px 16px" }}
+                    >
+                      <CalendarMonthIcon
+                        fontSize="small"
+                        sx={{
+                          marginRight: "2px",
+                          color: "black",
+                          marginBottom: "-2px",
+                          fontSize: "16px",
+                        }}
+                      />
+                      <span marginBottom="2px">
+                        {extractTerms(profCourseStats.recentTerms).join(", ")}
+                      </span>
+                    </Typography>
+                  </RecentTermsToolTip>
+                  <ProfessorRecency
+                  lastTaughtQuarter={profCourseStats.recentTerms[0]}
+                ></ProfessorRecency>
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}
@@ -741,4 +917,3 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   }
   return null;
 }
-
