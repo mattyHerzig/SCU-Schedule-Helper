@@ -35,7 +35,7 @@ export default function RmpStats({
         </Typography>
         <Box sx={{ px: 2 }}>
           <Typography variant="body2" display="inline" color="text.secondary">
-            No data available
+            No data available.
             <Typography
               variant="body3"
               component={"span"}

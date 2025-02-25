@@ -523,7 +523,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             profName={selected.id}
             preferredPercentiles={preferredPercentiles}
           />
-          <hr />
+          <Divider sx={{ mt: 2 }} />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -532,6 +532,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             gutterBottom
           >
             Statistics by Course
+          </Typography>
             <Box
               sx={{
                 display: "flex",
@@ -637,7 +638,6 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 </Typography>
               ))}
             </Box>
-          </Typography>
           {sortedCourses.length > 0 &&
             sortedCourses.map(([courseCode, courseStats], index) => (
               <Box>
@@ -727,7 +727,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     1 && <Divider sx={{ my: 2 }} />}
               </Box>
             ))}
-          <hr />
+          <Divider sx={{ mt: 2 }} />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -794,7 +794,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             deptStats={data.departmentStatistics[selected.id.substring(0, 4)]}
             preferredPercentiles={preferredPercentiles}
           />
-          <hr sx={{ mt: 2 }} />
+          <Divider sx={{ mt: 2 }} />
 
           <Typography
             variant="h6"
