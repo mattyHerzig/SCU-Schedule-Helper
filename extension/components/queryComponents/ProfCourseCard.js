@@ -16,7 +16,6 @@ import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckIcon from "@mui/icons-material/Check";
 import WarningIcon from "@mui/icons-material/Warning";
-import CloseIcon from "@mui/icons-material/Close";
 import RecentTermsToolTip from "./recentTermsToolTip";
 
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
@@ -436,23 +435,23 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           />
         ),
       }; // Green
-    } else{
+    } else {
       return {
-        label: `Lastest: ${lastSeason} ${lastYear}`,
+        label: `Last: ${lastSeason} ${lastYear}`,
         icon: (
           <WarningIcon
-        fontSize="small"
-        sx={{
-          marginRight: "2px",
-          color: "black",
-          marginBottom: "0px",
-          fontSize: "15px",
-        }}
-        color="warning"
+            fontSize="small"
+            sx={{
+              marginRight: "2px",
+              color: "black",
+              marginBottom: "0px",
+              fontSize: "15px",
+            }}
+            color="warning"
           />
         ),
       }; // Yellow
-    } 
+    }
   }
 
   function ProfessorRecency({ lastTaughtQuarter, currentQuarter }) {
@@ -467,7 +466,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       >
         {recency.icon}
         <Typography variant="body2" fontSize="0.8rem">
-        {recency.label}
+          {recency.label}
         </Typography>
       </Typography>
     );
@@ -642,62 +641,76 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           {sortedCourses.length > 0 &&
             sortedCourses.map(([courseCode, courseStats], index) => (
               <Box>
-              <Box key={courseCode} sx={{ mt: 2 }}
-              display={"flex"}
-              flexDirection={"row"}
-              justifyContent={"space-between"}
-              >
                 <Box
-                  display="flex"
-                  alignItems="left"
-                  flexDirection="column"
-                  justifyContent="space-between"
+                  key={courseCode}
+                  sx={{ mt: 2 }}
+                  display={"flex"}
+                  flexDirection={"row"}
+                  justifyContent={"space-between"}
                 >
-                  <Typography
-                    variant="body1"
-                    gutterBottom
-                    onClick={() => {
-                      onPageNavigation(courseCode);
-                    }}
-                    sx={{
-                      ml: 1,
-                      color: "#802a25",
-                      cursor: "pointer",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                      margin: "0px 0px 0px",
-                    }}
-                    title={getCourseName(courseCode)}
+                  <Box
+                    display="flex"
+                    alignItems="left"
+                    flexDirection="column"
+                    justifyContent="space-between"
                   >
-                    {`${courseCode.substring(0, 4)} ${courseCode.substring(4)}`}
-                  </Typography>
-                  {courseStats.recentTerms && (
-                  <RecentTermsToolTip recentTerms={courseStats.recentTerms}>
                     <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      width={"150px"}
-                      sx={{ margin: "0px 0px 0px" }}
+                      variant="body1"
+                      gutterBottom
+                      onClick={() => {
+                        onPageNavigation(courseCode);
+                      }}
+                      sx={{
+                        ml: 1,
+                        color: "#802a25",
+                        cursor: "pointer",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                        margin: "0px 0px 0px",
+                      }}
+                      title={getCourseName(courseCode)}
                     >
-                      <CalendarMonthIcon
-                        fontSize="small"
-                        sx={{
-                          marginRight: "2px",
-                          color: "black",
-                          marginBottom: "0px",
-                          fontSize: "16px",
-                        }}
-                      />
-                      {extractTerms(courseStats.recentTerms).join(", ")}
+                      {`${courseCode.substring(0, 4)} ${courseCode.substring(
+                        4
+                      )}`}
                     </Typography>
-                    <ProfessorRecency
-                      lastTaughtQuarter={courseStats.recentTerms[0]}
-                    ></ProfessorRecency>
-                  </RecentTermsToolTip>
-                )}
+                    {courseStats.recentTerms && (
+                      <>
+                        <RecentTermsToolTip
+                          recentTerms={courseStats.recentTerms}
+                        >
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            width={"150px"}
+                            sx={{
+                              margin: "0px 0px 0px",
+                            }}
+                          >
+                            <CalendarMonthIcon
+                              fontSize="small"
+                              sx={{
+                                marginRight: "2px",
+                                color: "black",
+                                marginBottom: "-2px",
+                                fontSize: "16px",
+                              }}
+                            />
+                            {extractTerms(courseStats.recentTerms).join(", ")}
+                          </Typography>
+                        </RecentTermsToolTip>
+                        <ProfessorRecency
+                          lastTaughtQuarter={courseStats.recentTerms[0]}
+                        ></ProfessorRecency>
+                      </>
+                    )}
                   </Box>
-                  <Box display="flex" flexDirection="column" justifyContent="center">
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="center"
+                  >
                     <StatsWithLessFormatting
                       stats={courseStats}
                       deptStats={
@@ -706,7 +719,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       preferredPercentiles={preferredPercentiles}
                     />
                   </Box>
-              </Box>
+                </Box>
                 {index <
                   Object.keys(selected).filter((key) =>
                     key.match(/[A-Z]{4}\d+/)
@@ -898,75 +911,85 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             sortedProfessors.map(([profName, profCourseStats], index) => {
               return (
                 <Box>
-                <Box key={profName} sx={{ mt: 2 }}
-                display={"flex"}
-                flexDirection={"row"}
-                justifyContent={"space-between"}
-                >
                   <Box
-                    display="flex"
-                    alignItems="left"
-                    flexDirection="column"
-                    justifyContent="space-between"
+                    key={profName}
+                    sx={{ mt: 2 }}
+                    display={"flex"}
+                    flexDirection={"row"}
+                    justifyContent={"space-between"}
                   >
-                    <Typography
-                      variant="body1"
-                      gutterBottom
-                      component={"span"}
-                      onClick={() => {
-                        onPageNavigation(profName);
-                      }}
-                      sx={{
-                        ml: 1,
-                        color: "#802a25",
-                        margin: "0px 0px 0px",
-                        cursor: "pointer",
-                        "&:hover": {
-                          textDecoration: "underline",
-                        },
-                      }}
+                    <Box
+                      display="flex"
+                      alignItems="left"
+                      flexDirection="column"
+                      justifyContent="space-between"
                     >
-                      {profName}
-                    </Typography>
-                    <RecentTermsToolTip recentTerms={profCourseStats.recentTerms}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      width={"150px"}
-                      sx={{ margin: "0px 0px 0px" }}
-                    >
-                      <CalendarMonthIcon
-                        fontSize="small"
-                        sx={{
-                          marginRight: "2px",
-                          color: "black",
-                          marginBottom: "-2px",
-                          fontSize: "16px",
+                      <Typography
+                        variant="body1"
+                        gutterBottom
+                        component={"span"}
+                        onClick={() => {
+                          onPageNavigation(profName);
                         }}
-                      />
-                      <span marginBottom="2px">
-                        {extractTerms(profCourseStats.recentTerms).join(", ")}
-                      </span>
-                    </Typography>
-                    <ProfessorRecency
-                      lastTaughtQuarter={profCourseStats.recentTerms[0]}
-                    ></ProfessorRecency>
-                  </RecentTermsToolTip>
-                  </Box>
-                  <Box display="flex" flexDirection="column" justifyContent="center">
-                    <StatsWithLessFormatting
+                        sx={{
+                          ml: 1,
+                          color: "#802a25",
+                          margin: "0px 0px 0px",
+                          cursor: "pointer",
+                          "&:hover": {
+                            textDecoration: "underline",
+                          },
+                        }}
+                      >
+                        {profName}
+                      </Typography>
+                      <RecentTermsToolTip
+                        recentTerms={profCourseStats.recentTerms}
+                      >
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          width={"150px"}
+                          sx={{ margin: "0px 0px 0px" }}
+                        >
+                          <CalendarMonthIcon
+                            fontSize="small"
+                            sx={{
+                              marginRight: "2px",
+                              color: "black",
+                              marginBottom: "-2px",
+                              fontSize: "16px",
+                            }}
+                          />
+                          <span marginBottom="2px">
+                            {extractTerms(profCourseStats.recentTerms).join(
+                              ", "
+                            )}
+                          </span>
+                        </Typography>
+                      </RecentTermsToolTip>
+                      <ProfessorRecency
+                        lastTaughtQuarter={profCourseStats.recentTerms[0]}
+                      ></ProfessorRecency>
+                    </Box>
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      justifyContent="center"
+                    >
+                      <StatsWithLessFormatting
                         stats={profCourseStats}
                         deptStats={
                           data.departmentStatistics[selected.id.substring(0, 4)]
                         }
                         preferredPercentiles={preferredPercentiles}
                       />
+                    </Box>
                   </Box>
-                </Box>
-                
-                {index < selected.professors.length - 1 && (
-                  <Divider sx={{ my: 2 }} />
-                )}
+
+                  {index < selected.professors.length - 1 && (
+                    <Divider sx={{ my: 2 }} />
+                  )}
                 </Box>
               );
             })}
