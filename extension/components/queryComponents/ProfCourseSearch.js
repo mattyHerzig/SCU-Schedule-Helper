@@ -10,7 +10,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import { matchSorter } from "match-sorter";
-import ProfCourseCard from "./ProfCourseCard";
+import ProfCourseCard from "./ProfCourseCard/ProfCourseCard";
 
 export default function ProfCourseSearch({
   scrollToTop,
