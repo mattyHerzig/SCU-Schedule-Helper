@@ -1,13 +1,13 @@
-import React from 'react';
-import { Tooltip } from '@mui/material';
+import React from "react";
+import { Tooltip } from "@mui/material";
 
-const RecentTermsToolTip = ({ recentTerms, children }) => {
+export default function RecentTermsToolTip({ recentTerms, children }) {
   function cleanYearsAndTerms(recentTerms) {
-    const termPattern = /(Spring|Summer|Fall|Winter)/gi;
-    const yearPattern = /\d{4}/gi;
+    const termPattern = /(Spring|Summer|Fall|Winter)/i;
+    const yearPattern = /\d{4}/;
     const result = {};
 
-    recentTerms.forEach(term => {
+    recentTerms.forEach((term) => {
       const termMatch = term.match(termPattern);
       const yearMatch = term.match(yearPattern);
 
@@ -24,7 +24,7 @@ const RecentTermsToolTip = ({ recentTerms, children }) => {
     });
 
     return Object.entries(result).map(([term, years]) => (
-      <div key={term} style={{ fontSize: '0.875rem', lineHeight: '1.25rem' }}>
+      <div key={term} style={{ fontSize: "0.875rem", lineHeight: "1.25rem" }}>
         <strong>{term}:</strong> {years.join(", ")}
       </div>
     ));
@@ -36,20 +36,18 @@ const RecentTermsToolTip = ({ recentTerms, children }) => {
       placement="bottom-start"
       PopperProps={{
         sx: {
-          '& .MuiTooltip-tooltip': {
-            backgroundColor: 'white',
-            color: 'black',
-            border: '1px solid #ddd',
-            maxWidth: '380px',
-            padding: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }
-        }
+          "& .MuiTooltip-tooltip": {
+            backgroundColor: "white",
+            color: "black",
+            border: "1px solid #ddd",
+            maxWidth: "380px",
+            padding: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          },
+        },
       }}
     >
       {children}
     </Tooltip>
   );
-};
-
-export default RecentTermsToolTip;
+}
