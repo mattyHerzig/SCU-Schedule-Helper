@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
+import { Card, CardContent, Typography, Box, Divider } from "@mui/material";
 import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  CircularProgress,
-  Divider,
-} from "@mui/material";
+  CalendarMonth as CalendarMonthIcon,
+} from "@mui/icons-material";
 import FriendCoursesTooltip from "./FriendCoursesTooltip";
 import EvalStats from "./EvalStats";
+import StatsWithLessFormatting from "./StatsWithLessFormatting";
 import RmpStats from "./RmpStats";
+import RecentTermsToolTip from "./RecentTermsToolTip";
+import ProfessorRecencyIndicator from "./ProfessorRecencyIndicator";
+import SortingMetricPicker from "./SortingMetricPicker";
 
+export const SortingMetrics = Object.freeze({
+  overall: "Overall",
+  quality: "Quality",
+  difficulty: "Difficulty",
+  workload: "Workload",
+});
 export const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 export const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 
@@ -20,6 +26,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
   const [isLoadingRmp, setIsLoadingRmp] = useState(true);
   const [friendData, setFriendData] = useState(null);
   const [profDepts, setProfDepts] = useState([]);
+  const [sortingMetric, setSortingMetric] = useState(SortingMetrics.overall);
+  const [sortDescending, setSortDescending] = useState(true);
   const [profDeptAvgs, setProfDeptAvgs] = useState({
     quality: [],
     difficulty: [],
@@ -30,7 +38,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     difficulty: 0,
     workload: 0,
   });
+  const [sortedCourses, setSortedCourses] = useState([]);
+  const [sortedProfs, setSortedProfs] = useState([]);
 
+  // Fetch friend data and preferred percentiles on component mount.
   useEffect(() => {
     async function getPrefferedPercentiles() {
       const userInfo = (await chrome.storage.local.get("userInfo")).userInfo;
@@ -60,7 +71,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     });
   }, []);
 
+  // Fetch RMP data and department averages when new selection is made. Reset sorting metric to overall (descending).
   useEffect(() => {
+    setSortingMetric(SortingMetrics.overall);
+    setSortDescending(true);
     async function getRMPrating() {
       setIsLoadingRmp(true);
       try {
@@ -78,7 +92,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
 
     if (selected.type === "prof") {
       const profDepts = Object.keys(data[selected.id]).filter(
-        (key) => key !== "type" && key.length === 4,
+        (key) => key !== "type" && key.length === 4
       );
       setProfDepts(profDepts);
       setProfDeptAvgs({
@@ -93,6 +107,29 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
 
     fetchFriendData();
   }, [selected]);
+
+  // Sort professors or courses based on selected metric and sort order.
+  useEffect(() => {
+    let ratingsToSort;
+    if (selected.type === "prof")
+      ratingsToSort = Object.entries(data[selected.id]).filter(
+        ([key,]) => key !== "overall" && key.length > 4
+      );
+    else
+      ratingsToSort = selected.professors.map((item) => [item, data[item][selected.id]]);
+    if (!ratingsToSort || ratingsToSort.length === 0) return;
+
+    let sortedItems;
+    if (sortingMetric === SortingMetrics.overall)
+      sortedItems = sortByAllMetrics(ratingsToSort);
+    else
+      sortedItems = sortByIndividualMetric(ratingsToSort, sortingMetric.toLowerCase());
+
+    if(selected.type === "prof")
+      setSortedCourses(sortedItems);
+    else
+      setSortedProfs(sortedItems);
+  }, [sortingMetric, sortDescending, selected, data]);
 
   function getDeptAvgs(profDepts, type) {
     const aggregatedAvgs = [];
@@ -140,12 +177,16 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           const match = section.match(interestedSectionPattern);
           if (!match) continue;
           const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
-          const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+          const meetingPattern = `${meetingPatternMatch[1]
+            } at ${meetingPatternMatch[2]
+              .replaceAll(" ", "")
+              .replaceAll(":00", "")
+              .toLowerCase()}`;
           const courseCode = match[2]
             .substring(0, match[2].indexOf("-"))
             .replace(" ", "");
           friendInterestedInfos.push(
-            `${friendName} wants to take for ${courseCode} on ${meetingPattern}`,
+            `${friendName} wants to take for ${courseCode} on ${meetingPattern}`
           );
         }
       }
@@ -161,7 +202,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           continue;
         }
         friendTakenInfos.push(
-          `${friendName} took with ${match[1] || "unknown prof"}`,
+          `${friendName} took with ${match[1] || "unknown prof"}`
         );
       }
       for (const friendId in friendData.friendInterestedSections?.[
@@ -173,18 +214,78 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
         const match = course.match(interestedSectionPattern);
         if (!match) continue;
         const meetingPatternMatch = match[3].match(/(.*) \| (.*) \| (.*)/);
-        const meetingPattern = `${meetingPatternMatch[1]} at ${meetingPatternMatch[2].replaceAll(" ", "").replaceAll(":00", "").toLowerCase()}`;
+        const meetingPattern = `${meetingPatternMatch[1]
+          } at ${meetingPatternMatch[2]
+            .replaceAll(" ", "")
+            .replaceAll(":00", "")
+            .toLowerCase()}`;
         friendInterestedInfos.push(
-          `${friendName} wants to take with ${match[1]} on ${meetingPattern}`,
+          `${friendName} wants to take with ${match[1]} on ${meetingPattern}`
         );
       }
     }
-
     setFriendData({ friendTakenInfos, friendInterestedInfos });
   }
 
   function getCourseName(courseCode) {
     return data[courseCode]?.courseName || "";
+  }
+
+  function extractTerms(recentTerms) {
+    const termPattern = /(Spring|Summer|Fall|Winter)/gi;
+    const simplifiedTerms = recentTerms
+      .map((term) => term.match(termPattern))
+      .flat()
+      .filter(Boolean);
+    const uniqueTerms = [...new Set(simplifiedTerms)];
+    return uniqueTerms;
+  }
+
+  function sortByAllMetrics(ratingEntries) {
+    // ratingEntries are arrays like [courseCode/professorName, courseStats/profStats].
+    return ratingEntries.sort((entryA, entryB) => {
+      const ratingA = entryA[1];
+      const ratingB = entryB[1];
+      ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
+      ratingA.difficultyAvg = ratingA.difficultyTotal / ratingA.difficultyCount;
+      ratingA.workloadAvg = ratingA.workloadTotal / ratingA.workloadCount;
+      ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
+      ratingB.difficultyAvg = ratingB.difficultyTotal / ratingB.difficultyCount;
+      ratingB.workloadAvg = ratingB.workloadTotal / ratingB.workloadCount;
+      const scoreA =
+        ratingA.qualityAvg +
+        (5 - ratingA.difficultyAvg) +
+        (15 - ratingA.workloadAvg);
+      const scoreB =
+        ratingB.qualityAvg +
+        (5 - ratingB.difficultyAvg) +
+        (15 - ratingB.workloadAvg);
+      if (sortDescending)
+        return scoreB - scoreA;
+      else
+        return scoreA - scoreB;
+
+    });
+  }
+
+  function sortByIndividualMetric(ratingEntries, metric) {
+    // ratingEntries are arrays like [courseCode/professorName, courseStats/profStats]
+    return ratingEntries.sort((entryA, entryB) => {
+      const ratingA = entryA[1];
+      const ratingB = entryB[1];
+      const metricAvgA = ratingA[`${metric}Total`] / ratingA[`${metric}Count`];
+      const metricAvgB = ratingB[`${metric}Total`] / ratingB[`${metric}Count`];
+      return sortDescending ? metricAvgB - metricAvgA : metricAvgA - metricAvgB;
+    });
+  }
+
+  function handleMetricChange(metric) {
+    setSortingMetric((prev) => {
+      setSortDescending(
+        (currentlyDescending) => prev !== metric || !currentlyDescending
+      );
+      return metric;
+    });
   }
 
   if (selected.type === "prof") {
@@ -238,6 +339,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             profName={selected.id}
             preferredPercentiles={preferredPercentiles}
           />
+          <Divider sx={{ mt: 2 }} />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -247,52 +349,97 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Statistics by Course
           </Typography>
-          {Object.entries(selected)
-            .filter(
-              ([key, value]) =>
-                typeof value === "object" &&
-                value.qualityTotal !== undefined &&
-                key !== "overall" &&
-                key.length > 4,
-            )
-            .map(([courseCode, courseStats], index) => (
-              <Box key={courseCode} sx={{ mt: 2 }}>
-                <Typography variant="body1" gutterBottom>
-                  {`${courseCode} - ${getCourseName(courseCode)}`}
-                  <Typography
-                    variant="body2"
-                    component="p"
-                    onClick={() => {
-                      onPageNavigation(courseCode);
-                    }}
-                    sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
+          <SortingMetricPicker sortingMetric={sortingMetric} sortDescending={sortDescending} handleMetricChange={handleMetricChange} />
+          {sortedCourses.length > 0 &&
+            sortedCourses.map(([courseCode, courseStats], index) => (
+              <Box>
+                <Box
+                  key={courseCode}
+                  sx={{ mt: 2 }}
+                  display={"flex"}
+                  flexDirection={"row"}
+                  justifyContent={"space-between"}
+                >
+                  <Box
+                    display="flex"
+                    alignItems="left"
+                    flexDirection="column"
+                    justifyContent="space-between"
                   >
-                    Go to course page
-                  </Typography>
-                </Typography>
-                {courseStats.recentTerms && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ px: 2, mt: 1, mb: 2 }}
+                    <Typography
+                      variant="body1"
+                      gutterBottom
+                      onClick={() => {
+                        onPageNavigation(courseCode);
+                      }}
+                      sx={{
+                        ml: 1,
+                        color: "#802a25",
+                        cursor: "pointer",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                        margin: "0px 0px 0px",
+                      }}
+                      title={getCourseName(courseCode)}
+                    >
+                      {`${courseCode.substring(0, 4)} ${courseCode.substring(
+                        4
+                      )}`}
+                    </Typography>
+                    {courseStats.recentTerms && (
+                      <>
+                        <RecentTermsToolTip
+                          recentTerms={courseStats.recentTerms}
+                        >
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            width={"150px"}
+                            sx={{
+                              margin: "0px 0px 0px",
+                            }}
+                          >
+                            <CalendarMonthIcon
+                              fontSize="small"
+                              sx={{
+                                marginRight: "2px",
+                                color: "black",
+                                marginBottom: "-2px",
+                                fontSize: "16px",
+                              }}
+                            />
+                            {extractTerms(courseStats.recentTerms).join(", ")}
+                          </Typography>
+                        </RecentTermsToolTip>
+                        <ProfessorRecencyIndicator
+                          lastTaughtQuarter={courseStats.recentTerms[0]}
+                        ></ProfessorRecencyIndicator>
+                      </>
+                    )}
+                  </Box>
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="center"
                   >
-                    Quarters Taught: {courseStats.recentTerms.join(", ")}
-                  </Typography>
-                )}
-                <EvalStats
-                  stats={courseStats}
-                  deptStats={
-                    data.departmentStatistics[courseCode.substring(0, 4)]
-                  }
-                  preferredPercentiles={preferredPercentiles}
-                />
+                    <StatsWithLessFormatting
+                      stats={courseStats}
+                      deptStats={
+                        data.departmentStatistics[courseCode.substring(0, 4)]
+                      }
+                      preferredPercentiles={preferredPercentiles}
+                    />
+                  </Box>
+                </Box>
                 {index <
                   Object.keys(selected).filter((key) =>
-                    key.match(/[A-Z]{4}\d+/),
+                    key.match(/[A-Z]{4}\d+/)
                   ).length -
-                    1 && <Divider sx={{ my: 2 }} />}
+                  1 && <Divider sx={{ my: 2 }} />}
               </Box>
             ))}
+          <Divider sx={{ mt: 2 }} />
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -307,7 +454,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 typeof value === "object" &&
                 value.qualityTotal !== undefined &&
                 key !== "overall" &&
-                key.length === 4,
+                key.length === 4
             )
             .map(([dept, stats], index) => (
               <Box key={dept} sx={{ mt: 2 }}>
@@ -322,7 +469,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                 {index <
                   Object.keys(selected).filter((key) => key.length === 4)
                     .length -
-                    2 && <Divider sx={{ my: 2 }} />}
+                  2 && <Divider sx={{ my: 2 }} />}
               </Box>
             ))}
         </CardContent>
@@ -337,10 +484,12 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           <Typography variant="h6" fontWeight="bold">
             {selected.courseName} ({selected.id})
           </Typography>
-
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Recent Terms: {selected.recentTerms.join(", ")}
-          </Typography>
+          <RecentTermsToolTip recentTerms={selected.recentTerms}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              <b>Previously Offered: </b>{" "}
+              {extractTerms(selected.recentTerms).join(", ")}
+            </Typography>
+          </RecentTermsToolTip>
 
           <FriendCoursesTooltip friendData={friendData} />
 
@@ -357,6 +506,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             deptStats={data.departmentStatistics[selected.id.substring(0, 4)]}
             preferredPercentiles={preferredPercentiles}
           />
+          <Divider sx={{ mt: 2 }} />
+
           <Typography
             variant="h6"
             fontSize={"1.15rem"}
@@ -365,62 +516,87 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
           >
             Statistics by Professor
           </Typography>
-
-          {selected.professors
-            .map((profName) => [profName, data[profName][selected.id]])
-            .sort((objA, objB) => {
-              const ratingA = objA[1];
-              ratingA.qualityAvg = ratingA.qualityTotal / ratingA.qualityCount;
-              ratingA.difficultyAvg =
-                ratingA.difficultyTotal / ratingA.difficultyCount;
-              ratingA.workloadAvg =
-                ratingA.workloadTotal / ratingA.workloadCount;
-              const ratingB = objB[1];
-              ratingB.qualityAvg = ratingB.qualityTotal / ratingB.qualityCount;
-              ratingB.difficultyAvg =
-                ratingB.difficultyTotal / ratingB.difficultyCount;
-              ratingB.workloadAvg =
-                ratingB.workloadTotal / ratingB.workloadCount;
-              const scoreA =
-                ratingA.qualityAvg +
-                (5 - ratingA.difficultyAvg) +
-                (15 - ratingA.workloadAvg);
-              const scoreB =
-                ratingB.qualityAvg +
-                (5 - ratingB.difficultyAvg) +
-                (15 - ratingB.workloadAvg);
-              return scoreB - scoreA; // Sort by descending score.
-            })
-            .map(([profName, profCourseStats], index) => {
+          <SortingMetricPicker sortingMetric={sortingMetric} sortDescending={sortDescending} handleMetricChange={handleMetricChange} />
+          {sortedProfs.length > 0 &&
+            sortedProfs.map(([profName, profCourseStats], index) => {
               return (
-                <Box key={profName} sx={{ mt: 2 }}>
-                  <Typography variant="body1" gutterBottom>
-                    {profName}
-                    <Typography
-                      variant="body2"
-                      component="span"
-                      onClick={() => {
-                        onPageNavigation(profName);
-                      }}
-                      sx={{ ml: 1, color: "#802a25", cursor: "pointer" }}
-                    >
-                      Go to prof. page
-                    </Typography>
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ px: 2, mt: 1, mb: 2 }}
+                <Box>
+                  <Box
+                    key={profName}
+                    sx={{ mt: 2 }}
+                    display={"flex"}
+                    flexDirection={"row"}
+                    justifyContent={"space-between"}
                   >
-                    Quarters Taught: {profCourseStats.recentTerms.join(", ")}
-                  </Typography>
-                  <EvalStats
-                    stats={profCourseStats}
-                    deptStats={
-                      data.departmentStatistics[selected.id.substring(0, 4)]
-                    }
-                    preferredPercentiles={preferredPercentiles}
-                  />
+                    <Box
+                      display="flex"
+                      alignItems="left"
+                      flexDirection="column"
+                      justifyContent="space-between"
+                    >
+                      <Typography
+                        variant="body1"
+                        gutterBottom
+                        component={"span"}
+                        onClick={() => {
+                          onPageNavigation(profName);
+                        }}
+                        sx={{
+                          ml: 1,
+                          color: "#802a25",
+                          margin: "0px 0px 0px",
+                          cursor: "pointer",
+                          "&:hover": {
+                            textDecoration: "underline",
+                          },
+                        }}
+                      >
+                        {profName}
+                      </Typography>
+                      <RecentTermsToolTip
+                        recentTerms={profCourseStats.recentTerms}
+                      >
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          width={"150px"}
+                          sx={{ margin: "0px 0px 0px" }}
+                        >
+                          <CalendarMonthIcon
+                            fontSize="small"
+                            sx={{
+                              marginRight: "2px",
+                              color: "black",
+                              marginBottom: "-2px",
+                              fontSize: "16px",
+                            }}
+                          />
+                          <span marginBottom="2px">
+                            {extractTerms(profCourseStats.recentTerms).join(
+                              ", "
+                            )}
+                          </span>
+                        </Typography>
+                      </RecentTermsToolTip>
+                      <ProfessorRecencyIndicator
+                        lastTaughtQuarter={profCourseStats.recentTerms[0]}
+                      ></ProfessorRecencyIndicator>
+                    </Box>
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      justifyContent="center"
+                    >
+                      <StatsWithLessFormatting
+                        stats={profCourseStats}
+                        deptStats={
+                          data.departmentStatistics[selected.id.substring(0, 4)]
+                        }
+                        preferredPercentiles={preferredPercentiles}
+                      />
+                    </Box>
+                  </Box>
+
                   {index < selected.professors.length - 1 && (
                     <Divider sx={{ my: 2 }} />
                   )}
