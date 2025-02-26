@@ -55,14 +55,14 @@ async function scrapeProfessorPage(profId, debuggingEnabled = false) {
     closingBraceIndex + 1
   );
   let teacherData = JSON.parse(teacherInfoString);
-  chrome.storage.local.set({
-    [profId]: { teacherData, exp: Date.now() + 86400000 },
-  });
-  if (debuggingEnabled) console.log(teacherData);
   if (teacherData.firstName)
     teacherData.firstName = teacherData.firstName.toLowerCase().trim();
   if (teacherData.lastName)
     teacherData.lastName = teacherData.lastName.toLowerCase().trim();
+  if (debuggingEnabled) console.log(teacherData);
+  chrome.storage.local.set({
+    [profId]: { teacherData, exp: Date.now() + 86400000 },
+  });
   return teacherData;
 }
 

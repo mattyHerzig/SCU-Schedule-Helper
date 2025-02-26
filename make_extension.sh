@@ -1,4 +1,6 @@
 #!/bin/bash
+rm -rf SCU-Schedule-Helper.zip
+
 cd extension
 
 rm -rf out
