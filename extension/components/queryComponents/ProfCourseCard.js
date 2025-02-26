@@ -38,7 +38,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
     difficulty: 0,
     workload: 0,
   });
-  const [sortedItems, setSortedItems] = useState([]);
+  const [sortedCourses, setSortedCourses] = useState([]);
+  const [sortedProfs, setSortedProfs] = useState([]);
 
   // Fetch friend data and preferred percentiles on component mount.
   useEffect(() => {
@@ -72,7 +73,6 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
 
   // Fetch RMP data and department averages when new selection is made. Reset sorting metric to overall (descending).
   useEffect(() => {
-    setSortedItems([]);
     setSortingMetric(SortingMetrics.overall);
     setSortDescending(true);
     async function getRMPrating() {
@@ -119,10 +119,16 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
       ratingsToSort = selected.professors.map((item) => [item, data[item][selected.id]]);
     if (!ratingsToSort || ratingsToSort.length === 0) return;
 
+    let sortedItems;
     if (sortingMetric === SortingMetrics.overall)
-      setSortedItems(sortByAllMetrics(ratingsToSort));
+      sortedItems = sortByAllMetrics(ratingsToSort);
     else
-      setSortedItems(sortByIndividualMetric(ratingsToSort, sortingMetric.toLowerCase()));
+      sortedItems = sortByIndividualMetric(ratingsToSort, sortingMetric.toLowerCase());
+
+    if(selected.type === "prof")
+      setSortedCourses(sortedItems);
+    else
+      setSortedProfs(sortedItems);
   }, [sortingMetric, sortDescending, selected, data]);
 
   function getDeptAvgs(profDepts, type) {
@@ -344,8 +350,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             Statistics by Course
           </Typography>
           <SortingMetricPicker sortingMetric={sortingMetric} sortDescending={sortDescending} handleMetricChange={handleMetricChange} />
-          {sortedItems.length > 0 &&
-            sortedItems.map(([courseCode, courseStats], index) => (
+          {sortedCourses.length > 0 &&
+            sortedCourses.map(([courseCode, courseStats], index) => (
               <Box>
                 <Box
                   key={courseCode}
@@ -511,8 +517,8 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
             Statistics by Professor
           </Typography>
           <SortingMetricPicker sortingMetric={sortingMetric} sortDescending={sortDescending} handleMetricChange={handleMetricChange} />
-          {sortedItems.length > 0 &&
-            sortedItems.map(([profName, profCourseStats], index) => {
+          {sortedProfs.length > 0 &&
+            sortedProfs.map(([profName, profCourseStats], index) => {
               return (
                 <Box>
                   <Box
