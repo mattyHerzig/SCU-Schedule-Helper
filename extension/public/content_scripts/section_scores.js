@@ -5,6 +5,9 @@ let inButton = false;
 let friendInterestedSections = {};
 let friendCoursesTaken = {};
 let friends = {};
+let foundEnrollmentStatistics = false;
+let enrollmentStatistics = [];
+let tdElements = [];
 
 const Difficulty = Object.freeze({
   VeryEasy: 0,
@@ -44,9 +47,9 @@ chrome.storage.local.get(
     friendInterestedSections = data.friendInterestedSections || {};
     friendCoursesTaken = data.friendCoursesTaken || {};
     friends = data.friends || {};
-    await checkForGrid();
-
-    const observer = new MutationObserver(checkForGrid);
+    
+    checkPage();
+    const observer = new MutationObserver(checkPage);
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
@@ -54,15 +57,33 @@ chrome.storage.local.get(
   },
 );
 
-async function checkForGrid() {
+// Check URL changes
+window.addEventListener('popstate', () => {
+  foundEnrollmentStatistics = false;
+});
+
+// Check page is reloaded
+window.addEventListener('beforeunload', () => {
+  foundEnrollmentStatistics = false;
+});
+
+
+async function checkPage() {
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
   const MultiParameterButton = document.querySelector('[data-automation-id="wd-MultiParameterButton"]'); // Saved Schedule Page
   if (visibleGrid) {
     await handleFindSectionsGrid();
   } else if (MultiParameterButton) {
-    console.log("Saved Schedule Page detected.");
+    console.log('Saved Schedule Page detected.');
     await handleSavedSchedulePageGrid();
-    // run enrollment_statistics.js
+    if(!foundEnrollmentStatistics) {
+      foundEnrollmentStatistics = true;
+      enrollmentStatistics = await handleFindEnrollmentStatistics();
+      if(enrollmentStatistics) {
+        displayEnrollmentStats();
+      }
+    }
+    
   }
 }
 
@@ -87,9 +108,9 @@ async function handleFindSectionsGrid() {
     courseSectionCell.appendChild(pushDown);
     await displayProfessorDifficulty(courseSectionCell, mainRow, professorName, false);
     courseSectionCell.removeChild(pushDown);
-    mainRow.cells[0].appendChild(document.createElement("br"));
-    mainRow.cells[0].appendChild(document.createElement("br"));
-    mainRow.cells[0].appendChild(document.createElement("br"));
+    // mainRow.cells[0].appendChild(document.createElement("br"));
+    // mainRow.cells[0].appendChild(document.createElement("br"));
+    // mainRow.cells[0].appendChild(document.createElement("br"));
   }
 }
 
@@ -111,9 +132,9 @@ async function handleSavedSchedulePageGrid() {
     courseCell.appendChild(pushDown);
     await displayProfessorDifficulty(courseCell, courseRow, professorName,true);
     courseCell.removeChild(pushDown);
-    courseRow.cells[0].appendChild(document.createElement("br"));
-    courseRow.cells[0].appendChild(document.createElement("br"));
-    courseRow.cells[0].appendChild(document.createElement("br"));
+    // courseRow.cells[0].appendChild(document.createElement("br"));
+    // courseRow.cells[0].appendChild(document.createElement("br"));
+    // courseRow.cells[0].appendChild(document.createElement("br"));
   }
 }
 
@@ -141,6 +162,7 @@ async function displayProfessorDifficulty(
 
   let prof = getProfName(professorName);
   let courseText = courseSectionCell.innerText.trim();
+  
   const courseCode = courseText
     .substring(0, courseText.indexOf("-"))
     .replace(/\s/g, "");
@@ -234,6 +256,7 @@ async function displayProfessorDifficulty(
     scuEvalsDifficultyPercentile,
     scuEvalsWorkloadPercentile,
     matchesTimePreference: timeWithinPreference,
+    meetingPattern: meetingPattern,
     friendsTaken,
     friendsInterested,
   });
@@ -478,6 +501,9 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
       document.body.removeChild(friendsInterestedTooltip);
     }
   });
+
+  tdElements.push([tdElement, ratingInfo.meetingPattern]);
+
   infoButton.appendChild(tooltip);
   scoreContainer.appendChild(scoreText);
   scoreContainer.appendChild(infoButton);
@@ -485,6 +511,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
   tdElement.appendChild(sectionTimeMatch);
   tdElement.appendChild(friendsTaken);
   tdElement.appendChild(friendsInterested);
+  
 }
 
 function createRatingToolTip(ratingInfo) {
@@ -749,4 +776,143 @@ function bsFind(sortedArray, target) {
 
 function nullOrUndefined(object) {
   return object === null || object === undefined || isNaN(object);
+}
+
+async function handleFindEnrollmentStatistics() {  
+  const currentUrl = window.location.href;
+  const clientRequestID = "f716d24cd63d4b4f8be1172f72d8bf70";
+  const savedScheduleIdMatch = currentUrl.match(/\d{5}\$\d{5}/);
+  if (!savedScheduleIdMatch) {
+      console.error('Could not extract saved schedule ID from URL:', currentUrl);
+      return [];
+  }
+  const savedScheduleId = savedScheduleIdMatch[0];
+  const apiUrl = `https://www.myworkday.com/scu/inst/15$369057/${savedScheduleId}.htmld?clientRequestID=${clientRequestID}`;
+
+  try {
+      // Step 1: Fetch the initial list of courses
+      const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+              "accept": "application/json",
+              "accept-language": "en-US,en;q=0.9",
+              "content-type": "application/x-www-form-urlencoded",
+              "sec-fetch-dest": "empty",
+              "sec-fetch-mode": "cors",
+              "sec-fetch-site": "same-origin",
+              "Referer": currentUrl,
+              "Referrer-Policy": "strict-origin-when-cross-origin"
+          },
+          credentials: "include"
+      });
+
+      if (!response.ok) {
+          console.error('Failed to fetch course data:', response.statusText);
+          return [];
+      }
+
+      const data = await response.json();
+      
+      // Step 2: Find the course sections under the "162.1" key
+      const coursesData = data?.body?.children?.[6]?.rows; // 6 is for the 7th child (zero-based index)
+      let courseSections = [];
+      let meetingPatterns = [];
+
+      // Iterate over each row to find '162.1' in cellMap
+      coursesData?.forEach(row => {
+          const courseSection = row.cellsMap?.["162.1"];
+          const courseTitle = row.cellsMap?.["162.7"]?.instances?.[0]?.text;
+          if (courseSection) {
+              const match = courseSection.selfUriTemplate.match(/15\$(\d+\/\d+\$\d+)/);
+              if (match) {
+                  courseSections.push(match[0]);
+              }
+          }
+          if (courseTitle) {
+            meetingPatterns.push(courseTitle);
+          }
+      });
+
+      if (!meetingPatterns || !courseSections || !Array.isArray(courseSections)) {
+          console.error('No course sections found in the response.');
+          return [];
+      }
+
+
+      // Step 3: Create an array to hold courses with their enrollment data
+      const coursesWithStats = [];
+      i = 0;
+      // Step 4: Iterate through the course sections
+      for (const courseSection of courseSections) {
+          const sectionUrl = `https://www.myworkday.com/scu/inst/${courseSection}.htmld?clientRequestID=c087109c484c4df2846d9904b5cad947`;
+
+          try {
+
+              // Step 5: Fetch the Enrolled/Capacity data for each course section
+              const sectionResponse = await fetch(sectionUrl, {
+                  method: "GET",
+                  headers: {
+                      "accept": "*/*",
+                      "accept-language": "en-US,en;q=0.9",
+                      "content-type": "application/x-www-form-urlencoded",
+                      "sec-fetch-dest": "empty",
+                      "sec-fetch-mode": "cors",
+                      "sec-fetch-site": "same-origin",
+                      "Referer": `https://www.myworkday.com/scu/inst/${courseSection}.htmld?clientRequestID=c087109c484c4df2846d9904b5cad947`,
+                      "Referrer-Policy": "strict-origin-when-cross-origin"
+                  },
+                  credentials: "include" 
+              });
+
+              if (!sectionResponse.ok) {
+                  console.error('Failed to fetch section data:', sectionResponse.statusText);
+                  continue;
+              }
+
+              const sectionData = await sectionResponse.json();
+              
+              // Step 6: Extract the Enrolled/Capacity data
+              const enrolledStats = sectionData?.body?.children?.[0]?.children?.[1]?.children?.find(child => child.label === "Enrolled/Capacity")?.value;
+
+              // Step 7: Organize the data into an object
+              if (enrolledStats) {
+                  const courseInfo = {
+                      meetingPattern: meetingPatterns[i],
+                      enrolledStats: enrolledStats
+                  };
+                  coursesWithStats.push(courseInfo);
+              }
+              i += 1;
+
+          } catch (error) {
+              console.error('Error fetching section data:', error);
+          }
+      }
+
+      console.log('Courses with stats:', coursesWithStats)
+      return coursesWithStats; // Return the array of courses with stats
+
+  } catch (error) {
+      console.error('Error fetching course data:', error);
+      return [];
+  }
+}
+
+function displayEnrollmentStats(){
+  for(let i = 0; i < tdElements.length; i++){
+    const tdElement = tdElements[i][0];
+    const ratingInfoMeetingPattern = tdElements[i][1];
+    console.log("TD Element: ", tdElement);
+    const enrollmentStat = enrollmentStatistics.find(stat => stat.meetingPattern.includes(ratingInfoMeetingPattern));
+    const enrollmentStats = document.createElement("div");
+    enrollmentStats.innerHTML = `
+              <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
+                <div style="color: #666;">
+                  <span style="margin-right: 4px; font-weight:bold">Enrolled: </span> ${enrollmentStat?.enrolledStats || "N/A"}
+                </div>
+              </div>
+            `;
+    tdElement.appendChild(enrollmentStats);
+  }
+  
 }
