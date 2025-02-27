@@ -56,11 +56,13 @@ chrome.storage.local.get(
 
 async function checkForGrid() {
   const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
-  const rivaWidget = document.querySelector('[data-automation-id="rivaWidget"]'); // Saved Schedule Page
+  const MultiParameterButton = document.querySelector('[data-automation-id="wd-MultiParameterButton"]'); // Saved Schedule Page
   if (visibleGrid) {
     await handleFindSectionsGrid();
-  } else if (rivaWidget) {
+  } else if (MultiParameterButton) {
+    console.log("Saved Schedule Page detected.");
     await handleSavedSchedulePageGrid();
+    // run enrollment_statistics.js
   }
 }
 
