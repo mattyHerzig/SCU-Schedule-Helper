@@ -69,12 +69,15 @@ window.addEventListener('beforeunload', () => {
 
 
 async function checkPage() {
-  const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
-  const MultiParameterButton = document.querySelector('[data-automation-id="wd-MultiParameterButton"]'); // Saved Schedule Page
-  if (visibleGrid) {
+  const pageTitle = document.querySelector('[data-automation-id="pageHeaderTitleText"]'); 
+  console.log(pageTitle?.innerText);
+  const isSavedSchedulePage = pageTitle?.innerText === "View Student Registration Saved Schedule" ? true : false; // Saved Schedule Page
+  const VisibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page// Find Courses Page
+  if (VisibleGrid) {
+    console.log("Find Courses Page");
     await handleFindSectionsGrid();
-  } else if (MultiParameterButton) {
-    console.log('Saved Schedule Page detected.');
+  } else if (isSavedSchedulePage) {
+    console.log("Saved Schedule Page");
     await handleSavedSchedulePageGrid();
     if(!foundEnrollmentStatistics) {
       foundEnrollmentStatistics = true;
