@@ -1,5 +1,5 @@
 import { fetchWithAuth } from "./authorization.js";
-import { prodEvalsEndpoint, prodNameMappingsEndpoint } from "./constants.js";
+import { PROD_EVALS_ENDPOINT, PROD_NAME_MAPPINGS_ENDPOINT } from "./constants.js";
 
 /**
  * Fetches the evals object from the server, then decodes, decompresses, and stores it in local storage.
@@ -15,7 +15,7 @@ export async function downloadEvals() {
     });
     return;
   }
-  const evalsResponse = await fetchWithAuth(prodEvalsEndpoint);
+  const evalsResponse = await fetchWithAuth(PROD_EVALS_ENDPOINT);
   if (!evalsResponse || !evalsResponse.ok) {
     await chrome.storage.local.set({
       isDownloadingEvals: false,
@@ -39,7 +39,7 @@ export async function downloadProfessorNameMappings() {
   if (currentExpirationDate && new Date() < new Date(currentExpirationDate)) {
     return;
   }
-  const response = await fetchWithAuth(prodNameMappingsEndpoint);
+  const response = await fetchWithAuth(PROD_NAME_MAPPINGS_ENDPOINT);
   if (!response || !response.ok) {
     return;
   }

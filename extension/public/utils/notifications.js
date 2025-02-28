@@ -1,5 +1,5 @@
 import { fetchWithAuth, signOut } from "./authorization.js";
-import { prodUserEndpoint } from "./constants.js";
+import { PROD_USER_ENDPOINT } from "./constants.js";
 import {
   addFriendLocally,
   refreshUserData,
@@ -81,7 +81,7 @@ async function handleFriendRequestAccepted(friendId) {
 
 async function handleFriendProfileUpdated(friendId) {
   const friendProfileResponse = await fetchWithAuth(
-    `${prodUserEndpoint}/${friendId}`,
+    `${PROD_USER_ENDPOINT}/${friendId}`,
   );
   if (!friendProfileResponse || !friendProfileResponse.ok) {
     return;
