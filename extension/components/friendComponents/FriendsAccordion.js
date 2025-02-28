@@ -177,8 +177,8 @@ export default function FriendsAccordion({
               <AccordionDetails
                 sx={{
                   p: 2,
-                  overflow: "hidden",
-                  maxHeight: "fit-content",
+                  overflow: "auto",
+                  maxHeight: "14rem",
                   boxSizing: "border-box",
                 }}
               >
