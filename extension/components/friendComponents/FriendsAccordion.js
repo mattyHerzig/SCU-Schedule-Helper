@@ -118,7 +118,7 @@ export default function FriendsAccordion({
           }}
         >
           <Typography variant="h6" sx={{ fontSize: "1rem" }}>
-            Friends {`(${friends.length})`}
+            Friends
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
