@@ -586,6 +586,7 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       display="flex"
                       flexDirection="column"
                       justifyContent="center"
+                      width= "208px"
                     >
                       <StatsWithLessFormatting
                         stats={profCourseStats}
