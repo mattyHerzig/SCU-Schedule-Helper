@@ -22,10 +22,6 @@
     {
       "matches": ["https://www.myworkday.com/scu/*"],
       "js": ["content_scripts/section_scores.js"]
-    },
-    {
-      "matches": ["https://www.myworkday.com/scu/*"],
-      "js": ["content_scripts/enrollment_statistics.js"]
     }
   ],
   "background": {
