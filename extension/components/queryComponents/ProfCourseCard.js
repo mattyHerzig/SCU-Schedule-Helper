@@ -358,7 +358,6 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                   sx={{ mt: 2 }}
                   display={"flex"}
                   flexDirection={"row"}
-                  justifyContent={"space-between"}
                 >
                   <Box
                     display="flex"
@@ -422,8 +421,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     display="flex"
                     flexDirection="column"
                     justifyContent="center"
+                    marginLeft="1rem"
                   >
                     <StatsWithLessFormatting
+                      flexGap={"2.5rem"}
                       stats={courseStats}
                       deptStats={
                         data.departmentStatistics[courseCode.substring(0, 4)]
@@ -526,7 +527,6 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                     sx={{ mt: 2 }}
                     display={"flex"}
                     flexDirection={"row"}
-                    justifyContent={"space-between"}
                   >
                     <Box
                       display="flex"
@@ -586,9 +586,10 @@ export default function ProfCourseCard({ selected, data, onPageNavigation }) {
                       display="flex"
                       flexDirection="column"
                       justifyContent="center"
-                      width= "208px"
+                      marginLeft="0.75rem"
                     >
                       <StatsWithLessFormatting
+                        flexGap={"2.75rem"}
                         stats={profCourseStats}
                         deptStats={
                           data.departmentStatistics[selected.id.substring(0, 4)]
