@@ -108,9 +108,6 @@ async function handleFindSectionsGrid() {
     courseSectionCell.appendChild(pushDown);
     await displayProfessorDifficulty(courseSectionCell, mainRow, professorName, false);
     courseSectionCell.removeChild(pushDown);
-    // mainRow.cells[0].appendChild(document.createElement("br"));
-    // mainRow.cells[0].appendChild(document.createElement("br"));
-    // mainRow.cells[0].appendChild(document.createElement("br"));
   }
 }
 
@@ -132,9 +129,6 @@ async function handleSavedSchedulePageGrid() {
     courseCell.appendChild(pushDown);
     await displayProfessorDifficulty(courseCell, courseRow, professorName,true);
     courseCell.removeChild(pushDown);
-    // courseRow.cells[0].appendChild(document.createElement("br"));
-    // courseRow.cells[0].appendChild(document.createElement("br"));
-    // courseRow.cells[0].appendChild(document.createElement("br"));
   }
 }
 
