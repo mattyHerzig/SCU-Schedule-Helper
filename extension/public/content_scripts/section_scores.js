@@ -780,14 +780,13 @@ function nullOrUndefined(object) {
 
 async function handleFindEnrollmentStatistics() {  
   const currentUrl = window.location.href;
-  const clientRequestID = "f716d24cd63d4b4f8be1172f72d8bf70";
   const savedScheduleIdMatch = currentUrl.match(/\d{5}\$\d{5}/);
   if (!savedScheduleIdMatch) {
       console.error('Could not extract saved schedule ID from URL:', currentUrl);
       return [];
   }
   const savedScheduleId = savedScheduleIdMatch[0];
-  const apiUrl = `https://www.myworkday.com/scu/inst/15$369057/${savedScheduleId}.htmld?clientRequestID=${clientRequestID}`;
+  const apiUrl = `https://www.myworkday.com/scu/inst/15$369057/${savedScheduleId}.htmld`;
 
   try {
       // Step 1: Fetch the initial list of courses
@@ -844,7 +843,7 @@ async function handleFindEnrollmentStatistics() {
       i = 0;
       // Step 4: Iterate through the course sections
       for (const courseSection of courseSections) {
-          const sectionUrl = `https://www.myworkday.com/scu/inst/${courseSection}.htmld?clientRequestID=c087109c484c4df2846d9904b5cad947`;
+          const sectionUrl = `https://www.myworkday.com/scu/inst/${courseSection}.htmld`;
 
           try {
 
@@ -858,7 +857,7 @@ async function handleFindEnrollmentStatistics() {
                       "sec-fetch-dest": "empty",
                       "sec-fetch-mode": "cors",
                       "sec-fetch-site": "same-origin",
-                      "Referer": `https://www.myworkday.com/scu/inst/${courseSection}.htmld?clientRequestID=c087109c484c4df2846d9904b5cad947`,
+                      "Referer": sectionUrl,
                       "Referrer-Policy": "strict-origin-when-cross-origin"
                   },
                   credentials: "include" 
