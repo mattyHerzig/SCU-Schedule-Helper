@@ -5,6 +5,8 @@ testing
 persistent_data
 local_data
 out
+target
+.vscode
 .env
 *.zip
 *.next
