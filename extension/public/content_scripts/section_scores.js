@@ -505,8 +505,8 @@ async function appendRatingInfoToCell(tdElement, ratingInfo) {
 
   await startedGettingStats;
   const enrollmentStat = await enrollmentStats[meetingPattern];
-  const enrollmentStats = document.createElement("div");
-  enrollmentStats.innerHTML = `
+  const enrollmentStatsDiv = document.createElement("div");
+  enrollmentStatsDiv.innerHTML = `
               <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
                 <div style="color: #666;">
                   <span style="margin-right: 4px; font-weight:bold">Enrolled: </span> ${enrollmentStat || "N/A"}
@@ -521,7 +521,7 @@ async function appendRatingInfoToCell(tdElement, ratingInfo) {
   tdElement.appendChild(sectionTimeMatch);
   tdElement.appendChild(friendsTaken);
   tdElement.appendChild(friendsInterested);
-  tdElement.appendChild(enrollmentStats);
+  tdElement.appendChild(enrollmentStatsDiv);
 }
 
 function createRatingToolTip(ratingInfo) {
