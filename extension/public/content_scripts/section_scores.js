@@ -797,8 +797,8 @@ async function handleFindEnrollmentStatistics() {
   }
   const savedScheduleId = savedScheduleIdMatch[0];
   const apiUrl = `https://www.myworkday.com/scu/inst/15$369057/${savedScheduleId}.htmld`;
+  
   try {
-    // Step 1: Fetch the initial list of courses
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
@@ -807,14 +807,11 @@ async function handleFindEnrollmentStatistics() {
     }
     const data = await response.json();
 
-    // Step 2: Find the course sections under the "162.1" key
-    const coursesData = data?.body?.children?.[6]?.rows; // 6 is for the 7th child (zero-based index)
+    const coursesData = data?.body?.children?.[6]?.rows;
     let courseSections = [];
 
-    // Iterate over each row to find '162.1' in cellMap
     coursesData?.forEach(row => {
       const courseSection = row.cellsMap?.["162.1"];
-      // Use meeting pattern as a unique identifier for each course.
       const meetingPattern = row.cellsMap?.["162.7"]?.instances?.[0]?.text;
 
       if (courseSection) {
@@ -825,28 +822,27 @@ async function handleFindEnrollmentStatistics() {
       }
     });
 
-    // Step 4: Iterate through the course sections
-    for (const courseSection of courseSections) {
+    // Create and wait for all enrollment fetch promises
+    await Promise.all(courseSections.map(async (courseSection) => {
       const sectionUrl = `https://www.myworkday.com/scu/inst/${courseSection.url}.htmld`;
       const meetingPattern = courseSection.meetingPattern;
-      enrollmentStats[meetingPattern] =  new Promise(async (resolve, reject) => {
-        try {
-          // Step 5: Fetch the Enrolled/Capacity data for each course section
-          const sectionResponse = await fetch(sectionUrl);
-          if (!sectionResponse.ok) {
-            console.error('Failed to fetch section data:', sectionResponse.statusText);
-            reject();
-          }
-          const sectionData = await sectionResponse.json();
-          // Step 6: Extract the Enrolled/Capacity data
-          const enrolledStats = sectionData?.body?.children?.[0]?.children?.[1]?.children?.find(child => child.label === "Enrolled/Capacity")?.value;
-          resolve(enrolledStats);
-        } catch (error) {
-          console.error('Error fetching section data:', error);
+
+      try {
+        const sectionResponse = await fetch(sectionUrl);
+        if (!sectionResponse.ok) {
+          console.error('Failed to fetch section data:', sectionResponse.statusText);
+          return;
         }
+        const sectionData = await sectionResponse.json();
+        const enrolledStats = sectionData?.body?.children?.[0]?.children?.[1]?.children?.find(child => child.label === "Enrolled/Capacity")?.value;
+        
+        if (enrolledStats) {
+          enrollmentStats[meetingPattern] = enrolledStats;
+        }
+      } catch (error) {
+        console.error('Error fetching section data:', error);
       }
-      );
-    }
+    }));
     
     if (startedGettingStatsResolver) {
       startedGettingStatsResolver();
