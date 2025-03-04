@@ -91,6 +91,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse(response);
       });
       break;
+    case "getOrImportCourses":
+      getOrImportCourses().then((response) => {
+          sendResponse(response);
+        })
+        .catch((err) => {
+          console.error(err);
+          sendResponse({ ok: false, message: err.toString() });
+        });
+      return true; // Keep the message channel open for async
     case "deleteAccount":
       deleteAccount().then((response) => {
         sendResponse(response);
@@ -160,6 +169,54 @@ async function runStartupChecks() {
   await downloadProfessorNameMappings();
   // Check if we need to expire any interestedSections.
   await refreshInterestedSections();
+}
+
+// Pseudocode function that checks if user has courses in DB and, if not, calls importCurrentCourses
+async function getOrImportCourses() {
+  // 1. Check if DB has courses:
+  const existingCourses = await getCoursesFromDbOrServer();
+  if (existingCourses && existingCourses.length > 0) {
+    // Return them immediately
+    return { ok: true, courses: existingCourses };
+  }
+
+  // 2. Otherwise, we need to scrape using your "importCurrentCourses" flow:
+  //    The background script typically calls `chrome.tabs.sendMessage`
+  //    but we need to know which tab to inject into.
+  //    You might track the active tab if the user is on Workday, for example.
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) {
+    return { ok: false, message: "No active Workday tab found." };
+  }
+
+  // 3. Send message to the content script that triggers CurrentCourseImporter
+  const importResponse = await new Promise((resolve) => {
+    chrome.tabs.sendMessage(tab.id, "importCurrentCourses", (resp) => {
+      resolve(resp);
+    });
+  });
+
+  if (importResponse !== "Successfully imported courses.") {
+    return { ok: false, message: importResponse || "Course import failed." };
+  }
+
+  // 4. Now that import is done, we should have courses in DB
+  const newCourses = await getCoursesFromDbOrServer();
+  if (!newCourses || !newCourses.length) {
+    return { ok: false, message: "No courses found after import." };
+  }
+
+  return { ok: true, courses: newCourses };
+}
+
+// Stub function: depends on your real DB logic
+async function getCoursesFromDbOrServer() {
+  // Maybe you have queryUserByName or something similar in user.js
+  // e.g.:
+  // const userData = await queryUserByName("CURRENT_USER");
+  // return userData?.coursesTaken || [];
+  // For now, just returning an empty array if no data
+  return [];
 }
 
 async function handleFeedbackSubmission(data) {

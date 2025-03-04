@@ -1,0 +1,10 @@
+1. not just SCU
+2 make colors colorblind accessible
+
+Features for google cal exporter per cornell one:
+Key Features:
+- Automatic Schedule Parsing: Extracts class names, days, times, and locations directly from your university’s scheduling system.
+- Google Calendar Integration: Seamlessly adds events to your - - - Google Calendar, complete with recurrence rules and location details.
+- Smart Event Management: Detects if an event already exists, preventing duplicate
+- entries. If a class's time is "To Be Assigned," the extension alerts you without cluttering your calendar.
+- Instant Feedback: Get real-time updates in the extension's popup window as your schedule is parsed and events are created.
