@@ -5,6 +5,12 @@ let inButton = false;
 let friendInterestedSections = {};
 let friendCoursesTaken = {};
 let friends = {};
+let foundEnrollmentStatistics = false;
+let startedGettingStatsResolver = null;
+let startedGettingStats = new Promise((resolve) => {
+  startedGettingStatsResolver = resolve;
+});
+let enrollmentStats = {};
 
 const Difficulty = Object.freeze({
   VeryEasy: 0,
@@ -44,9 +50,9 @@ chrome.storage.local.get(
     friendInterestedSections = data.friendInterestedSections || {};
     friendCoursesTaken = data.friendCoursesTaken || {};
     friends = data.friends || {};
-    await checkForGrid();
 
-    const observer = new MutationObserver(checkForGrid);
+    checkPage();
+    const observer = new MutationObserver(checkPage);
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
@@ -54,13 +60,27 @@ chrome.storage.local.get(
   },
 );
 
-async function checkForGrid() {
-  const visibleGrid = document.querySelector('[data-automation-id="VisibleGrid"]'); // Find Courses Page
-  const rivaWidget = document.querySelector('[data-automation-id="rivaWidget"]'); // Saved Schedule Page
-  if (visibleGrid) {
+window.addEventListener('popstate', () => {
+  foundEnrollmentStatistics = false;
+});
+
+window.addEventListener('beforeunload', () => {
+  foundEnrollmentStatistics = false;
+});
+
+
+async function checkPage() {
+  const pageTitle = document.querySelector('[data-automation-id="pageHeaderTitleText"]');
+  const isSavedSchedulePage = pageTitle?.innerText === "View Student Registration Saved Schedule" ? true : false; // Saved Schedule Page
+  const isFindCoursesPage = document.querySelector('[data-automation-label="SCU Find Course Sections"]'); // Find Courses Page// Find Courses Page
+  if (isFindCoursesPage) {
     await handleFindSectionsGrid();
-  } else if (rivaWidget) {
-    await handleSavedSchedulePageGrid();
+  } else if (isSavedSchedulePage) {
+    if (!foundEnrollmentStatistics) {
+      foundEnrollmentStatistics = true;
+      await handleFindEnrollmentStatistics();
+      await handleSavedSchedulePageGrid();
+    }
   }
 }
 
@@ -85,9 +105,6 @@ async function handleFindSectionsGrid() {
     courseSectionCell.appendChild(pushDown);
     await displayProfessorDifficulty(courseSectionCell, mainRow, professorName, false);
     courseSectionCell.removeChild(pushDown);
-    mainRow.cells[0].appendChild(document.createElement("br"));
-    mainRow.cells[0].appendChild(document.createElement("br"));
-    mainRow.cells[0].appendChild(document.createElement("br"));
   }
 }
 
@@ -95,6 +112,7 @@ async function handleSavedSchedulePageGrid() {
   const courses = document.querySelectorAll(
     '[data-testid="table"] tbody tr',
   );
+  const displayPromises = [];
   for (let i = 0; i < courses.length; i++) {
     const courseRow = courses[i];
     const courseCell = courseRow.cells[0];
@@ -106,13 +124,17 @@ async function handleSavedSchedulePageGrid() {
     let professorName = instructorCell.innerText.trim().split("\n")[0];
     const pushDown = document.createElement("div");
     pushDown.style.height = "100px";
+
     courseCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseCell, courseRow, professorName,true);
-    courseCell.removeChild(pushDown);
-    courseRow.cells[0].appendChild(document.createElement("br"));
-    courseRow.cells[0].appendChild(document.createElement("br"));
-    courseRow.cells[0].appendChild(document.createElement("br"));
+    const displayPromise = new Promise((resolve) => {
+      displayProfessorDifficulty(courseCell, courseRow, professorName, true).then(() => {
+        courseCell.removeChild(pushDown);
+        resolve();
+      });
+    })
+    displayPromises.push(displayPromise);
   }
+  await Promise.all(displayPromises);
 }
 
 async function displayProfessorDifficulty(
@@ -139,6 +161,7 @@ async function displayProfessorDifficulty(
 
   let prof = getProfName(professorName);
   let courseText = courseSectionCell.innerText.trim();
+
   const courseCode = courseText
     .substring(0, courseText.indexOf("-"))
     .replace(/\s/g, "");
@@ -164,7 +187,7 @@ async function displayProfessorDifficulty(
   } else {
     meetingPattern = mainSectionRow.cells[7].textContent.trim();
   }
-  
+
   const timeMatch = meetingPattern.match(/\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/);
   let timeWithinPreference = false;
   if (timeMatch) {
@@ -221,7 +244,7 @@ async function displayProfessorDifficulty(
     scuEvalsWorkloadPercentile = scuEvalsWorkload / 15.0;
   }
 
-  appendRatingInfoToCell(courseSectionCell, {
+  await appendRatingInfoToCell(courseSectionCell, {
     rmpLink,
     rmpQuality: rmpResponse?.avgRating,
     rmpDifficulty: rmpResponse?.avgDifficulty,
@@ -232,6 +255,7 @@ async function displayProfessorDifficulty(
     scuEvalsDifficultyPercentile,
     scuEvalsWorkloadPercentile,
     matchesTimePreference: timeWithinPreference,
+    meetingPattern: meetingPattern,
     friendsTaken,
     friendsInterested,
   });
@@ -320,7 +344,7 @@ function rmpScore(quality, difficulty) {
   return ((quality + difficultyScore) / 8) * 10;
 }
 
-function appendRatingInfoToCell(tdElement, ratingInfo) {
+async function appendRatingInfoToCell(tdElement, ratingInfo) {
   const overallScore = calcOverallScore(ratingInfo);
   const scoreContainer = document.createElement("div");
   scoreContainer.style.display = "flex";
@@ -476,6 +500,20 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
       document.body.removeChild(friendsInterestedTooltip);
     }
   });
+
+  meetingPattern = tdElement.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.innerText;
+
+  await startedGettingStats;
+  const enrollmentStat = enrollmentStats[meetingPattern];
+  const enrollmentStatsDiv = document.createElement("div");
+  enrollmentStatsDiv.innerHTML = `
+              <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
+                <div style="color: #666;">
+                  <span style="margin-right: 4px; font-weight:bold">Enrolled: </span> ${enrollmentStat || "N/A"}
+                </div>
+              </div>
+            `;
+
   infoButton.appendChild(tooltip);
   scoreContainer.appendChild(scoreText);
   scoreContainer.appendChild(infoButton);
@@ -483,6 +521,7 @@ function appendRatingInfoToCell(tdElement, ratingInfo) {
   tdElement.appendChild(sectionTimeMatch);
   tdElement.appendChild(friendsTaken);
   tdElement.appendChild(friendsInterested);
+  tdElement.appendChild(enrollmentStatsDiv);
 }
 
 function createRatingToolTip(ratingInfo) {
@@ -747,4 +786,69 @@ function bsFind(sortedArray, target) {
 
 function nullOrUndefined(object) {
   return object === null || object === undefined || isNaN(object);
+}
+
+async function handleFindEnrollmentStatistics() {
+  const currentUrl = window.location.href;
+  const savedScheduleIdMatch = currentUrl.match(/\d{5}\$\d{5}/);
+  if (!savedScheduleIdMatch) {
+    console.error('Could not extract saved schedule ID from URL:', currentUrl);
+    return [];
+  }
+  const savedScheduleId = savedScheduleIdMatch[0];
+  const apiUrl = `https://www.myworkday.com/scu/inst/15$369057/${savedScheduleId}.htmld`;
+  
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      console.error('Failed to fetch course data:', response.statusText);
+      return [];
+    }
+    const data = await response.json();
+
+    const coursesData = data?.body?.children?.[6]?.rows;
+    let courseSections = [];
+
+    coursesData?.forEach(row => {
+      const courseSection = row.cellsMap?.["162.1"];
+      const meetingPattern = row.cellsMap?.["162.7"]?.instances?.[0]?.text;
+
+      if (courseSection) {
+        const match = courseSection.selfUriTemplate.match(/15\$(\d+\/\d+\$\d+)/);
+        if (match) {
+          courseSections.push({ meetingPattern, url: match[0] });
+        }
+      }
+    });
+
+    // Create and wait for all enrollment fetch promises
+    await Promise.all(courseSections.map(async (courseSection) => {
+      const sectionUrl = `https://www.myworkday.com/scu/inst/${courseSection.url}.htmld`;
+      const meetingPattern = courseSection.meetingPattern;
+
+      try {
+        const sectionResponse = await fetch(sectionUrl);
+        if (!sectionResponse.ok) {
+          console.error('Failed to fetch section data:', sectionResponse.statusText);
+          return;
+        }
+        const sectionData = await sectionResponse.json();
+        const enrolledStats = sectionData?.body?.children?.[0]?.children?.[1]?.children?.find(child => child.label === "Enrolled/Capacity")?.value;
+        
+        if (enrolledStats) {
+          enrollmentStats[meetingPattern] = enrolledStats;
+        }
+      } catch (error) {
+        console.error('Error fetching section data:', error);
+      }
+    }));
+    
+    if (startedGettingStatsResolver) {
+      startedGettingStatsResolver();
+    }
+  } catch (error) {
+    console.error('Error fetching course data:', error);
+    return [];
+  }
 }
