@@ -40,13 +40,12 @@ export default function FriendsAccordion({
         courses: {
           interested: parseInterestedSections(profile.interestedSections),
           taken: parseTakenCourses(profile.coursesTaken).sort(
-            mostRecentTermFirst,
+            mostRecentTermFirst
           ),
         },
       };
     });
     setTransformedFriends(transformedFriends);
-    
   }, [friends]);
 
   function handleRemoveFriendClick(event, id) {
@@ -89,8 +88,8 @@ export default function FriendsAccordion({
       <Typography variant="h6" gutterBottom sx={{ fontSize: "1.25rem" }}>
         Friends {`(${friends.length})`}
       </Typography>
-      
       <Accordion
+        slotProps={{ transition: { unmountOnExit: true } }}
         defaultExpanded={friends.length > 0}
         expanded={friendsExpanded}
         onChange={(event, expanded) => setFriendsExpanded(expanded)}
@@ -124,6 +123,7 @@ export default function FriendsAccordion({
         <AccordionDetails>
           {transformedFriends.map((friend) => (
             <Accordion
+              slotProps={{ transition: { unmountOnExit: true } }}
               key={friend.id}
               sx={{
                 mb: 1,
