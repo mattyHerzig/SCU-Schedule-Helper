@@ -79,8 +79,8 @@ async function checkPage() {
     if (!foundEnrollmentStatistics) {
       foundEnrollmentStatistics = true;
       await handleFindEnrollmentStatistics();
+      await handleSavedSchedulePageGrid();
     }
-    await handleSavedSchedulePageGrid();
   }
 }
 
@@ -504,7 +504,7 @@ async function appendRatingInfoToCell(tdElement, ratingInfo) {
   meetingPattern = tdElement.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.innerText;
 
   await startedGettingStats;
-  const enrollmentStat = await enrollmentStats[meetingPattern];
+  const enrollmentStat = enrollmentStats[meetingPattern];
   const enrollmentStatsDiv = document.createElement("div");
   enrollmentStatsDiv.innerHTML = `
               <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
