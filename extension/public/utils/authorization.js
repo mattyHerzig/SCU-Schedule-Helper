@@ -1,5 +1,5 @@
 import { subscribe } from "./notifications.js";
-import { prodAuthTokenEndpoint, prodUserEndpoint } from "./constants.js";
+import { PROD_AUTH_TOKEN_ENDPOINT, PROD_USER_ENDPOINT } from "./constants.js";
 import {
   downloadEvals,
   downloadProfessorNameMappings,
@@ -30,7 +30,7 @@ export async function signIn() {
     subscription = await subscribe();
   }
 
-  let response = await fetch(prodAuthTokenEndpoint, {
+  let response = await fetch(PROD_AUTH_TOKEN_ENDPOINT, {
     method: "GET",
     headers: {
       Authorization: `OAuth ${oAuthToken}`,
@@ -73,7 +73,7 @@ export async function signIn() {
     );
   }
 
-  const createdUser = await fetch(prodUserEndpoint, {
+  const createdUser = await fetch(PROD_USER_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: "Bearer " + data.accessToken,
@@ -130,7 +130,7 @@ export async function signIn() {
 }
 
 export async function updateSubscriptionAndRefreshUserData(subscription) {
-  const response = await fetchWithAuth(`${prodUserEndpoint}`, {
+  const response = await fetchWithAuth(`${PROD_USER_ENDPOINT}`, {
     method: "PUT",
     body: JSON.stringify({
       personal: {
@@ -225,7 +225,7 @@ async function refreshAccessToken() {
   if (!refreshTokenData.refreshToken) {
     return null;
   }
-  const response = await fetch(prodAuthTokenEndpoint, {
+  const response = await fetch(PROD_AUTH_TOKEN_ENDPOINT, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${refreshTokenData.refreshToken}`,

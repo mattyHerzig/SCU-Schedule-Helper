@@ -7,8 +7,9 @@ export default function StatBoxWithLessFormatting({
   deptStats,
   isRmpRating,
 }) {
+  label = label.toLowerCase();
+  
   function getColor(value, label, isRmpRating) {
-    label = label.toLowerCase();
     if (isRmpRating) {
       if (label === "quality") return getRatingColor(value, 1, 5, true);
       const diffScore = Math.abs(
@@ -22,17 +23,18 @@ export default function StatBoxWithLessFormatting({
   }
 
   return (
-      <Box sx={{ display: "flex", alignItems: "baseline" }}>
-        <Typography
-          variant="h6"
-          sx={{
-            color: getColor(value, label, isRmpRating),
-            fontWeight: "bold",
-          }}
-        >
-          {value.toFixed(1)}
-        </Typography>
-      </Box>
+    <Box sx={{ display: "flex", alignItems: "baseline" }}>
+      <Typography
+        variant="h6"
+        sx={{
+          color: getColor(value, label, isRmpRating),
+          fontWeight: "bold",
+          ...(label === "workload" ? { minWidth: "2.5rem", textAlign: "center" } : {}),
+        }}
+      >
+        {value.toFixed(1)}
+      </Typography>
+    </Box>
   );
 }
 

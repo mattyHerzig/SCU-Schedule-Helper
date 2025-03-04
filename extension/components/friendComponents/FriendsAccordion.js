@@ -30,6 +30,7 @@ export default function FriendsAccordion({
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null);
   const [transformedFriends, setTransformedFriends] = useState([]);
+  const [friendsExpanded, setFriendsExpanded] = useState(false);
 
   useEffect(() => {
     const transformedFriends = friends.map((profile) => {
@@ -39,7 +40,7 @@ export default function FriendsAccordion({
         courses: {
           interested: parseInterestedSections(profile.interestedSections),
           taken: parseTakenCourses(profile.coursesTaken).sort(
-            mostRecentTermFirst,
+            mostRecentTermFirst
           ),
         },
       };
@@ -47,13 +48,13 @@ export default function FriendsAccordion({
     setTransformedFriends(transformedFriends);
   }, [friends]);
 
-  function handleRemoveFriendClick (event, id) {
+  function handleRemoveFriendClick(event, id) {
     event.stopPropagation();
     setFriendToRemove(id);
     setOpenConfirmDialog(true);
-  };
+  }
 
-  async function handleConfirmRemoveFriend () {
+  async function handleConfirmRemoveFriend() {
     if (friendToRemove) {
       try {
         const updateResponse = await chrome.runtime.sendMessage({
@@ -75,84 +76,123 @@ export default function FriendsAccordion({
         console.error("Error removing friend:", error);
       }
     }
-  };
+  }
 
-  function handleCancelRemoveFriend () {
+  function handleCancelRemoveFriend() {
     setOpenConfirmDialog(false);
     setFriendToRemove(null);
-  };
+  }
 
   return (
     <Box sx={{ width: "100%" }}>
       <Typography variant="h6" gutterBottom sx={{ fontSize: "1.25rem" }}>
-        Friends
+        Friends {`(${friends.length})`}
       </Typography>
-      {transformedFriends.map((friend) => (
-        <Accordion
-          key={friend.id}
+      <Accordion
+        slotProps={{ transition: { unmountOnExit: true } }}
+        defaultExpanded={friends.length > 0}
+        expanded={friendsExpanded}
+        onChange={(event, expanded) => setFriendsExpanded(expanded)}
+        disableGutters
+        square
+        sx={{
+          "&:before": {
+            display: "none",
+          },
+          "&:not(:last-child)": {
+            borderBottom: 0,
+          },
+          mb: 2,
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMore />}
+          aria-controls="friends-list-content"
+          id="friends-list-header"
           sx={{
-            mb: 1,
-            "&:before": {
-              display: "none",
+            flexDirection: "row-reverse",
+            "& .MuiAccordionSummary-content": {
+              marginLeft: 2,
             },
           }}
         >
-          <AccordionSummary
-            expandIcon={<ExpandMore />}
-            aria-controls={`panel${friend.id}-content`}
-            id={`panel${friend.id}-header`}
-            sx={{
-              "& .MuiAccordionSummary-content, & .MuiAccordionSummary-content.Mui-expanded":
-                {
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  mr: 1,
+          <Typography variant="h6" sx={{ fontSize: "1rem" }}>
+            Friends
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          {transformedFriends.map((friend) => (
+            <Accordion
+              slotProps={{ transition: { unmountOnExit: true } }}
+              key={friend.id}
+              sx={{
+                mb: 1,
+                "&:before": {
+                  display: "none",
                 },
-            }}
-          >
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{ width: "100%" }}
+                overflow: "hidden",
+              }}
             >
-              <Avatar
-                src={friend.photoUrl}
-                alt={friend.name}
-                sx={{ width: 40, height: 40 }}
-              />
-              <Typography sx={{ flexGrow: 1 }}>{friend.name}</Typography>
-              <IconButton
-                size="small"
-                onClick={(e) => handleRemoveFriendClick(e, friend.id)}
+              <AccordionSummary
+                expandIcon={<ExpandMore />}
+                aria-controls={`panel${friend.id}-content`}
+                id={`panel${friend.id}-header`}
                 sx={{
-                  color: "error.main",
-                  "&:hover": {
-                    backgroundColor: "error.light",
-                    color: "white",
-                  },
+                  "& .MuiAccordionSummary-content, & .MuiAccordionSummary-content.Mui-expanded":
+                    {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mr: 1,
+                    },
                 }}
               >
-                <Close fontSize="small" />
-              </IconButton>
-            </Stack>
-          </AccordionSummary>
-          <AccordionDetails
-            sx={{
-              maxHeight: "10rem",
-              overflowY: "auto",
-            }}
-          >
-            <Box>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                Email: {friend.email}
-              </Typography>
-              <CourseDetailsCard courses={friend.courses} />
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      ))}
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ width: "100%" }}
+                >
+                  <Avatar
+                    src={friend.photoUrl}
+                    alt={friend.name}
+                    sx={{ width: 40, height: 40 }}
+                  />
+                  <Typography sx={{ flexGrow: 1 }}>{friend.name}</Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleRemoveFriendClick(e, friend.id)}
+                    sx={{
+                      color: "error.main",
+                      "&:hover": {
+                        backgroundColor: "error.light",
+                        color: "white",
+                      },
+                    }}
+                  >
+                    <Close fontSize="small" />
+                  </IconButton>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails
+                sx={{
+                  p: 2,
+                  overflow: "auto",
+                  maxHeight: "14rem",
+                  boxSizing: "border-box",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    Email: {friend.email || `${friend.id}@scu.edu`}
+                  </Typography>
+                  <CourseDetailsCard courses={friend.courses} />
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          ))}
+        </AccordionDetails>
+      </Accordion>
 
       <Dialog
         open={openConfirmDialog}

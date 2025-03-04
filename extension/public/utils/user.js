@@ -1,17 +1,17 @@
 import {
-  courseCodePattern,
-  courseTakenPattern,
-  interestedSectionPattern,
-  prodUserEndpoint,
-  workdayCourseHistoryUrl,
-  workdayCurrentCoursesUrl,
+  COURSE_CODE_PATTERN,
+  COURSE_TAKEN_PATTERN,
+  INTERESTED_SECTION_PATTERN,
+  PROD_USER_ENDPOINT,
+  WORKDAY_COURSE_HISTORY_URL,
+  WORKDAY_CURRENT_COURSES_URL,
 } from "./constants.js";
 
 import { fetchWithAuth, signOut } from "./authorization.js";
 
 export async function refreshUserData(items = []) {
   const itemsQuery = items.length > 0 ? `?items=${items.join(",")}` : "";
-  const response = await fetchWithAuth(`${prodUserEndpoint}/me${itemsQuery}`);
+  const response = await fetchWithAuth(`${PROD_USER_ENDPOINT}/me${itemsQuery}`);
   if (!response) {
     return "Unknown error fetching user data. Please try again later.";
   }
@@ -79,7 +79,7 @@ export async function refreshUserData(items = []) {
 }
 
 export async function updateUser(updateItems, allowLocalOnly = false) {
-  const response = await fetchWithAuth(prodUserEndpoint, {
+  const response = await fetchWithAuth(PROD_USER_ENDPOINT, {
     method: "PUT",
     body: JSON.stringify(updateItems),
   });
@@ -195,7 +195,7 @@ async function updateLocalCache(updateItems) {
 }
 
 export async function deleteAccount() {
-  const deleteResponse = await fetchWithAuth(prodUserEndpoint, {
+  const deleteResponse = await fetchWithAuth(PROD_USER_ENDPOINT, {
     method: "DELETE",
   });
   if (!deleteResponse) {
@@ -211,7 +211,7 @@ export async function deleteAccount() {
 
 export async function addFriendLocally(friendId, friendReqType) {
   const getFriendProfileResponse = await fetchWithAuth(
-    `${prodUserEndpoint}/${friendId}`,
+    `${PROD_USER_ENDPOINT}/${friendId}`,
   );
   if (!getFriendProfileResponse) {
     return "Unknown error getting friend profile. Please try again later.";
@@ -256,7 +256,7 @@ export async function updateFriendCourseAndSectionIndexes(
     (await chrome.storage.local.get("friendCoursesTaken")).friendCoursesTaken ||
     {};
   for (const course of coursesTaken) {
-    const courseMatch = courseTakenPattern.exec(course);
+    const courseMatch = COURSE_TAKEN_PATTERN.exec(course);
     if (!courseMatch) {
       continue;
     }
@@ -264,7 +264,7 @@ export async function updateFriendCourseAndSectionIndexes(
     const courseCode = courseMatch[2]
       .substring(0, courseMatch[2].indexOf("-"))
       .replace(/\s/g, "");
-	if(!courseCode.match(courseCodePattern)) continue;
+	if(!courseCode.match(COURSE_CODE_PATTERN)) continue;
     const curCourseIndex = friendCoursesTaken[courseCode] || {};
     const curProfIndex = friendCoursesTaken[profName] || {};
     curCourseIndex[friendId] = course; // A friend should only have one course entry per course code.
@@ -277,7 +277,7 @@ export async function updateFriendCourseAndSectionIndexes(
     (await chrome.storage.local.get("friendInterestedSections"))
       .friendInterestedSections || {};
   for (const section in interestedSections) {
-    const sectionMatch = interestedSectionPattern.exec(section);
+    const sectionMatch = INTERESTED_SECTION_PATTERN.exec(section);
     if (!sectionMatch) {
       continue;
     }
@@ -334,7 +334,7 @@ export async function clearFriendCourseAndSectionIndexes(friendId) {
 
 export async function addFriendRequestLocally(friendId, type) {
   const getUserPublicProfileResponse = await fetchWithAuth(
-    `${prodUserEndpoint}/${friendId}`,
+    `${PROD_USER_ENDPOINT}/${friendId}`,
   );
   if (!getUserPublicProfileResponse) {
     return "Unknown error getting user profile. Please try again later.";
@@ -395,7 +395,7 @@ export async function refreshInterestedSections() {
 
 export async function queryUserByName(name) {
   const response = await fetchWithAuth(
-    `${prodUserEndpoint}/query?name=${encodeURIComponent(name)}`,
+    `${PROD_USER_ENDPOINT}/query?name=${encodeURIComponent(name)}`,
   );
   if (!response) {
     return "Unknown error querying users. Please try again later.";
@@ -409,14 +409,14 @@ export async function queryUserByName(name) {
 
 export async function importCurrentCourses() {
   return await openTabAndSendMessage(
-    workdayCurrentCoursesUrl,
+    WORKDAY_CURRENT_COURSES_URL,
     "importCurrentCourses",
   );
 }
 
 export async function importCourseHistory() {
   return await openTabAndSendMessage(
-    workdayCourseHistoryUrl,
+    WORKDAY_COURSE_HISTORY_URL,
     "importCourseHistory",
   );
 }
