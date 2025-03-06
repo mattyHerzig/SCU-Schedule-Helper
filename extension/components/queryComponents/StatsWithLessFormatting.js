@@ -1,7 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import StatBoxWithLessFormatting from "./StatBoxWithLessFormatting";
 
-export default function StatsWithLessFormatting({ stats, deptStats, preferredPercentiles }) {
+export default function StatsWithLessFormatting({ flexGap, stats, deptStats, preferredPercentiles }) {
   if (
     !stats ||
     stats.qualityTotal === undefined ||
@@ -19,7 +19,7 @@ export default function StatsWithLessFormatting({ stats, deptStats, preferredPer
     <Box
       sx={{
         display: "flex",
-        gap: "49px",
+        gap: flexGap,
         justifyContent: "space-between",
         pr: "20px",
         pl: "5px",

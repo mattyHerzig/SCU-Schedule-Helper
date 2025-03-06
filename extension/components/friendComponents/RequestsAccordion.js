@@ -17,7 +17,7 @@ export default function RequestsAccordion({
   handleActionCompleted = (action, type) => {},
 }) {
   const [requestsInExpanded, setRequestsInExpanded] = useState(
-    requestsIn.length > 0,
+    requestsIn.length > 0
   );
   const [requestsOutExpanded, setRequestsOutExpanded] = useState(false);
 
@@ -73,6 +73,7 @@ export default function RequestsAccordion({
       </Typography>
 
       <Accordion
+        slotProps={{ transition: { unmountOnExit: true } }}
         defaultExpanded={requestsIn.length > 0}
         expanded={requestsInExpanded}
         onChange={(event, expanded) => setRequestsInExpanded(expanded)}
@@ -105,6 +106,7 @@ export default function RequestsAccordion({
         <AccordionDetails>
           {requestsIn.map((request) => (
             <Accordion
+              slotProps={{ transition: { unmountOnExit: true } }}
               key={request.id}
               sx={{
                 mb: 1,
@@ -191,6 +193,7 @@ export default function RequestsAccordion({
         </AccordionDetails>
       </Accordion>
       <Accordion
+        slotProps={{ transition: { unmountOnExit: true } }}
         disableGutters
         expanded={requestsOutExpanded}
         onChange={(event, expanded) => setRequestsOutExpanded(expanded)}
@@ -222,6 +225,7 @@ export default function RequestsAccordion({
         <AccordionDetails>
           {requestsOut.map((request) => (
             <Accordion
+              slotProps={{ transition: { unmountOnExit: true } }}
               key={request.id}
               sx={{
                 mb: 1,
