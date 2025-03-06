@@ -3,7 +3,7 @@ import {
   signOut,
   updateSubscriptionAndRefreshUserData,
 } from "./utils/authorization.js";
-import { prodServerUrl } from "./utils/constants.js";
+import { PROD_SERVER_URL } from "./utils/constants.js";
 import {
   downloadEvals,
   downloadProfessorNameMappings,
@@ -164,7 +164,7 @@ async function runStartupChecks() {
 
 async function handleFeedbackSubmission(data) {
   try {
-    const response = await fetch(`${prodServerUrl}/feedback`, {
+    const response = await fetch(`${PROD_SERVER_URL}/feedback`, {
       method: "POST",
       body: JSON.stringify({ ...data }),
     });
