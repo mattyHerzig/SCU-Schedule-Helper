@@ -1,3 +1,14 @@
+let evalsData = {};
+let userInfo = {};
+let inTooltip = false;
+let inButton = false;
+let friendInterestedSections = {};
+let friendCoursesTaken = {};
+let friends = {};
+let currentUrl = window.location.href;
+let enrollmentStatsStatus = FetchStatus.NotFetched;
+let enrollmentStats = {};
+
 const FetchStatus = Object.freeze({
   NotFetched: 0,
   Fetching: 1,
@@ -12,15 +23,6 @@ const Difficulty = Object.freeze({
   VeryHard: 4,
 });
 
-let evalsData = {};
-let userInfo = {};
-let inTooltip = false;
-let inButton = false;
-let friendInterestedSections = {};
-let friendCoursesTaken = {};
-let friends = {};
-let enrollmentStatsStatus = FetchStatus.NotFetched;
-let enrollmentStats = {};
 let prefferedDifficulty = Difficulty.VeryEasy;
 let preferredDifficultyPercentile = prefferedDifficulty / 4;
 
@@ -61,14 +63,14 @@ chrome.storage.local.get(
   },
 );
 
-window.addEventListener("beforeunload", () => { // Reset variables when navigating away from page.
-  enrollmentStatsStatus = FetchStatus.NotFetched;
-  enrollmentStats = {};
-  inTooltip = false;
-  inButton = false;
-})
-
 async function checkPage() {
+  if (currentUrl !== window.location.href) {
+    currentUrl = window.location.href;
+    enrollmentStatsStatus = FetchStatus.NotFetched;
+    enrollmentStats = {};
+    inTooltip = false;
+    inButton = false;
+  }
   const pageTitle = document.querySelector('[data-automation-id="pageHeaderTitleText"]');
   const isSavedSchedulePage = pageTitle?.innerText === "View Student Registration Saved Schedule" ? true : false; // Saved Schedule Page
   const isFindCoursesPage = document.querySelector('[data-automation-label="SCU Find Course Sections"]'); // Find Courses Page// Find Courses Page
