@@ -73,7 +73,7 @@ async function checkPage() {
   }
   const pageTitle = document.querySelector('[data-automation-id="pageHeaderTitleText"]');
   const isSavedSchedulePage = pageTitle?.innerText === "View Student Registration Saved Schedule" ? true : false; // Saved Schedule Page
-  const isFindCoursesPage = document.querySelector('[data-automation-label="SCU Find Course Sections"]'); // Find Courses Page// Find Courses Page
+  const isFindCoursesPage = document.querySelector('[data-automation-label="SCU Find Course Sections"]'); // Find Courses Page
   if (isFindCoursesPage) {
     await handleFindSectionsGrid();
   } else if (isSavedSchedulePage) {
