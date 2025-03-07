@@ -1,14 +1,3 @@
-let evalsData = {};
-let userInfo = {};
-let inTooltip = false;
-let inButton = false;
-let friendInterestedSections = {};
-let friendCoursesTaken = {};
-let friends = {};
-let currentUrl = window.location.href;
-let enrollmentStatsStatus = FetchStatus.NotFetched;
-let enrollmentStats = {};
-
 const FetchStatus = Object.freeze({
   NotFetched: 0,
   Fetching: 1,
@@ -22,6 +11,17 @@ const Difficulty = Object.freeze({
   Hard: 3,
   VeryHard: 4,
 });
+
+let evalsData = {};
+let userInfo = {};
+let inTooltip = false;
+let inButton = false;
+let friendInterestedSections = {};
+let friendCoursesTaken = {};
+let friends = {};
+let currentUrl = window.location.href;
+let enrollmentStatsStatus = FetchStatus.NotFetched;
+let enrollmentStats = {};
 
 let prefferedDifficulty = Difficulty.VeryEasy;
 let preferredDifficultyPercentile = prefferedDifficulty / 4;
@@ -65,6 +65,7 @@ chrome.storage.local.get(
 
 async function checkPage() {
   if (currentUrl !== window.location.href) {
+    console.log("URL changed, resetting data");
     currentUrl = window.location.href;
     enrollmentStatsStatus = FetchStatus.NotFetched;
     enrollmentStats = {};
