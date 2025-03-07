@@ -65,7 +65,6 @@ chrome.storage.local.get(
 
 async function checkPage() {
   if (currentUrl !== window.location.href) {
-    console.log("URL changed, resetting data");
     currentUrl = window.location.href;
     enrollmentStatsStatus = FetchStatus.NotFetched;
     enrollmentStats = {};
