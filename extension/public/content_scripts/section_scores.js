@@ -5,12 +5,15 @@ let inButton = false;
 let friendInterestedSections = {};
 let friendCoursesTaken = {};
 let friends = {};
-let foundEnrollmentStatistics = false;
-let startedGettingStatsResolver = null;
-let startedGettingStats = new Promise((resolve) => {
-  startedGettingStatsResolver = resolve;
-});
+let currentUrl = window.location.href;
+let enrollmentStatsStatus = FetchStatus.NotFetched;
 let enrollmentStats = {};
+
+const FetchStatus = Object.freeze({
+  NotFetched: 0,
+  Fetching: 1,
+  Fetched: 2,
+});
 
 const Difficulty = Object.freeze({
   VeryEasy: 0,
@@ -60,25 +63,27 @@ chrome.storage.local.get(
   },
 );
 
-window.addEventListener('popstate', () => {
-  foundEnrollmentStatistics = false;
-});
-
-window.addEventListener('beforeunload', () => {
-  foundEnrollmentStatistics = false;
-});
-
-
 async function checkPage() {
+  if (currentUrl !== window.location.href) {
+    currentUrl = window.location.href;
+    enrollmentStatsStatus = FetchStatus.NotFetched;
+    enrollmentStats = {};
+    inTooltip = false;
+    inButton = false;
+  }
   const pageTitle = document.querySelector('[data-automation-id="pageHeaderTitleText"]');
   const isSavedSchedulePage = pageTitle?.innerText === "View Student Registration Saved Schedule" ? true : false; // Saved Schedule Page
   const isFindCoursesPage = document.querySelector('[data-automation-label="SCU Find Course Sections"]'); // Find Courses Page// Find Courses Page
   if (isFindCoursesPage) {
     await handleFindSectionsGrid();
   } else if (isSavedSchedulePage) {
-    if (!foundEnrollmentStatistics) {
-      foundEnrollmentStatistics = true;
-      await handleFindEnrollmentStatistics();
+    if (enrollmentStatsStatus === FetchStatus.NotFetched) {
+      enrollmentStatsStatus = FetchStatus.Fetching;
+      await findEnrollmentStatistics();
+      enrollmentStatsStatus = FetchStatus.Fetched;
+      await handleSavedSchedulePageGrid();
+    }
+    if (enrollmentStatsStatus === FetchStatus.Fetched) {
       await handleSavedSchedulePageGrid();
     }
   }
@@ -89,7 +94,6 @@ async function handleFindSectionsGrid() {
     "table.lockedTable tbody tr",
   );
   const mainSectionRows = document.querySelectorAll("table.mainTable tbody tr");
-
   for (let i = 0; i < courseSectionRows.length; i++) {
     const row = courseSectionRows[i];
     const courseSectionCell = row.cells[0];
@@ -244,7 +248,7 @@ async function displayProfessorDifficulty(
     scuEvalsWorkloadPercentile = scuEvalsWorkload / 15.0;
   }
 
-  await appendRatingInfoToCell(courseSectionCell, {
+  await appendRatingInfoToCell(courseSectionCell, isSavedSchedulePage, {
     rmpLink,
     rmpQuality: rmpResponse?.avgRating,
     rmpDifficulty: rmpResponse?.avgDifficulty,
@@ -344,7 +348,7 @@ function rmpScore(quality, difficulty) {
   return ((quality + difficultyScore) / 8) * 10;
 }
 
-async function appendRatingInfoToCell(tdElement, ratingInfo) {
+async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo) {
   const overallScore = calcOverallScore(ratingInfo);
   const scoreContainer = document.createElement("div");
   scoreContainer.style.display = "flex";
@@ -501,18 +505,6 @@ async function appendRatingInfoToCell(tdElement, ratingInfo) {
     }
   });
 
-  meetingPattern = tdElement.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.innerText;
-
-  await startedGettingStats;
-  const enrollmentStat = enrollmentStats[meetingPattern];
-  const enrollmentStatsDiv = document.createElement("div");
-  enrollmentStatsDiv.innerHTML = `
-              <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
-                <div style="color: #666;">
-                  <span style="margin-right: 4px; font-weight:bold">Enrolled: </span> ${enrollmentStat || "N/A"}
-                </div>
-              </div>
-            `;
 
   infoButton.appendChild(tooltip);
   scoreContainer.appendChild(scoreText);
@@ -521,7 +513,19 @@ async function appendRatingInfoToCell(tdElement, ratingInfo) {
   tdElement.appendChild(sectionTimeMatch);
   tdElement.appendChild(friendsTaken);
   tdElement.appendChild(friendsInterested);
-  tdElement.appendChild(enrollmentStatsDiv);
+  if (isSavedSchedulePage) {
+    const meetingPattern = tdElement.parentElement?.lastChild?.textContent;
+    const enrollmentStat = meetingPattern && enrollmentStats[meetingPattern];
+    const enrollmentStatsDiv = document.createElement("div");
+    enrollmentStatsDiv.innerHTML = `
+              <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
+                <div style="color: #666;">
+                  <span style="margin-right: 4px; font-weight:bold">Enrolled: </span> ${enrollmentStat || "N/A"}
+                </div>
+              </div>
+            `;
+    tdElement.appendChild(enrollmentStatsDiv);
+  }
 }
 
 function createRatingToolTip(ratingInfo) {
@@ -784,47 +788,37 @@ function bsFind(sortedArray, target) {
   return left;
 }
 
-function nullOrUndefined(object) {
-  return object === null || object === undefined || isNaN(object);
-}
-
-async function handleFindEnrollmentStatistics() {
+async function findEnrollmentStatistics() {
   const currentUrl = window.location.href;
-  const savedScheduleIdMatch = currentUrl.match(/\d{5}\$\d{5}/);
-  if (!savedScheduleIdMatch) {
-    console.error('Could not extract saved schedule ID from URL:', currentUrl);
-    return [];
+  if (!currentUrl.includes("scu/d/inst")) {
+    console.error('Page URL did not include /d/ :', currentUrl);
+    return;
   }
-  const savedScheduleId = savedScheduleIdMatch[0];
-  const apiUrl = `https://www.myworkday.com/scu/inst/15$369057/${savedScheduleId}.htmld`;
-  
+  const apiUrl = currentUrl.replace(/scu\/d\/inst/, "scu/inst");
+
   try {
     const response = await fetch(apiUrl);
-
     if (!response.ok) {
-      console.error('Failed to fetch course data:', response.statusText);
-      return [];
+      console.error('Failed to fetch course data:', response);
     }
     const data = await response.json();
-
     const coursesData = data?.body?.children?.[6]?.rows;
     let courseSections = [];
 
-    coursesData?.forEach(row => {
-      const courseSection = row.cellsMap?.["162.1"];
-      const meetingPattern = row.cellsMap?.["162.7"]?.instances?.[0]?.text;
+    for (const row of coursesData) {
+      const courseSectionData = row.cellsMap?.["162.1"];
+      const sectionMeetingPattern = row.cellsMap?.["162.7"]?.instances?.[0]?.text;
 
-      if (courseSection) {
-        const match = courseSection.selfUriTemplate.match(/15\$(\d+\/\d+\$\d+)/);
-        if (match) {
-          courseSections.push({ meetingPattern, url: match[0] });
+      if (courseSectionData) {
+        if (courseSectionData.selfUriTemplate) {
+          courseSections.push({ meetingPattern: sectionMeetingPattern, uri: courseSectionData.selfUriTemplate });
         }
       }
-    });
+    };
 
-    // Create and wait for all enrollment fetch promises
+    // Create and wait for all enrollment fetch promises concurrently.
     await Promise.all(courseSections.map(async (courseSection) => {
-      const sectionUrl = `https://www.myworkday.com/scu/inst/${courseSection.url}.htmld`;
+      const sectionUrl = `${courseSection.uri}.htmld`;
       const meetingPattern = courseSection.meetingPattern;
 
       try {
@@ -835,7 +829,7 @@ async function handleFindEnrollmentStatistics() {
         }
         const sectionData = await sectionResponse.json();
         const enrolledStats = sectionData?.body?.children?.[0]?.children?.[1]?.children?.find(child => child.label === "Enrolled/Capacity")?.value;
-        
+
         if (enrolledStats) {
           enrollmentStats[meetingPattern] = enrolledStats;
         }
@@ -843,12 +837,11 @@ async function handleFindEnrollmentStatistics() {
         console.error('Error fetching section data:', error);
       }
     }));
-    
-    if (startedGettingStatsResolver) {
-      startedGettingStatsResolver();
-    }
   } catch (error) {
     console.error('Error fetching course data:', error);
-    return [];
   }
+}
+
+function nullOrUndefined(object) {
+  return object === null || object === undefined || isNaN(object);
 }
