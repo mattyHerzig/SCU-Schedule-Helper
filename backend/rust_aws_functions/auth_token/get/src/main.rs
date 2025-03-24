@@ -1,6 +1,8 @@
 use lambda_http::{run, service_fn, tracing, Error};
 mod http_handler;
 use http_handler::function_handler;
+mod model;
+mod errors;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
