@@ -1,10 +1,27 @@
 use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAuthTokenResponse {
+    pub access_token: String,
+    pub access_token_expiration_date: String,
+    pub refresh_token: String,
+    pub o_auth_info: Option<OAuthInfo>,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserAuthorization {
     pub user_id: String,
     pub oauth_info: Option<OAuthInfo>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct OAuthInfo {
+    pub email: String,
+    pub name: String,
+    pub photo_url: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -15,11 +32,11 @@ pub struct JwtClaims {
 }
 
 #[derive(Serialize, Deserialize)] 
+#[serde(untagged)]
 pub enum GoogleUserInfoResponse {
     Success(GoogleUserInfoSuccessResponse),
     Error(GoogleUserInfoErrorResponse),
 }
-
 
 #[derive(Serialize, Deserialize)]
 pub struct GoogleUserInfoSuccessResponse {
@@ -36,21 +53,4 @@ pub struct GoogleUserInfoSuccessResponse {
 pub struct GoogleUserInfoErrorResponse {
     pub error: String,
     pub error_description: String,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetAuthTokenResponse {
-    pub access_token: String,
-    pub access_token_expiration_date: String,
-    pub refresh_token: String,
-    pub o_auth_info: Option<OAuthInfo>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct OAuthInfo {
-    pub email: String,
-    pub name: String,
-    pub photo_url: String,
 }

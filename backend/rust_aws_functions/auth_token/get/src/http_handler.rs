@@ -1,7 +1,8 @@
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use lambda_http::{Body, Error, Request, Response};
 use crate::errors::*;
 use crate::model::*;
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use lambda_http::{Body, Error, Request, Response};
+use reqwest::header::HeaderValue;
 
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     match get_user_authorization(event).await {
@@ -58,7 +59,7 @@ async fn get_user_authorization(event: Request) -> Result<UserAuthorization, Err
         return Err(NO_HEADER.into());
     }
 
-    let default_header = reqwest::header::HeaderValue::from_str("").unwrap();
+    let default_header: HeaderValue = ("").parse().unwrap();
     let authorization_header = event
         .headers()
         .get("authorization")
@@ -90,7 +91,7 @@ async fn verify_google_oauth_token(token: &str) -> Result<UserAuthorization, Err
 
     let response_body = response.text().await.unwrap();
     let user_info: GoogleUserInfoResponse = serde_json::from_str(&response_body)
-        .map_err(|_| format!("{}, please try again.", GOOGLE_OAUTH_ERROR))?;
+        .map_err(|e| format!("{}, {} please try again.", e,  GOOGLE_OAUTH_ERROR))?;
 
     match user_info {
         GoogleUserInfoResponse::Success(response) => {
@@ -161,38 +162,37 @@ fn generate_token(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lambda_http::{Request, RequestExt};
-    use std::collections::HashMap;
+    use lambda_http::Request;
+    use dotenv::dotenv;
+    use std::sync::Once;
 
-    #[tokio::test]
-    async fn test_generic_http_handler() {
-        let request = Request::default();
+    static INIT: Once = Once::new();
 
-        let response = function_handler(request).await.unwrap();
-        assert_eq!(response.status(), 200);
-
-        let body_bytes = response.body().to_vec();
-        let body_string = String::from_utf8(body_bytes).unwrap();
-
-        assert_eq!(
-            body_string,
-            "Hello world, this is an AWS Lambda HTTP request"
-        );
+    pub fn initialize() {
+        INIT.call_once(|| {
+            dotenv().ok();
+        });
     }
 
     #[tokio::test]
-    async fn test_http_handler_with_query_string() {
-        let mut query_string_parameters: HashMap<String, String> = HashMap::new();
-        query_string_parameters.insert("name".into(), "get".into());
+    async fn test_google_oauth_request() {
+        initialize();
+        let mut request = Request::default();
 
-        let request = Request::default().with_query_string_parameters(query_string_parameters);
+        // insert Authorization: OAuth env::var("GOOGLE_OAUTH_TOKEN").unwrap()
+        request.headers_mut().insert(
+            "authorization",
+            format!("OAuth {}", std::env::var("GOOGLE_OAUTH_TOKEN").unwrap())
+                .parse()
+                .unwrap(),
+        );
 
         let response = function_handler(request).await.unwrap();
-        assert_eq!(response.status(), 200);
+   
 
         let body_bytes = response.body().to_vec();
         let body_string = String::from_utf8(body_bytes).unwrap();
-
-        assert_eq!(body_string, "Hello get, this is an AWS Lambda HTTP request");
+        println!("{}", body_string);
+        assert_eq!(response.status(), 200);
     }
 }
