@@ -5,8 +5,9 @@ use serde::{Serialize, Deserialize};
 pub struct GetAuthTokenResponse {
     pub access_token: String,
     pub access_token_expiration_date: String,
-    pub refresh_token: String,
-    pub o_auth_info: Option<OAuthInfo>,
+    pub refresh_token: Option<String>,
+    #[serde(rename = "oAuthInfo")]
+    pub oauth_info: Option<OAuthInfo>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -29,6 +30,23 @@ pub struct JwtClaims {
     pub sub: String,
     pub exp: usize,
     pub r#type: String
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GoogleTokenInfoResponse {
+    Success(GoogleTokenInfoSuccessResponse),
+    Error(GoogleTokenInfoErrorResponse),
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GoogleTokenInfoSuccessResponse {
+    pub aud: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GoogleTokenInfoErrorResponse {
+    pub error_description: String,
 }
 
 #[derive(Serialize, Deserialize)] 
