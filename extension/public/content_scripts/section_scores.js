@@ -91,23 +91,23 @@ async function checkPage() {
 
 async function handleFindSectionsGrid() {
   const courseSectionRows = document.querySelectorAll(
-    "table.lockedTable tbody tr",
+    "table tbody tr",
   );
-  const mainSectionRows = document.querySelectorAll("table.mainTable tbody tr");
+
   for (let i = 0; i < courseSectionRows.length; i++) {
     const row = courseSectionRows[i];
+    row.style.height = "162px";
     const courseSectionCell = row.cells[0];
     let courseText = courseSectionCell.innerText.trim();
     if (courseText === "") continue;
     if (courseSectionCell.hasAttribute("has-ratings")) continue;
     courseSectionCell.setAttribute("has-ratings", "true");
-    const mainRow = mainSectionRows[i];
-    const instructorCell = mainRow.cells[5];
+    const instructorCell = row.cells[6];
     let professorName = instructorCell.innerText.trim().split("\n")[0];
     const pushDown = document.createElement("div");
     pushDown.style.height = "100px";
     courseSectionCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseSectionCell, mainRow, professorName, false);
+    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
     courseSectionCell.removeChild(pushDown);
   }
 }
@@ -189,7 +189,7 @@ async function displayProfessorDifficulty(
   if (isSavedSchedulePage) {
     meetingPattern = mainSectionRow.cells[9].textContent.trim();
   } else {
-    meetingPattern = mainSectionRow.cells[7].textContent.trim();
+    meetingPattern = mainSectionRow.cells[8].textContent.trim();
   }
 
   const timeMatch = meetingPattern.match(/\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/);
@@ -504,7 +504,7 @@ async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo
       document.body.removeChild(friendsInterestedTooltip);
     }
   });
-
+  
 
   infoButton.appendChild(tooltip);
   scoreContainer.appendChild(scoreText);
