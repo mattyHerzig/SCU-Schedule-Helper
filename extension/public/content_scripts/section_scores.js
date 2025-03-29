@@ -60,7 +60,7 @@ chrome.storage.local.get(
       childList: true,
       subtree: true,
     });
-  },
+  }
 );
 
 async function checkPage() {
@@ -71,9 +71,16 @@ async function checkPage() {
     inTooltip = false;
     inButton = false;
   }
-  const pageTitle = document.querySelector('[data-automation-id="pageHeaderTitleText"]');
-  const isSavedSchedulePage = pageTitle?.innerText === "View Student Registration Saved Schedule" ? true : false; // Saved Schedule Page
-  const isFindCoursesPage = document.querySelector('[data-automation-label="SCU Find Course Sections"]'); // Find Courses Page
+  const pageTitle = document.querySelector(
+    '[data-automation-id="pageHeaderTitleText"]'
+  );
+  const isSavedSchedulePage =
+    pageTitle?.innerText === "View Student Registration Saved Schedule"
+      ? true
+      : false; // Saved Schedule Page
+  const isFindCoursesPage = document.querySelector(
+    '[data-automation-label="SCU Find Course Sections"]'
+  ); // Find Courses Page
   if (isFindCoursesPage) {
     await handleFindSectionsGrid();
   } else if (isSavedSchedulePage) {
@@ -116,9 +123,7 @@ async function handleFindSectionsGrid() {
 }
 
 async function handleSavedSchedulePageGrid() {
-  const courses = document.querySelectorAll(
-    '[data-testid="table"] tbody tr',
-  );
+  const courses = document.querySelectorAll('[data-testid="table"] tbody tr');
   const displayPromises = [];
   for (let i = 0; i < courses.length; i++) {
     const courseRow = courses[i];
@@ -134,11 +139,16 @@ async function handleSavedSchedulePageGrid() {
 
     courseCell.appendChild(pushDown);
     const displayPromise = new Promise((resolve) => {
-      displayProfessorDifficulty(courseCell, courseRow, professorName, true).then(() => {
+      displayProfessorDifficulty(
+        courseCell,
+        courseRow,
+        professorName,
+        true
+      ).then(() => {
         courseCell.removeChild(pushDown);
         resolve();
       });
-    })
+    });
     displayPromises.push(displayPromise);
   }
   await Promise.all(displayPromises);
@@ -162,7 +172,10 @@ async function displayProfessorDifficulty(
   let scuEvalsQuality = null;
   let scuEvalsDifficulty = null;
   let scuEvalsWorkload = null;
-  let rmpLink = `https://www.ratemyprofessors.com/search/professors?q=${getProfName(professorName, true)}`;
+  let rmpLink = `https://www.ratemyprofessors.com/search/professors?q=${getProfName(
+    professorName,
+    true
+  )}`;
   if (rmpResponse && rmpResponse.legacyId)
     rmpLink = `https://www.ratemyprofessors.com/professor/${rmpResponse.legacyId}`;
 
@@ -195,10 +208,11 @@ async function displayProfessorDifficulty(
     meetingPattern = mainSectionRow.cells[8].textContent.trim();
   }
 
-  const timeMatch = meetingPattern.match(/\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/);
+  const timeMatch = meetingPattern.match(
+    /\d{1,2}:\d{2} [AP]M - \d{1,2}:\d{2} [AP]M/
+  );
   let timeWithinPreference = false;
   if (timeMatch) {
-
     const meetingTime = timeMatch[0];
     if (isTimeWithinPreference(meetingTime)) {
       timeWithinPreference = true;
@@ -223,7 +237,7 @@ async function displayProfessorDifficulty(
   for (const friend in friendInterestedSections[courseCode]) {
     if (friendInterestedSections[courseCode][friend].includes(prof)) {
       const match = friendInterestedSections[courseCode][friend].match(
-        interestedSectionPattern,
+        interestedSectionPattern
       );
       if (match && courseText === match[2]) {
         friendsInterested.push(friends[friend].name);
@@ -242,11 +256,17 @@ async function displayProfessorDifficulty(
   if (scuEvalsQuality && !scuEvalsQualityPercentile) {
     scuEvalsQualityPercentile = (scuEvalsQuality - 1) / 4;
   }
-  let scuEvalsDifficultyPercentile = getPercentile(scuEvalsDifficulty, difficultyAvgs);
+  let scuEvalsDifficultyPercentile = getPercentile(
+    scuEvalsDifficulty,
+    difficultyAvgs
+  );
   if (scuEvalsDifficulty && !scuEvalsDifficultyPercentile) {
     scuEvalsDifficultyPercentile = (scuEvalsDifficulty - 1) / 4;
   }
-  let scuEvalsWorkloadPercentile = getPercentile(scuEvalsWorkload, workloadAvgs);
+  let scuEvalsWorkloadPercentile = getPercentile(
+    scuEvalsWorkload,
+    workloadAvgs
+  );
   if (scuEvalsWorkload && !scuEvalsWorkloadPercentile) {
     scuEvalsWorkloadPercentile = scuEvalsWorkload / 15.0;
   }
@@ -308,7 +328,7 @@ function calcOverallScore(scores) {
     return scuEvalsScore(
       scuEvalsQualityPercentile,
       scuEvalsDifficultyPercentile,
-      scuEvalsWorkloadPercentile,
+      scuEvalsWorkloadPercentile
     );
   }
   if (
@@ -322,9 +342,9 @@ function calcOverallScore(scores) {
     scuEvalsScore(
       scuEvalsQualityPercentile,
       scuEvalsDifficultyPercentile,
-      scuEvalsWorkloadPercentile,
+      scuEvalsWorkloadPercentile
     ) *
-    (scuEvals / 100) +
+      (scuEvals / 100) +
     rmpScore(rmpQuality, rmpDifficulty) * (rmp / 100)
   );
 }
@@ -332,7 +352,7 @@ function calcOverallScore(scores) {
 function scuEvalsScore(
   qualityPercentile,
   difficultyPercentile,
-  workloadPercentile,
+  workloadPercentile
 ) {
   const qualityScore = qualityPercentile * 100;
   const difficultyScore =
@@ -351,7 +371,11 @@ function rmpScore(quality, difficulty) {
   return ((quality + difficultyScore) / 8) * 10;
 }
 
-async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo) {
+async function appendRatingInfoToCell(
+  tdElement,
+  isSavedSchedulePage,
+  ratingInfo
+) {
   const overallScore = calcOverallScore(ratingInfo);
   const scoreContainer = document.createElement("div");
   scoreContainer.style.display = "flex";
@@ -361,13 +385,20 @@ async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo
   // Create score text
   const scoreText = document.createElement("div");
   scoreText.innerHTML = `
-        <span style="font-size: 24px; font-weight: bold; color: ${getRatingColor(overallScore, 0, 10, true)}; ">${overallScore?.toFixed(2) || "N/A"}</span>
+        <span style="font-size: 24px; font-weight: bold; color: ${getRatingColor(
+          overallScore,
+          0,
+          10,
+          true
+        )}; ">${overallScore?.toFixed(2) || "N/A"}</span>
         <span style="color: #6c757d; font-size: 16px;">/ 10</span>
       `;
 
   // Create info button with tooltip
   const infoButton = document.createElement("div");
-  infoButton.innerHTML = `<img src="${chrome.runtime.getURL("images/info_icon.png")}" alt ="info" width="17" height="17"/>`;
+  infoButton.innerHTML = `<img src="${chrome.runtime.getURL(
+    "images/info_icon.png"
+  )}" alt ="info" width="17" height="17"/>`;
   infoButton.style.cssText = `
         cursor: help;
         color: #6c757d;
@@ -434,14 +465,20 @@ async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo
   sectionTimeMatch.innerHTML = `      
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${(ratingInfo.matchesTimePreference && "✓") || "X"}</span> Section Time
+                <span style="margin-right: 4px; font-weight:bold">${
+                  (ratingInfo.matchesTimePreference && "✓") || "X"
+                }</span> Section Time
               </div>
             </div>`;
   const friendsTaken = document.createElement("div");
   friendsTaken.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsTaken.length}</span> ${(ratingInfo.friendsTaken.length === 1 && "Friend") || "Friends"} Took
+                <span style="margin-right: 4px; font-weight:bold">${
+                  ratingInfo.friendsTaken.length
+                }</span> ${
+    (ratingInfo.friendsTaken.length === 1 && "Friend") || "Friends"
+  } Took
               </div>
             </div>
           `;
@@ -475,13 +512,17 @@ async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo
   friendsInterested.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsInterested.length}</span> ${(ratingInfo.friendsInterested.length === 1 && "Friend") || "Friends"} Interested
+                <span style="margin-right: 4px; font-weight:bold">${
+                  ratingInfo.friendsInterested.length
+                }</span> ${
+    (ratingInfo.friendsInterested.length === 1 && "Friend") || "Friends"
+  } Interested
               </div>
             </div>
           `;
 
   const friendsInterestedTooltip = createFriendsToolTip(
-    ratingInfo.friendsInterested,
+    ratingInfo.friendsInterested
   );
   friendsInterested.addEventListener("mouseenter", (event) => {
     if (ratingInfo.friendsInterested.length === 0) return;
@@ -507,7 +548,6 @@ async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo
       document.body.removeChild(friendsInterestedTooltip);
     }
   });
-  
 
   infoButton.appendChild(tooltip);
   scoreContainer.appendChild(scoreText);
@@ -523,7 +563,9 @@ async function appendRatingInfoToCell(tdElement, isSavedSchedulePage, ratingInfo
     enrollmentStatsDiv.innerHTML = `
               <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
                 <div style="color: #666;">
-                  <span style="margin-right: 4px; font-weight:bold">Enrolled: </span> ${enrollmentStat || "N/A"}
+                  <span style="margin-right: 4px; font-weight:bold">Seats Available: </span> ${
+                    enrollmentStat || "N/A"
+                  }
                 </div>
               </div>
             `;
@@ -549,7 +591,7 @@ function createRatingToolTip(ratingInfo) {
     Math.abs(prefferedDifficulty - rmpDifficulty + 1),
     0,
     4,
-    false,
+    false
   );
   const scuEvalsQualityScore = scuEvalsQualityPercentile
     ? scuEvalsQualityPercentile * 100
@@ -558,17 +600,17 @@ function createRatingToolTip(ratingInfo) {
     scuEvalsQualityScore,
     0,
     100,
-    true,
+    true
   );
   const scuEvalsDifficultyScore = scuEvalsDifficultyPercentile
     ? Math.abs(preferredDifficultyPercentile - scuEvalsDifficultyPercentile) *
-    100
+      100
     : undefined;
   const scuEvalsDifficultyColor = getRatingColor(
     scuEvalsDifficultyScore,
     0,
     100,
-    false,
+    false
   );
   const scuEvalsWorkloadScore = scuEvalsWorkloadPercentile
     ? Math.abs(preferredDifficultyPercentile - scuEvalsWorkloadPercentile) * 100
@@ -577,7 +619,7 @@ function createRatingToolTip(ratingInfo) {
     scuEvalsWorkloadScore,
     0,
     100,
-    false,
+    false
   );
   ratingDiv.innerHTML = `
         <div style="
@@ -615,12 +657,21 @@ function createRatingToolTip(ratingInfo) {
             
             <div style="display: flex; gap: 20px; margin: 8px 0;">
               <div>
-                <span style="color: ${getRatingColor(rmpQuality, 1, 5, true)}; font-size: 16px; font-weight: bold;">${rmpQuality?.toFixed(2) || "N/A"}</span>
+                <span style="color: ${getRatingColor(
+                  rmpQuality,
+                  1,
+                  5,
+                  true
+                )}; font-size: 16px; font-weight: bold;">${
+    rmpQuality?.toFixed(2) || "N/A"
+  }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">quality</div>
               </div>
               <div>
-                <span style="color: ${rmpDifficultyColor};font-size: 16px; font-weight: bold;">${rmpDifficulty?.toFixed(2) || "N/A"}</span>
+                <span style="color: ${rmpDifficultyColor};font-size: 16px; font-weight: bold;">${
+    rmpDifficulty?.toFixed(2) || "N/A"
+  }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">difficulty</div>
               </div>
@@ -631,25 +682,32 @@ function createRatingToolTip(ratingInfo) {
             </div>
             
             <div style="display: flex; gap: 20px; margin: 8px 0;">
-            ${!userInfo.id &&
-    `<div style="white-space: normal; width: 180px;">You must be signed in to view SCU evals data. Sign-in with the extension popup. </div>`
-    ||
-    `
+            ${
+              (!userInfo.id &&
+                `<div style="white-space: normal; width: 180px;">You must be signed in to view SCU evals data. Sign-in with the extension popup. </div>`) ||
+              `
               <div>
-                <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${scuEvalsQuality?.toFixed(2) || "N/A"}</span>
+                <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${
+                scuEvalsQuality?.toFixed(2) || "N/A"
+              }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">quality</div>
               </div>
               <div>
-                <span style="color: ${scuEvalsDifficultyColor}; font-size: 16px; font-weight: bold;">${scuEvalsDifficulty?.toFixed(2) || "N/A"}</span>
+                <span style="color: ${scuEvalsDifficultyColor}; font-size: 16px; font-weight: bold;">${
+                scuEvalsDifficulty?.toFixed(2) || "N/A"
+              }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">difficulty</div>
               </div>
               <div>
-                <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${scuEvalsWorkload?.toFixed(2) || "N/A"}</span>
+                <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${
+                scuEvalsWorkload?.toFixed(2) || "N/A"
+              }</span>
                 <div style="color: #666; font-size: 12px;">hrs / wk</div>
               </div>
-              `}
+              `
+            }
             </div>
           </div>
         </div>
@@ -684,10 +742,10 @@ function createFriendsToolTip(friendsTakenOrInterested) {
           "></div>
           <div style="position: relative; pointer-events: auto; width:max-content">
           ${friendsTakenOrInterested.reduce((acc, friend) => {
-    return (
-      acc + `<div style="color: #666; font-size:14px">${friend}</div>`
-    );
-  }, "")}
+            return (
+              acc + `<div style="color: #666; font-size:14px">${friend}</div>`
+            );
+          }, "")}
           </div>
         </div>
       `;
@@ -713,27 +771,27 @@ function getRatingColor(rating, ratingMin, ratingMax, goodValuesAreHigher) {
     return interpolateColor(
       redShade,
       yellowShade,
-      (rating - ratingMin) / (ratingMid - ratingMin),
+      (rating - ratingMin) / (ratingMid - ratingMin)
     );
   }
   if (rating <= ratingMid && !goodValuesAreHigher) {
     return interpolateColor(
       greenShade,
       yellowShade,
-      (rating - ratingMin) / (ratingMid - ratingMin),
+      (rating - ratingMin) / (ratingMid - ratingMin)
     );
   }
   if (goodValuesAreHigher) {
     return interpolateColor(
       yellowShade,
       greenShade,
-      (rating - ratingMid) / (ratingMax - ratingMid),
+      (rating - ratingMid) / (ratingMax - ratingMid)
     );
   }
   return interpolateColor(
     yellowShade,
     redShade,
-    (rating - ratingMid) / (ratingMax - ratingMid),
+    (rating - ratingMid) / (ratingMax - ratingMid)
   );
 }
 
@@ -794,7 +852,7 @@ function bsFind(sortedArray, target) {
 async function findEnrollmentStatistics() {
   const currentUrl = window.location.href;
   if (!currentUrl.includes("scu/d/inst")) {
-    console.error('Page URL did not include /d/ :', currentUrl);
+    console.error("Page URL did not include /d/ :", currentUrl);
     return;
   }
   const apiUrl = currentUrl.replace(/scu\/d\/inst/, "scu/inst");
@@ -802,7 +860,7 @@ async function findEnrollmentStatistics() {
   try {
     const response = await fetch(apiUrl);
     if (!response.ok) {
-      console.error('Failed to fetch course data:', response);
+      console.error("Failed to fetch course data:", response);
     }
     const data = await response.json();
     const coursesData = data?.body?.children?.[6]?.rows;
@@ -810,39 +868,87 @@ async function findEnrollmentStatistics() {
 
     for (const row of coursesData) {
       const courseSectionData = row.cellsMap?.["162.1"];
-      const sectionMeetingPattern = row.cellsMap?.["162.7"]?.instances?.[0]?.text;
+      const sectionMeetingPattern =
+        row.cellsMap?.["162.7"]?.instances?.[0]?.text;
 
       if (courseSectionData) {
         if (courseSectionData.selfUriTemplate) {
-          courseSections.push({ meetingPattern: sectionMeetingPattern, uri: courseSectionData.selfUriTemplate });
+          courseSections.push({
+            meetingPattern: sectionMeetingPattern,
+            uri: courseSectionData.selfUriTemplate,
+          });
         }
       }
-    };
+    }
 
     // Create and wait for all enrollment fetch promises concurrently.
-    await Promise.all(courseSections.map(async (courseSection) => {
-      const sectionUrl = `${courseSection.uri}.htmld`;
-      const meetingPattern = courseSection.meetingPattern;
+    await Promise.all(
+      courseSections.map(async (courseSection) => {
+        const sectionUrl = `${courseSection.uri}.htmld`;
+        const meetingPattern = courseSection.meetingPattern;
 
-      try {
-        const sectionResponse = await fetch(sectionUrl);
-        if (!sectionResponse.ok) {
-          console.error('Failed to fetch section data:', sectionResponse.statusText);
-          return;
-        }
-        const sectionData = await sectionResponse.json();
-        const enrolledStats = sectionData?.body?.children?.[0]?.children?.[1]?.children?.find(child => child.label === "Enrolled/Capacity")?.value;
+        try {
+          const sectionResponse = await fetch(sectionUrl);
+          if (!sectionResponse.ok) {
+            console.error(
+              "Failed to fetch section data:",
+              sectionResponse.statusText
+            );
+            return;
+          }
 
-        if (enrolledStats) {
-          enrollmentStats[meetingPattern] = enrolledStats;
+          const sectionData = await sectionResponse.json();
+          let enrolledStats = findObjectByPropertyValue(
+            sectionData,
+            "label",
+            "Seats Available"
+          )?.value;
+
+          if (enrolledStats) {
+            if (enrolledStats.match(/\-?\d+ of \d+/)){
+              let [enrolled, total] = enrolledStats.split(" of ");
+              enrolledStats = `${enrolled}/${total}`;
+            }
+            enrollmentStats[meetingPattern] = enrolledStats;
+          }
+        } catch (error) {
+          console.error("Error fetching section data:", error);
         }
-      } catch (error) {
-        console.error('Error fetching section data:', error);
-      }
-    }));
+      })
+    );
   } catch (error) {
-    console.error('Error fetching course data:', error);
+    console.error("Error fetching course data:", error);
   }
+}
+
+function findObjectByPropertyValue(obj, key, value) {
+  if (typeof obj !== "object" || obj === null) {
+    return null;
+  }
+
+  if (obj[key] === value) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const result = findObjectByPropertyValue(item, key, value);
+      if (result) {
+        return result;
+      }
+    }
+  } else {
+    for (const prop in obj) {
+      if (typeof obj[prop] === "object") {
+        const result = findObjectByPropertyValue(obj[prop], key, value);
+        if (result) {
+          return result;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function nullOrUndefined(object) {
