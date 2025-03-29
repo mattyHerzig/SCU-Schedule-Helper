@@ -563,7 +563,7 @@ async function appendRatingInfoToCell(
     enrollmentStatsDiv.innerHTML = `
               <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
                 <div style="color: #666;">
-                  <span style="margin-right: 4px; font-weight:bold">Seats Left: </span> ${
+                  <span style="margin-right: 4px; font-weight:bold">Seats Available: </span> ${
                     enrollmentStat || "N/A"
                   }
                 </div>
@@ -905,9 +905,8 @@ async function findEnrollmentStatistics() {
           )?.value;
 
           if (enrolledStats) {
-            if (enrolledStats.match(/\d+ of \d+/)){
+            if (enrolledStats.match(/\-?\d+ of \d+/)){
               let [enrolled, total] = enrolledStats.split(" of ");
-              if(parseInt(enrolled) < 0) enrolled = 0;
               enrolledStats = `${enrolled}/${total}`;
             }
             enrollmentStats[meetingPattern] = enrolledStats;
