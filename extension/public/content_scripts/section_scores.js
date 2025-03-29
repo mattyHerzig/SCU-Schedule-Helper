@@ -108,14 +108,11 @@ async function handleFindSectionsGrid() {
     courseSectionCell.setAttribute("has-ratings", "true");
     const instructorCell = row.cells[6];
     let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const courseTitleHeight = courseSectionCell.firstElementChild 
-        ? window.getComputedStyle(courseSectionCell.firstElementChild).height 
-        : "0px";
-    const ratingsHeight = 121;
+    const courseTitleHeight = window.getComputedStyle(courseSectionCell.firstElementChild).height;
     displayPromises.push({
       promise: displayProfessorDifficulty(courseSectionCell, row, professorName, false),
       row: row,
-      height: parseInt(courseTitleHeight) + raitingsHeight
+      height: parseInt(courseTitleHeight) + 121
     });
   }
   
