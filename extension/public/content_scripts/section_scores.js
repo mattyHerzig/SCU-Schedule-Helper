@@ -90,25 +90,28 @@ async function checkPage() {
 }
 
 async function handleFindSectionsGrid() {
-  const courseSectionRows = document.querySelectorAll(
-    "table tbody tr",
-  );
-
+  const courseSectionRows = document.querySelectorAll("table tbody tr");
+  const displayPromises = [];
+  
   for (let i = 0; i < courseSectionRows.length; i++) {
     const row = courseSectionRows[i];
-    row.style.height = "162px";
     const courseSectionCell = row.cells[0];
     let courseText = courseSectionCell.innerText.trim();
-    if (courseText === "") continue;
-    if (courseSectionCell.hasAttribute("has-ratings")) continue;
+    if (courseText === "" || courseSectionCell.hasAttribute("has-ratings")) continue;
     courseSectionCell.setAttribute("has-ratings", "true");
     const instructorCell = row.cells[6];
     let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const pushDown = document.createElement("div");
-    pushDown.style.height = "100px";
-    courseSectionCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
-    courseSectionCell.removeChild(pushDown);
+    const courseTitleHeight = window.getComputedStyle(courseSectionCell.firstElementChild).height;
+    displayPromises.push({
+      promise: displayProfessorDifficulty(courseSectionCell, row, professorName, false),
+      row: row,
+      height: parseInt(courseTitleHeight) + 121
+    });
+  }
+  
+  for (const item of displayPromises) {
+    await item.promise;
+    item.row.style.height = item.height + "px";
   }
 }
 
