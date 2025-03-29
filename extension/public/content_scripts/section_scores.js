@@ -111,7 +111,7 @@ async function handleFindSectionsGrid() {
     const courseTitleHeight = courseSectionCell.firstElementChild 
         ? window.getComputedStyle(courseSectionCell.firstElementChild).height 
         : "0px";
-    const raitingsHeight = 121;
+    const ratingsHeight = 121;
     displayPromises.push({
       promise: displayProfessorDifficulty(courseSectionCell, row, professorName, false),
       row: row,
