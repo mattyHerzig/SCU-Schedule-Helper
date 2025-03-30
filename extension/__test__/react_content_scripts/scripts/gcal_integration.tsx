@@ -1,8 +1,6 @@
-// inject_calendar_button.tsx
-
 import React from "react";
 import { createRoot } from "react-dom/client";
-import GoogleCalendarButton from "./GoogleCalendarButton";
+import GoogleCalendarButton from "../components/gcal_integration/GoogleCalendarIntegration";
 
 const container = document.createElement("div");
 container.style.position = "fixed";

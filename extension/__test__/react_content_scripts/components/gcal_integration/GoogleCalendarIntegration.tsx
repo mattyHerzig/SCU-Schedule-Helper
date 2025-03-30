@@ -1,8 +1,27 @@
-// GoogleCalendarButton.tsx
 import React, { useState } from "react";
+import { RRule, Weekday } from "rrule";
+import { getEnrolledCoursesTables } from "../shared/utils";
 
-// Suppose you have these utility funcs:
-import { doGoogleOauth, addCoursesToGoogleCalendar } from "../shared/googleCalUtils";
+interface CourseEvent {
+  courseName: string;
+  location: string;
+  professor: string;
+  startDate: string;
+  endDate: string;
+  recurrence: string;
+}
+
+const WORKDAY_TO_RRULE_DAY_MAPPING: Record<string, Weekday> = {
+  M: RRule.MO,
+  T: RRule.TU,
+  W: RRule.WE,
+  Th: RRule.TH,
+  F: RRule.FR,
+};
+
+const MEETING_PATTERN_REGEX =
+  /(.*) \| (\d{1,2}:\d{1,2} (?:AM|PM)) - (\d{1,2}:\d{1,2} (?:AM|PM)) \| (.*)/;
+const DAYS_OF_WEEK_STRINGS = ["Su", "M", "T", "W", "Th", "F", "Sa"];
 
 export default function GoogleCalendarButton() {
   const [status, setStatus] = useState<string>("");
@@ -10,32 +29,18 @@ export default function GoogleCalendarButton() {
   const handleClick = async () => {
     try {
       setStatus("Checking for courses...");
-      // 1. Ask the background script for courses:
-      const response = await new Promise<any>((resolve, reject) => {
-        chrome.runtime.sendMessage({ type: "getOrImportCourses" }, (resp) => {
-          if (chrome.runtime.lastError) {
-            return reject(chrome.runtime.lastError);
-          }
-          if (!resp || !resp.ok) {
-            return reject(resp?.message || "Failed to get or import courses.");
-          }
-          resolve(resp);
-        });
-      });
 
-      const courses = response.courses; // these might be in a string format or object format
+      const courses = getRelevantCourses();
       if (!courses || !courses.length) {
         setStatus("No courses found.");
         return;
       }
 
-      // 2. OAuth
       setStatus("Signing in to Google...");
-      await doGoogleOauth();  // your existing Google sign-in logic
+      const token = await chrome.runtime.sendMessage("runCalendarOAuth");
 
-      // 3. Add to Google Calendar
       setStatus("Adding courses to Google Calendar...");
-      await addCoursesToGoogleCalendar(courses);
+      await addCoursesToGoogleCalendar(token, courses);
 
       setStatus("Successfully added courses to Google Calendar!");
     } catch (error) {
@@ -50,4 +55,169 @@ export default function GoogleCalendarButton() {
       {status && <p>{status}</p>}
     </div>
   );
+}
+
+function getRelevantCourses(): CourseEvent[] {
+  const tables = getEnrolledCoursesTables();
+  const courses: CourseEvent[] = [];
+  for (const table of tables) {
+    const rows = Array.from(
+      table.querySelectorAll("tbody > tr") as NodeListOf<HTMLTableRowElement>
+    );
+    for (const row of rows) {
+      const tds = row.querySelectorAll("td");
+      const courseName = tds[1].innerText.trim();
+      const meetingPattern = tds[9].innerText.trim();
+      const professor = tds[10].innerText.trim();
+      const startDateMMDDYYYY = tds[11].innerText.trim();
+      const endDateMMDDYYYY = tds[12].innerText.trim();
+
+      const meetingPatternRegexMatch = meetingPattern.match(
+        MEETING_PATTERN_REGEX
+      );
+      if (!meetingPatternRegexMatch) {
+        console.error(
+          `Error: Could not parse meeting pattern: ${meetingPattern}`
+        );
+        continue;
+      }
+
+      const courseDaysOfWeek = meetingPatternRegexMatch[1]
+        .split(" ")
+        .map((day) => day.trim());
+      const startTime = meetingPatternRegexMatch[2].trim();
+      const startDate = new Date(`${startDateMMDDYYYY} ${startTime}`);
+      // If start time day of the week is not in days,
+      // then the start date should be the first day of the week in days,
+      // after the start time
+      startDate.setDate(
+        startDate.getDate() + calcStartDateOffset(startDate, courseDaysOfWeek)
+      );
+
+      const endTime = meetingPatternRegexMatch[3].trim();
+      const endDate = new Date(
+        `${startDate.toISOString().split("T")[0]} ${endTime}`
+      );
+
+      // The end date given is the last day of finals examinations,
+      // but classes end the week before finals.
+      const actualCourseEndDate = getSundayBeforeDate(
+        new Date(endDateMMDDYYYY)
+      );
+      const recurrence = createRecurringEvent(
+        courseDaysOfWeek,
+        actualCourseEndDate
+      );
+
+      const location = meetingPatternRegexMatch[4].trim();
+
+      courses.push({
+        courseName,
+        location,
+        professor,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        recurrence,
+      });
+    }
+  }
+  return courses;
+}
+
+async function addCoursesToGoogleCalendar(
+  token: string,
+  courses: CourseEvent[]
+) {
+  const calendarId = "primary"; // Use the primary calendar
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+    calendarId
+  )}/events`;
+
+  const headers = new Headers({
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  });
+
+  for (const course of courses) {
+    const event = {
+      summary: course.courseName,
+      location: course.location,
+      description: `Professor: ${course.professor}`,
+      start: {
+        dateTime: `${course.startDate}`,
+        timeZone: "America/Los_Angeles",
+      },
+      end: {
+        dateTime: `${course.endDate}`,
+        timeZone: "America/Los_Angeles",
+      },
+      recurrence: [course.recurrence],
+    };
+
+    console.log(
+      "Req:",
+      JSON.stringify(
+        {
+          url,
+          headers: Object.fromEntries(headers.entries()),
+          body: event,
+        },
+        null,
+        2
+      )
+    );
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(event),
+    });
+
+    console.log("Response:", response);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `Error adding event to Google Calendar: ${response.status} ${errorText}`
+      );
+    }
+  }
+}
+
+function createRecurringEvent(daysOfWeek: string[], until: Date): string {
+  // Convert input days to RRule days
+  const byweekday = daysOfWeek
+    .map((day) => WORKDAY_TO_RRULE_DAY_MAPPING[day])
+    .filter(Boolean);
+
+  if (byweekday.length === 0) {
+    throw new Error("Invalid days of the week provided.");
+  }
+
+  const rule = new RRule({
+    freq: RRule.WEEKLY,
+    byweekday,
+    until,
+  });
+
+  return rule.toString();
+}
+
+function calcStartDateOffset(startTimeDate: Date, courseDaysOfWeek: string[]) {
+  const startDayOfWeekIndex = startTimeDate.getDay();
+  const firstDayOfWeek = courseDaysOfWeek[0];
+  const firstDayOfWeekIndex = DAYS_OF_WEEK_STRINGS.indexOf(firstDayOfWeek);
+  let daysUntilFirstClass = firstDayOfWeekIndex - startDayOfWeekIndex;
+  if (firstDayOfWeekIndex < startDayOfWeekIndex) {
+    daysUntilFirstClass += 7;
+  }
+  return daysUntilFirstClass;
+}
+
+function getSundayBeforeDate(date: Date): Date {
+  const sundayDate = new Date(date);
+  const dayOfWeek = sundayDate.getDay();
+  const daysToSubtract = dayOfWeek === 0 ? 0 : dayOfWeek;
+  sundayDate.setDate(sundayDate.getDate() - daysToSubtract);
+  return sundayDate;
 }

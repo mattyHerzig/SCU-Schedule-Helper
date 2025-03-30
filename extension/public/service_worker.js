@@ -1,4 +1,5 @@
 import {
+  getCalendarOAuthToken,
   signIn,
   signOut,
   updateSubscriptionAndRefreshUserData,
@@ -91,8 +92,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse(response);
       });
       break;
+    case "runCalendarOAuth":
+      getCalendarOAuthToken().then((response) => {
+        sendResponse(response);
+      });
+      break;
     case "getOrImportCourses":
-      getOrImportCourses().then((response) => {
+      getOrImportCourses()
+        .then((response) => {
           sendResponse(response);
         })
         .catch((err) => {
