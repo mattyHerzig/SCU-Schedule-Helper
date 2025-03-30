@@ -16,14 +16,14 @@ export async function signIn() {
   let oAuthToken;
   try {
     await chrome.identity.clearAllCachedAuthTokens();
-    const { token } = await chrome.identity.getAuthToken({
+    const getAuthTokenResult = await chrome.identity.getAuthToken({
       interactive: true,
       scopes: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
       ],
     });
-    oAuthToken = token;
+    oAuthToken = getAuthTokenResult.token;
   } catch (error) {
     return "Authorization cancelled.";
   }
@@ -195,15 +195,15 @@ export async function signOut() {
 }
 
 export async function getCalendarOAuthToken() {
-  const result = await chrome.identity.getAuthToken({
+  const getAuthTokenResult = await chrome.identity.getAuthToken({
     interactive: true,
     scopes: ["https://www.googleapis.com/auth/calendar.events"],
   });
-  console.log("token", result);
-  if (!result) {
+  console.log("token", getAuthTokenResult);
+  if (!getAuthTokenResult) {
     throw new Error("Failed to get OAuth token.");
   }
-  return result.token;
+  return getAuthTokenResult.token;
 }
 
 /**
