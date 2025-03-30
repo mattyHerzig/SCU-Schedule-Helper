@@ -111,12 +111,8 @@ async function handleFindSectionsGrid() {
         ? window.getComputedStyle(courseSectionCell.firstElementChild).height 
         : "0px";
     const ratingsHeight = 121;
-    const pushDown = document.createElement("div");
-    pushDown.style.height = "100px";
-    courseSectionCell.appendChild(pushDown);
-    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
     row.style.height = (parseInt(courseTitleHeight) + ratingsHeight) + "px";
-    courseSectionCell.removeChild(pushDown);
+    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
   }
 }
 
