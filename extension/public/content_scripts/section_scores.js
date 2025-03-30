@@ -114,7 +114,7 @@ async function handleFindSectionsGrid() {
     const pushDown = document.createElement("div");
     pushDown.style.height = "100px";
     courseSectionCell.appendChild(pushDown);
-    displayProfessorDifficulty(courseSectionCell, row, professorName, false);
+    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
     row.style.height = (parseInt(courseTitleHeight) + ratingsHeight) + "px";
     courseSectionCell.removeChild(pushDown);
   }
