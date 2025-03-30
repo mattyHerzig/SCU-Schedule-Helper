@@ -98,8 +98,7 @@ async function checkPage() {
 
 async function handleFindSectionsGrid() {
   const courseSectionRows = document.querySelectorAll("table tbody tr");
-  const displayPromises = [];
-  
+
   for (let i = 0; i < courseSectionRows.length; i++) {
     const row = courseSectionRows[i];
     const courseSectionCell = row.cells[0];
@@ -112,16 +111,12 @@ async function handleFindSectionsGrid() {
         ? window.getComputedStyle(courseSectionCell.firstElementChild).height 
         : "0px";
     const ratingsHeight = 121;
-    displayPromises.push({
-      promise: displayProfessorDifficulty(courseSectionCell, row, professorName, false),
-      row: row,
-      height: parseInt(courseTitleHeight) + ratingsHeight
-    });
-  }
-  
-  for (const item of displayPromises) {
-    await item.promise;
-    item.row.style.height = item.height + "px";
+    const pushDown = document.createElement("div");
+    pushDown.style.height = "100px";
+    courseSectionCell.appendChild(pushDown);
+    displayProfessorDifficulty(courseSectionCell, row, professorName, false);
+    row.style.height = (parseInt(courseTitleHeight) + ratingsHeight) + "px";
+    courseSectionCell.removeChild(pushDown);
   }
 }
 
