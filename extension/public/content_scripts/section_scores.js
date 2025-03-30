@@ -101,24 +101,18 @@ async function handleFindSectionsGrid() {
 
   for (let i = 0; i < courseSectionRows.length; i++) {
     const row = courseSectionRows[i];
-    row.style.height = "162px";
     const courseSectionCell = row.cells[0];
     let courseText = courseSectionCell.innerText.trim();
-    if (courseText === "") continue;
-    if (courseSectionCell.hasAttribute("has-ratings")) continue;
+    if (courseText === "" || courseSectionCell.hasAttribute("has-ratings")) continue;
     courseSectionCell.setAttribute("has-ratings", "true");
     const instructorCell = row.cells[6];
     let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const pushDown = document.createElement("div");
-    pushDown.style.height = "100px";
-    courseSectionCell.appendChild(pushDown);
-    await displayProfessorDifficulty(
-      courseSectionCell,
-      row,
-      professorName,
-      false
-    );
-    courseSectionCell.removeChild(pushDown);
+    const courseTitleHeight = courseSectionCell.firstElementChild 
+        ? window.getComputedStyle(courseSectionCell.firstElementChild).height 
+        : "0px";
+    const ratingsHeight = 121;
+    row.style.height = (parseInt(courseTitleHeight) + ratingsHeight) + "px";
+    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
   }
 }
 
