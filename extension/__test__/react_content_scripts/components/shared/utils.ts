@@ -79,7 +79,7 @@ export async function updateUserCourseData(results: CourseData[]) {
       "Error occurred while sending data to service worker:",
       error
     );
-    return "An unknown error occured while updating your profile. Please try again.";
+    return "An unknown error occurred while updating your profile. Please try again.";
   }
 }
 
