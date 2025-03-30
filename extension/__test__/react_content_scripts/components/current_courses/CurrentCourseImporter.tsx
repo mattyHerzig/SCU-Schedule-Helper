@@ -121,8 +121,8 @@ function extractCourseData(
   academicPeriod: string,
 ): CourseData {
   const tds = row.querySelectorAll("td");
-  const courseName = tds[4].innerText.trim();
-  let professor = tds[9].innerText.trim();
+  const courseName = tds[5].innerText.trim();
+  let professor = tds[10].innerText.trim();
   const profIndexOfPipe = professor.indexOf("|");
   if (profIndexOfPipe !== -1) {
     professor = professor.substring(0, profIndexOfPipe).trim();
