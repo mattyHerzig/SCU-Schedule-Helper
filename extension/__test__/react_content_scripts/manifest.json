@@ -6,7 +6,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.myworkday.com/scu/d/task/2998$28771.htmld"],
-      "js": ["scripts/current_courses.tsx"]
+      "js": ["scripts/current_courses.tsx", "scripts/gcal_integration.tsx"]
     },
     {
       "matches": ["https://www.myworkday.com/scu/d/task/2998$30300.htmld"],

@@ -7,7 +7,12 @@
   "host_permissions": ["https://www.ratemyprofessors.com/*"],
   "web_accessible_resources": [
     {
-      "resources": ["index.html", "tab/index.html", "images/info_icon.png"],
+      "resources": [
+        "index.html",
+        "tab/index.html",
+        "images/info_icon.png",
+        "images/icon-16.png"
+      ],
       "matches": ["<all_urls>"]
     }
   ],
@@ -48,7 +53,8 @@
     "client_id": "583521775185-ff1gl7infgqmof69u134s6qjjerneuaq.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile"
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/calendar.events"
     ]
   }
 }
