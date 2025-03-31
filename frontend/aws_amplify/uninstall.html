@@ -1,6 +1,7 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Help Us Improve</title>
@@ -134,13 +135,20 @@
     </div>
 
     <script>
+      const urlParams = window.location.search;
+      fetch(`https://api.scu-schedule-helper.me/unsubscribe${urlParams}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       document
         .getElementById("feedback-form")
         .addEventListener("submit", function (event) {
           event.preventDefault();
 
           const selectedReasons = Array.from(
-            document.querySelectorAll('input[name="reason"]:checked'),
+            document.querySelectorAll('input[name="reason"]:checked')
           );
           const validationError = document.getElementById("validation-error");
           validationError.style.display = "none";

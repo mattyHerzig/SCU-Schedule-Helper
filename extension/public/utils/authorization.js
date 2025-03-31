@@ -97,8 +97,10 @@ export async function signIn() {
         const userId =
           (await chrome.storage.local.get("userInfo")).userInfo?.id ||
           "unknown";
-        await chrome.runtime.setUninstallURL(
-          `https://scu-schedule-helper.me/uninstall?u=${userId}&sub=${encodeURIComponent(subscription.endpoint)}`,
+        chrome.runtime.setUninstallURL(
+          `https://scu-schedule-helper.me/uninstall.html?u=${userId}&sub=${encodeURIComponent(
+            subscription.endpoint
+          )}`
         );
       }
     }
