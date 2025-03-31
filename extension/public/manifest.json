@@ -7,7 +7,12 @@
   "host_permissions": ["https://www.ratemyprofessors.com/*"],
   "web_accessible_resources": [
     {
-      "resources": ["index.html", "tab/index.html", "images/info_icon.png"],
+      "resources": [
+        "index.html",
+        "tab/index.html",
+        "images/info_icon.png",
+        "images/icon-16.png"
+      ],
       "matches": ["<all_urls>"]
     }
   ],

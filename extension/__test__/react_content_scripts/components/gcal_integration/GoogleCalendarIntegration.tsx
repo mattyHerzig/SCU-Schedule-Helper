@@ -25,11 +25,32 @@ const DAYS_OF_WEEK_STRINGS = ["Su", "M", "T", "W", "Th", "F", "Sa"];
 
 export default function GoogleCalendarButton() {
   const [status, setStatus] = useState<string>("");
+  const [buttonText, setButtonText] = useState<string>(
+    "Add Courses to Google Calendar"
+  );
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+
+  const buttonStyle = {
+    padding: "10px 20px",
+    borderRadius: "999px",
+    fontSize: "14px",
+    fontWeight: "500",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    whiteSpace: "nowrap",
+    outline: "none",
+    backgroundColor: isHovered ? "#333" : "white",
+    color: isHovered ? "white" : "#333",
+    border: "1px solid hsla(0, 0%, 20%, 1)",
+    boxShadow: "0 0 1px hsla(0, 0%, 20%, 1) inset",
+    display: "flex",
+    alignItems: "center", 
+    gap: "8px", 
+  };
 
   const handleClick = async () => {
     try {
       setStatus("Checking for courses...");
-
       const courses = getRelevantCourses();
       if (!courses || !courses.length) {
         setStatus("No courses found.");
@@ -42,7 +63,8 @@ export default function GoogleCalendarButton() {
       setStatus("Adding courses to Google Calendar...");
       await addCoursesToGoogleCalendar(token, courses);
 
-      setStatus("Successfully added courses to Google Calendar!");
+      setStatus("");
+      setButtonText("Courses Added to Google Calendar");
     } catch (error) {
       console.error(error);
       setStatus("Error: " + error);
@@ -51,7 +73,15 @@ export default function GoogleCalendarButton() {
 
   return (
     <div>
-      <button onClick={handleClick}>Add Courses to Google Calendar</button>
+      <button
+        style={buttonStyle}
+        onClick={handleClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <img src={chrome.runtime.getURL("images/icon-16.png")} />
+        {buttonText}
+      </button>
       {status && <p>{status}</p>}
     </div>
   );
@@ -87,9 +117,6 @@ function getRelevantCourses(): CourseEvent[] {
         .map((day) => day.trim());
       const startTime = meetingPatternRegexMatch[2].trim();
       const startDate = new Date(`${startDateMMDDYYYY} ${startTime}`);
-      // If start time day of the week is not in days,
-      // then the start date should be the first day of the week in days,
-      // after the start time
       startDate.setDate(
         startDate.getDate() + calcStartDateOffset(startDate, courseDaysOfWeek)
       );
@@ -99,8 +126,6 @@ function getRelevantCourses(): CourseEvent[] {
         `${startDate.toISOString().split("T")[0]} ${endTime}`
       );
 
-      // The end date given is the last day of finals examinations,
-      // but classes end the week before finals.
       const actualCourseEndDate = getSundayBeforeDate(
         new Date(endDateMMDDYYYY)
       );
@@ -128,7 +153,7 @@ async function addCoursesToGoogleCalendar(
   token: string,
   courses: CourseEvent[]
 ) {
-  const calendarId = "primary"; // Use the primary calendar
+  const calendarId = "primary";
   const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
     calendarId
   )}/events`;
@@ -185,7 +210,6 @@ async function addCoursesToGoogleCalendar(
 }
 
 function createRecurringEvent(daysOfWeek: string[], until: Date): string {
-  // Convert input days to RRule days
   const byweekday = daysOfWeek
     .map((day) => WORKDAY_TO_RRULE_DAY_MAPPING[day])
     .filter(Boolean);
