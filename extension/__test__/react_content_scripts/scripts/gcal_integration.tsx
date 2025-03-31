@@ -2,10 +2,19 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import GoogleCalendarButton from "../components/gcal_integration/GoogleCalendarIntegration";
 
+
 const isButtonAdded = () => {
   return !!document.getElementById('gcal-button-container');
 };
 
+const observer = new MutationObserver((mutations) => {
+    injectButton();
+});
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
 
 const injectButton = () => {
     if (isButtonAdded()) return;
@@ -29,11 +38,3 @@ const injectButton = () => {
     }
   };
 
-const observer = new MutationObserver((mutations) => {
-  injectButton();
-});
-
-observer.observe(document.body, {
-  childList: true,
-  subtree: true
-});
