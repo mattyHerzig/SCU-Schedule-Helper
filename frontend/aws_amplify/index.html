@@ -1,60 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SCU Schedule Helper</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
-      }
-      header {
-        background-color: #862633;
-        color: white;
-        padding: 15px;
-        text-align: center;
-      }
-      .content {
-        text-align: center;
-        margin-top: 50px;
-      }
-      .content h1 {
-        font-size: 2.5em;
-        color: #333;
-      }
-      .content p {
-        font-size: 1.2em;
-        color: #555;
-      }
-      .content a {
-        color: #862633;
-        text-decoration: none;
-        font-weight: bold;
-        margin: 10px;
-        font-size: 1.2em;
-      }
-      .content a:hover {
-        text-decoration: underline;
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Welcome to SCU Schedule Helper</h1>
-      <p>
-        Your personal course scheduling assistant for Santa Clara University
-      </p>
-    </header>
 
-    <div class="content">
+<head>
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCU Schedule Helper</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    header {
+      background-color: #862633;
+      color: white;
+      padding: 20px;
+    }
+
+    .content {
+      margin: 40px auto;
+      max-width: 700px;
+      padding: 0 20px;
+    }
+
+    .content h2 {
+      color: #333;
+      font-size: 1.8em;
+    }
+
+    .content p {
+      font-size: 1.1em;
+      color: #555;
+    }
+
+    .download-link {
+      display: inline-block;
+      background-color: white;
+      color: #862633;
+      padding: 15px 25px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-top: 15px;
+      border: 2px solid #862633;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .download-link:hover {
+      background-color: #f0f0f0;
+      box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .feature {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature h3 {
+      margin-top: 10px;
+      font-size: 1.3em;
+      color: #333;
+    }
+
+    .data-use {
+      margin-top: 40px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .data-use h2 {
+      color: #333;
+      text-align: center;
+    }
+
+    .data-use p {
+      font-size: 1.1em;
+      color: #555;
+      text-align: center;
+    }
+
+    .links {
+      margin-top: 30px;
+    }
+
+    .links a {
+      display: inline;
+      margin: 5px 0;
+      color: #862633;
+      font-weight: bold;
+      font-size: 1.2em;
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      font-size: 1.2em;
+      background-color: #862633;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      position: relative;
+      bottom: 0;
+      margin-top: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>SCU Schedule Helper</h1>
+    <p>Your personal course scheduling assistant for Santa Clara University</p>
+    <a href="https://chromewebstore.google.com/detail/scu-schedule-helper/feinilelhamnodbmhjhacnajbbhapdhj?hl=en"
+      class="download-link" target="_blank">Download on Chrome Web Store</a>
+  </header>
+
+  <div class="content">
+    <h2>About SCU Schedule Helper</h2>
+    <p>
+      SCU Schedule Helper enhances your course registration experience by embedding course section ratings directly into
+      Workday. We aggregate data from SCU Evaluations and RateMyProfessor to provide better course and professor
+      insights.
+    </p>
+    <div class="features">
+      <div class="feature">
+        <h3>Course Ratings</h3>
+        <p>See aggregated ratings from SCU Evaluations and RateMyProfessor.</p>
+      </div>
+      <div class="feature">
+        <h3>Friends' Courses</h3>
+        <p>Connect with friends and see their course history.</p>
+      </div>
+      <div class="feature">
+        <h3>Search & History</h3>
+        <p>Explore past course offerings and instructor history.</p>
+      </div>
+      <div class="feature">
+        <h3>Google Calendar Export</h3>
+        <p>Sync your course schedule to Google Calendar.</p>
+      </div>
+    </div>
+    <div class="data-use">
+      <h2>How We Use Your Data</h2>
       <p>
-        <a href="privacy_policy.html">Privacy Policy</a> |
-        <a href="terms_of_service.html">Terms of Service</a>
+        SCU Schedule Helper requires Google OAuth sign-in to verify that you are an SCU student and to personalize your
+        experience. We use your Google account solely for authentication and for exporting your course schedule to
+        Google Calendar (if you consent). We do not store or share your calendar data, and we only access it to prevent
+        duplicate events.
+      </p>
+      <p>
+        Additionally, we collect and store your course history and saved schedules if you choose to sync them with your
+        profile. This enables features such as course recommendations and seeing what classes your friends have taken.
+        All data is handled securely and is never shared with third parties.
+      </p>
+      <p>
+        See our privacy policy and terms of service below for more details.
       </p>
     </div>
-  </body>
+    <div class="links">
+      <a href="privacy_policy.html">Privacy Policy</a>
+      <span style="font-size: large; margin: 0 0.5rem"> | </span> 
+      <a href="terms_of_service.html">Terms of Service</a>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 SCU Schedule Helper. All Rights Reserved.</p>
+  </footer>
+</body>
+
 </html>
