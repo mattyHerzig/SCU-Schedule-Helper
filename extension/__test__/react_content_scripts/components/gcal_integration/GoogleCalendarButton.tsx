@@ -89,6 +89,10 @@ export default function GoogleCalendarButton() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        <img
+          src={chrome.runtime.getURL("images/icon-16.png")}
+          style={{ position: "relative", top: "-1px" }}
+        />
         Add Courses to Google Calendar
       </button>
       <Modal open={isModalOpen} onClose={handleCloseModal}>
