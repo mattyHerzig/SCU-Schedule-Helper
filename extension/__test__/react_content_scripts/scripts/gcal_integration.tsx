@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import GoogleCalendarButton from "../components/gcal_integration/GoogleCalendarIntegration";
+import GoogleCalendarButton from "../components/gcal_integration/GoogleCalendarButton";
 
 const isButtonAdded = () => {
   return !!document.getElementById('gcal-button-container');
