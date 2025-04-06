@@ -1,4 +1,5 @@
 import {
+  getCalendarOAuthToken,
   signIn,
   signOut,
   updateSubscriptionAndRefreshUserData,
@@ -88,6 +89,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     case "signOut":
       signOut().then((response) => {
+        sendResponse(response);
+      });
+      break;
+    case "runCalendarOAuth":
+      getCalendarOAuthToken().then((response) => {
         sendResponse(response);
       });
       break;

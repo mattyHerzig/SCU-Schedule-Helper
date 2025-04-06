@@ -16,10 +16,14 @@ export async function signIn() {
   let oAuthToken;
   try {
     await chrome.identity.clearAllCachedAuthTokens();
-    const { token } = await chrome.identity.getAuthToken({
+    const getAuthTokenResult = await chrome.identity.getAuthToken({
       interactive: true,
+      scopes: [
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+      ],
     });
-    oAuthToken = token;
+    oAuthToken = getAuthTokenResult.token;
   } catch (error) {
     return "Authorization cancelled.";
   }
@@ -43,13 +47,15 @@ export async function signIn() {
       token: oAuthToken,
     });
     await fetch(
-      `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(oAuthToken)}`,
+      `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(
+        oAuthToken
+      )}`,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         method: "POST",
-      },
+      }
     );
     return `${data.message}`;
   }
@@ -69,7 +75,7 @@ export async function signIn() {
   if (data.oAuthInfo.photoUrl.match(sizePattern)) {
     data.oAuthInfo.photoUrl = data.oAuthInfo.photoUrl.replace(
       sizePattern,
-      "$1=s256-c",
+      "$1=s256-c"
     );
   }
 
@@ -90,15 +96,15 @@ export async function signIn() {
     createdUserData.message === "You already have an account."
   ) {
     const updateError = await updateSubscriptionAndRefreshUserData(
-      JSON.stringify(subscription),
+      JSON.stringify(subscription)
     );
     if (!updateError) {
       if (chrome.runtime.setUninstallURL) {
         const userId =
           (await chrome.storage.local.get("userInfo")).userInfo?.id ||
           "unknown";
-        chrome.runtime.setUninstallURL(
-          `https://scu-schedule-helper.me/uninstall.html?u=${userId}&sub=${encodeURIComponent(
+        await chrome.runtime.setUninstallURL(
+          `https://scu-schedule-helper.me/uninstall?u=${userId}&sub=${encodeURIComponent(
             subscription.endpoint
           )}`
         );
@@ -126,7 +132,9 @@ export async function signIn() {
   });
 
   await chrome.runtime.setUninstallURL(
-    `https://scu-schedule-helper.me/uninstall?u=${createdUserData.id}&sub=${encodeURIComponent(subscription.endpoint)}`,
+    `https://scu-schedule-helper.me/uninstall?u=${
+      createdUserData.id
+    }&sub=${encodeURIComponent(subscription.endpoint)}`
   );
   return null;
 }
@@ -184,6 +192,28 @@ export async function signOut() {
   await chrome.storage.local.set({
     userInfo: currentUserInfo,
   });
+}
+
+export async function getCalendarOAuthToken() {
+  const WEB_AUTH_CLIENT_ID =
+    "583521775185-u0dt149h8j3cfbo676j455h73sj2vrbb.apps.googleusercontent.com";
+  try {
+    const responseUrl = await chrome.identity.launchWebAuthFlow({
+      url: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${WEB_AUTH_CLIENT_ID}&redirect_uri=${chrome.identity.getRedirectURL()}&response_type=token&scope=https://www.googleapis.com/auth/calendar.events&prompt=select_account`,
+      interactive: true,
+    });
+
+    if (!responseUrl) {
+      return null;
+    }
+
+    const urlParams = new URLSearchParams(responseUrl.split("#")[1]);
+    const accessToken = urlParams.get("access_token");
+    return accessToken;
+  } catch (error) {
+    console.error("Error getting calendar OAuth token:", error);
+    return null;
+  }
 }
 
 /**

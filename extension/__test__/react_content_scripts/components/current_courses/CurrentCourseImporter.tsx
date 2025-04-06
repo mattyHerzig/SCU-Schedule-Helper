@@ -5,6 +5,7 @@ import {
   ACADEMIC_PERIOD_PATTERN,
   CourseData,
   updateUserCourseData,
+  getEnrolledCoursesTables,
 } from "../shared/utils";
 
 export default function CurrentCourseImporter({
@@ -12,7 +13,7 @@ export default function CurrentCourseImporter({
 }) {
   const [shouldImport, setShouldImport] = useState(true);
   const [progressMessage, setProgressMessage] = useState(
-    "Waiting for page load",
+    "Waiting for page load"
   );
   const [progressNumerator, setProgressNumerator] = useState(0);
   const [progressDenominator, setProgressDenominator] = useState(0);
@@ -60,7 +61,7 @@ export default function CurrentCourseImporter({
                   setShouldImport(false);
                 }, 1000);
               }
-            },
+            }
           );
         } else {
           tableCountStable = true;
@@ -95,14 +96,14 @@ export default function CurrentCourseImporter({
 }
 
 async function processAllTables(incrementProgressNumerator: () => void) {
-  const relevantTables = getRelevantTables();
+  const relevantTables = getEnrolledCoursesTables();
   const academicPeriods = getAcademicPeriods();
 
   let results: CourseData[] = [];
   for (let i = 0; i < academicPeriods.length; i++) {
     const table = relevantTables[i];
     const rows = Array.from(
-      table.querySelectorAll("tbody > tr") as NodeListOf<HTMLTableRowElement>,
+      table.querySelectorAll("tbody > tr") as NodeListOf<HTMLTableRowElement>
     );
     const academicPeriod = academicPeriods[i].innerText.trim();
     for (const row of rows) {
@@ -118,7 +119,7 @@ async function processAllTables(incrementProgressNumerator: () => void) {
 
 function extractCourseData(
   row: HTMLTableRowElement,
-  academicPeriod: string,
+  academicPeriod: string
 ): CourseData {
   const tds = row.querySelectorAll("td");
   const courseName = tds[5].innerText.trim();
@@ -139,27 +140,17 @@ function extractCourseData(
   };
 }
 
-function getRelevantTables(): HTMLTableElement[] {
-  return Array.from(
-    document.querySelectorAll(
-      "table > caption",
-    ) as NodeListOf<HTMLTableCaptionElement>,
-  )
-    .filter((caption) => caption.innerText === "My Enrolled Courses")
-    .map((caption) => caption.parentElement as HTMLTableElement);
-}
-
 function getRelevantRowCount(): number {
-  return getRelevantTables().reduce(
+  return getEnrolledCoursesTables().reduce(
     (acc, table) => acc + table.querySelectorAll("tbody > tr").length,
-    0,
+    0
   );
 }
 
 function getAcademicPeriods(): HTMLTableCaptionElement[] {
   return Array.from(
     document.querySelectorAll(
-      "[data-automation-id='fieldSetLegendLabel'",
-    ) as NodeListOf<HTMLTableCaptionElement>,
+      "[data-automation-id='fieldSetLegendLabel'"
+    ) as NodeListOf<HTMLTableCaptionElement>
   ).filter((caption) => caption.innerText.match(/Winter|Spring|Summer|Fall/));
 }
