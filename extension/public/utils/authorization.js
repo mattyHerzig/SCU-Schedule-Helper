@@ -195,15 +195,25 @@ export async function signOut() {
 }
 
 export async function getCalendarOAuthToken() {
-  const getAuthTokenResult = await chrome.identity.getAuthToken({
-    interactive: true,
-    scopes: ["https://www.googleapis.com/auth/calendar.events"],
-  });
-  console.log("token", getAuthTokenResult);
-  if (!getAuthTokenResult) {
-    throw new Error("Failed to get OAuth token.");
+  const WEB_AUTH_CLIENT_ID =
+    "583521775185-u0dt149h8j3cfbo676j455h73sj2vrbb.apps.googleusercontent.com";
+  try {
+    const responseUrl = await chrome.identity.launchWebAuthFlow({
+      url: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${WEB_AUTH_CLIENT_ID}&redirect_uri=${chrome.identity.getRedirectURL()}&response_type=token&scope=https://www.googleapis.com/auth/calendar.events&prompt=select_account`,
+      interactive: true,
+    });
+
+    if (!responseUrl) {
+      return null;
+    }
+
+    const urlParams = new URLSearchParams(responseUrl.split("#")[1]);
+    const accessToken = urlParams.get("access_token");
+    return accessToken;
+  } catch (error) {
+    console.error("Error getting calendar OAuth token:", error);
+    return null;
   }
-  return getAuthTokenResult.token;
 }
 
 /**

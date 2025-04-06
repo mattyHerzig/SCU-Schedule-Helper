@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { RRule, Weekday } from "rrule";
 import { getEnrolledCoursesTables } from "../shared/utils";
+import { Modal, Box, Typography, IconButton } from "@mui/material";
+import Close from "@mui/icons-material/Close";
 
 interface CourseEvent {
   courseName: string;
@@ -25,12 +27,11 @@ const DAYS_OF_WEEK_STRINGS = ["Su", "M", "T", "W", "Th", "F", "Sa"];
 
 export default function GoogleCalendarButton() {
   const [status, setStatus] = useState<string>("");
-  const [buttonText, setButtonText] = useState<string>(
-    "Add Courses to Google Calendar"
-  );
+  const [errors, setErrors] = useState<string[]>([]);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  const buttonStyle = {
+  const workdayButtonStyle = {
     padding: "10px 20px",
     borderRadius: "999px",
     fontSize: "14px",
@@ -44,14 +45,15 @@ export default function GoogleCalendarButton() {
     border: "1px solid hsla(0, 0%, 20%, 1)",
     boxShadow: "0 0 1px hsla(0, 0%, 20%, 1) inset",
     display: "flex",
-    alignItems: "center", 
-    gap: "8px", 
+    alignItems: "center",
+    gap: "8px",
   };
 
   const handleClick = async () => {
     try {
+      setIsModalOpen(true);
       setStatus("Checking for courses...");
-      const courses = getRelevantCourses();
+      const courses = getRelevantCourses(setErrors);
       if (!courses || !courses.length) {
         setStatus("No courses found.");
         return;
@@ -59,35 +61,85 @@ export default function GoogleCalendarButton() {
 
       setStatus("Signing in to Google...");
       const token = await chrome.runtime.sendMessage("runCalendarOAuth");
+      if (!token) {
+        setErrors(["Sign-in failed. Please try again."]);
+        return;
+      }
 
       setStatus("Adding courses to Google Calendar...");
-      await addCoursesToGoogleCalendar(token, courses);
+      await addCoursesToGoogleCalendar(token, courses, setErrors);
 
-      setStatus("");
-      setButtonText("Courses Added to Google Calendar");
+      setStatus("Courses successfully added!");
     } catch (error) {
-      console.error(error);
-      setStatus("Error: " + error);
+      setErrors(["An unknown error occurred. Please try again."]);
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setStatus("");
+    setErrors([]);
   };
 
   return (
     <div>
       <button
-        style={buttonStyle}
+        style={workdayButtonStyle}
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <img src={chrome.runtime.getURL("images/icon-16.png")} />
-        {buttonText}
+        Add Courses to Google Calendar
       </button>
-      {status && <p>{status}</p>}
+      <Modal open={isModalOpen} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            bgcolor: "background.paper",
+            border: "2px solid #000",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: "8px",
+          }}
+        >
+          <IconButton
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+            }}
+          >
+            <Close onClick={handleCloseModal} />
+          </IconButton>
+          <Typography variant="h6" component="h2">
+            Add Courses to Google Calendar
+          </Typography>
+          <Typography sx={{ mt: 2 }}>{status}</Typography>
+          {errors && (
+            <Typography sx={{ mt: 2, color: "red" }}>
+              {errors.map((err, index) => (
+                <div key={index}>{err}</div>
+              ))}
+            </Typography>
+          )}
+        </Box>
+      </Modal>
     </div>
   );
 }
 
-function getRelevantCourses(): CourseEvent[] {
+function getRelevantCourses(
+  setErrors: React.Dispatch<React.SetStateAction<string[]>>
+): CourseEvent[] {
   const tables = getEnrolledCoursesTables();
   const courses: CourseEvent[] = [];
   for (const table of tables) {
@@ -105,10 +157,15 @@ function getRelevantCourses(): CourseEvent[] {
       const meetingPatternRegexMatch = meetingPattern.match(
         MEETING_PATTERN_REGEX
       );
+
       if (!meetingPatternRegexMatch) {
         console.error(
           `Error: Could not parse meeting pattern: ${meetingPattern}`
         );
+        setErrors((prev) => [
+          ...prev,
+          `Could not parse meeting pattern of ${courseName}`,
+        ]);
         continue;
       }
 
@@ -151,7 +208,8 @@ function getRelevantCourses(): CourseEvent[] {
 
 async function addCoursesToGoogleCalendar(
   token: string,
-  courses: CourseEvent[]
+  courses: CourseEvent[],
+  setErrors: React.Dispatch<React.SetStateAction<string[]>>
 ) {
   const calendarId = "primary";
   const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
@@ -163,49 +221,84 @@ async function addCoursesToGoogleCalendar(
     "Content-Type": "application/json",
   });
 
-  for (const course of courses) {
-    const event = {
-      summary: course.courseName,
-      location: course.location,
-      description: `Professor: ${course.professor}`,
-      start: {
-        dateTime: `${course.startDate}`,
-        timeZone: "America/Los_Angeles",
-      },
-      end: {
-        dateTime: `${course.endDate}`,
-        timeZone: "America/Los_Angeles",
-      },
-      recurrence: [course.recurrence],
-    };
-
-    console.log(
-      "Req:",
-      JSON.stringify(
-        {
-          url,
-          headers: Object.fromEntries(headers.entries()),
-          body: event,
+  await Promise.all(
+    courses.map(async (course) => {
+      const event = {
+        summary: course.courseName,
+        location: course.location,
+        description: `Professor: ${course.professor}`,
+        start: {
+          dateTime: `${course.startDate}`,
+          timeZone: "America/Los_Angeles",
         },
-        null,
-        2
-      )
-    );
+        end: {
+          dateTime: `${course.endDate}`,
+          timeZone: "America/Los_Angeles",
+        },
+        recurrence: [course.recurrence],
+      };
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(event),
+      if (await doesEventExist(token, course)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(event),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `Error adding event to Google Calendar: ${response.status} ${errorText}`
+          );
+          setErrors((prev) => [
+            ...prev,
+            `Failed to add ${course.courseName} to Google Calendar. Please try again.`,
+          ]);
+        }
+      } catch (error) {
+        console.error("Error adding event to Google Calendar:", error);
+        setErrors((prev) => [
+          ...prev,
+          `Failed to add ${course.courseName} to Google Calendar. Please try again.`,
+        ]);
+      }
+    })
+  );
+}
+
+async function doesEventExist(token: string, event: CourseEvent) {
+  const timeMin = new Date(event.startDate).toISOString();
+  const timeMax = new Date(event.endDate).toISOString();
+
+  const url = new URL(
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+  );
+
+  url.searchParams.set("q", event.courseName);
+  url.searchParams.set("timeMin", timeMin);
+  url.searchParams.set("timeMax", timeMax);
+  url.searchParams.set("singleEvents", "true");
+  url.searchParams.set("orderBy", "startTime");
+  try {
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    console.log("Response:", response);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `Error adding event to Google Calendar: ${response.status} ${errorText}`
-      );
+    const data = await response.json();
+    if (data.items && data.items.length > 0) {
+      return true;
+    } else {
+      return false;
     }
+  } catch (error) {
+    console.error("Error checking for existing events:", error);
+    return false;
   }
 }
 
