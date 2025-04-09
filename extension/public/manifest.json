@@ -3,8 +3,14 @@
   "name": "SCU Schedule Helper",
   "version": "2.2.0",
   "description": "Course/professor rating to help with SCU schedule planning.",
-  "permissions": ["storage", "identity", "notifications"],
-  "host_permissions": ["https://www.ratemyprofessors.com/*"],
+  "permissions": [
+    "storage",
+    "identity",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://www.ratemyprofessors.com/*"
+  ],
   "web_accessible_resources": [
     {
       "resources": [
@@ -13,20 +19,20 @@
         "images/info_icon.png",
         "images/icon-16.png"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.myworkday.com/scu/*"],
-      "exclude_matches": [
-        "https://www.myworkday.com/scu/d/task/2998$30300.htmld"
+      "matches": [
+        "https://www.myworkday.com/scu/*"
       ],
-      "js": ["content_scripts/course_tracking.js"]
-    },
-    {
-      "matches": ["https://www.myworkday.com/scu/*"],
-      "js": ["content_scripts/section_scores.js"]
+      "js": [
+        "content_scripts/section_scores.js",
+        "content_scripts/course_tracking.js"
+      ]
     }
   ],
   "background": {
