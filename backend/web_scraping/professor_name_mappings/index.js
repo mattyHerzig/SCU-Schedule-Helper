@@ -30,6 +30,9 @@ const s3 =
     : null;
 
 export default async function main() {
+  console.log(
+    `Attempting to update professor name mappings with data from term: ${process.env.ACADEMIC_PERIOD}`
+  );
   try {
     await initDirectoriesAndFiles();
     await authenticate(process.env.SCU_USERNAME, process.env.SCU_PASSWORD);
@@ -51,23 +54,23 @@ async function initDirectoriesAndFiles() {
     if (
       !fs.existsSync(
         path.resolve(
-          `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`,
-        ),
+          `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`
+        )
       )
     ) {
       fs.writeFileSync(
         path.resolve(
-          `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`,
+          `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`
         ),
-        JSON.stringify(professorNameMappings),
+        JSON.stringify(professorNameMappings)
       );
     } else {
       professorNameMappings = JSON.parse(
         fs.readFileSync(
           path.resolve(
-            `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`,
-          ),
-        ),
+            `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`
+          )
+        )
       );
     }
   } else {
@@ -82,11 +85,13 @@ async function initDirectoriesAndFiles() {
       response.$metadata.httpStatusCode >= 300
     ) {
       console.error(
-        `Failed to download professor name mappings from AWS: ${JSON.stringify(response)}`,
+        `Failed to download professor name mappings from AWS: ${JSON.stringify(
+          response
+        )}`
       );
     } else {
       professorNameMappings = JSON.parse(
-        await response.Body.transformToString(),
+        await response.Body.transformToString()
       );
     }
   }
@@ -96,9 +101,9 @@ export async function writeMappings() {
   if (process.env.GITHUB_WORKFLOW === undefined) {
     fs.writeFileSync(
       path.resolve(
-        `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`,
+        `${PERSISTENT_DATA_PATH}/${PROFESSOR_NAME_MAPPINGS_FILENAME}`
       ),
-      JSON.stringify(professorNameMappings),
+      JSON.stringify(professorNameMappings)
     );
     console.log("Successfully wrote mappings to file.");
   } else {
@@ -114,7 +119,9 @@ export async function writeMappings() {
       response.$metadata.httpStatusCode >= 300
     ) {
       console.error(
-        `Failed to upload professor name mappings to AWS: ${JSON.stringify(response)}`,
+        `Failed to upload professor name mappings to AWS: ${JSON.stringify(
+          response
+        )}`
       );
     } else {
       console.log("Successfully uploaded professor name mappings to AWS.");
