@@ -4,7 +4,7 @@ const debounceDelay = 100;
 const expDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 45);
 const sentInterestedSections = new Set();
 
-function checkForInterestedSections(mutationsList) {
+function checkForInterestedSections() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     const element = document.querySelector(

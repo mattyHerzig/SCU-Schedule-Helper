@@ -1,3 +1,4 @@
+(function () {
 const FetchStatus = Object.freeze({
   NotFetched: 0,
   Fetching: 1,
@@ -12,7 +13,8 @@ const Difficulty = Object.freeze({
   VeryHard: 4,
 });
 
-// Debouncing to avoid excessive function calls.
+const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
+const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 const debounceDelay = 100;
 
 let evalsData = {};
@@ -26,12 +28,9 @@ let currentUrl = window.location.href;
 let enrollmentStatsStatus = FetchStatus.NotFetched;
 let enrollmentStats = {};
 let debounceTimer;
-
 let prefferedDifficulty = Difficulty.VeryEasy;
 let preferredDifficultyPercentile = prefferedDifficulty / 4;
 
-const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
-const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 
 const observer = new MutationObserver(checkPage);
 observer.observe(document.documentElement, {
@@ -105,7 +104,6 @@ async function handleFindSectionsGrid() {
 
   await Promise.all(
     Array.from(courseSectionRows).map(async (row) => {
-      const row = courseSectionRows[i];
       const courseSectionCell = row.cells[0];
       let courseText = courseSectionCell.innerText.trim();
       if (courseText === "" || courseSectionCell.hasAttribute("has-ratings"))
@@ -133,7 +131,6 @@ async function handleSavedSchedulePageGrid() {
 
   await Promise.all(
     Array.from(courses).map(async (courseRow) => {
-      const courseRow = courses[i];
       const courseCell = courseRow.cells[0];
       let courseText = courseCell.innerText.trim();
       if (courseText === "" || courseRow.cells.length < 10) return;
@@ -956,3 +953,4 @@ function findObjectByPropertyValue(obj, key, value) {
 function nullOrUndefined(object) {
   return object === null || object === undefined || isNaN(object);
 }
+})();
