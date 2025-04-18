@@ -42,7 +42,6 @@ observer.observe(document.documentElement, {
 async function checkPage() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(async () => {
-
     if (currentUrl !== window.location.href) {
       currentUrl = window.location.href;
       enrollmentStatsStatus = FetchStatus.NotFetched;
@@ -62,14 +61,13 @@ async function checkPage() {
     ); // Find Courses Page
 
     if (isFindCoursesPage || isSavedSchedulePage) {
-      const data = await chrome.storage.local.get(
-        [
-          "evals",
-          "userInfo",
-          "friendInterestedSections",
-          "friendCoursesTaken",
-          "friends",
-        ]);
+      const data = await chrome.storage.local.get([
+        "evals",
+        "userInfo",
+        "friendInterestedSections",
+        "friendCoursesTaken",
+        "friends",
+      ]);
       userInfo = data.userInfo || {};
       if (userInfo.preferences && userInfo.preferences.difficulty) {
         prefferedDifficulty = userInfo.preferences.difficulty;
@@ -105,53 +103,57 @@ async function checkPage() {
 async function handleFindSectionsGrid() {
   const courseSectionRows = document.querySelectorAll("table tbody tr");
 
-  for (let i = 0; i < courseSectionRows.length; i++) {
-    const row = courseSectionRows[i];
-    const courseSectionCell = row.cells[0];
-    let courseText = courseSectionCell.innerText.trim();
-    if (courseText === "" || courseSectionCell.hasAttribute("has-ratings")) continue;
-    courseSectionCell.setAttribute("has-ratings", "true");
-    const instructorCell = row.cells[6];
-    let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const courseTitleHeight = courseSectionCell.firstElementChild
-      ? window.getComputedStyle(courseSectionCell.firstElementChild).height
-      : "0px";
-    const ratingsHeight = 121;
-    row.style.height = (parseInt(courseTitleHeight) + ratingsHeight) + "px";
-    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
-  }
+  await Promise.all(
+    Array.from(courseSectionRows).map(async (row) => {
+      const row = courseSectionRows[i];
+      const courseSectionCell = row.cells[0];
+      let courseText = courseSectionCell.innerText.trim();
+      if (courseText === "" || courseSectionCell.hasAttribute("has-ratings"))
+        return;
+      courseSectionCell.setAttribute("has-ratings", "true");
+      const instructorCell = row.cells[6];
+      let professorName = instructorCell.innerText.trim().split("\n")[0];
+      const courseTitleHeight = courseSectionCell.firstElementChild
+        ? window.getComputedStyle(courseSectionCell.firstElementChild).height
+        : "0px";
+      const ratingsHeight = 121;
+      row.style.height = parseInt(courseTitleHeight) + ratingsHeight + "px";
+      await displayProfessorDifficulty(
+        courseSectionCell,
+        row,
+        professorName,
+        false
+      );
+    })
+  );
 }
 
 async function handleSavedSchedulePageGrid() {
   const courses = document.querySelectorAll('[data-testid="table"] tbody tr');
-  const displayPromises = [];
-  for (let i = 0; i < courses.length; i++) {
-    const courseRow = courses[i];
-    const courseCell = courseRow.cells[0];
-    let courseText = courseCell.innerText.trim();
-    if (courseText === "" || courseRow.cells.length < 10) continue;
-    if (courseCell.hasAttribute("has-ratings")) continue;
-    courseCell.setAttribute("has-ratings", "true");
-    const instructorCell = courseRow.cells[6];
-    let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const pushDown = document.createElement("div");
-    pushDown.style.height = "100px";
 
-    courseCell.appendChild(pushDown);
-    const displayPromise = new Promise((resolve) => {
-      displayProfessorDifficulty(
+  await Promise.all(
+    Array.from(courses).map(async (courseRow) => {
+      const courseRow = courses[i];
+      const courseCell = courseRow.cells[0];
+      let courseText = courseCell.innerText.trim();
+      if (courseText === "" || courseRow.cells.length < 10) return;
+      if (courseCell.hasAttribute("has-ratings")) return;
+      courseCell.setAttribute("has-ratings", "true");
+      const instructorCell = courseRow.cells[6];
+      let professorName = instructorCell.innerText.trim().split("\n")[0];
+      const pushDown = document.createElement("div");
+      pushDown.style.height = "100px";
+
+      courseCell.appendChild(pushDown);
+      await displayProfessorDifficulty(
         courseCell,
         courseRow,
         professorName,
         true
-      ).then(() => {
-        courseCell.removeChild(pushDown);
-        resolve();
-      });
-    });
-    displayPromises.push(displayPromise);
-  }
-  await Promise.all(displayPromises);
+      );
+      courseCell.removeChild(pushDown);
+    })
+  );
 }
 
 async function displayProfessorDifficulty(
@@ -344,7 +346,7 @@ function calcOverallScore(scores) {
       scuEvalsDifficultyPercentile,
       scuEvalsWorkloadPercentile
     ) *
-    (scuEvals / 100) +
+      (scuEvals / 100) +
     rmpScore(rmpQuality, rmpDifficulty) * (rmp / 100)
   );
 }
@@ -386,11 +388,11 @@ async function appendRatingInfoToCell(
   const scoreText = document.createElement("div");
   scoreText.innerHTML = `
         <span style="font-size: 24px; font-weight: bold; color: ${getRatingColor(
-    overallScore,
-    0,
-    10,
-    true
-  )}; ">${overallScore?.toFixed(2) || "N/A"}</span>
+          overallScore,
+          0,
+          10,
+          true
+        )}; ">${overallScore?.toFixed(2) || "N/A"}</span>
         <span style="color: #6c757d; font-size: 16px;">/ 10</span>
       `;
 
@@ -465,17 +467,20 @@ async function appendRatingInfoToCell(
   sectionTimeMatch.innerHTML = `      
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${(ratingInfo.matchesTimePreference && "✓") || "X"
-    }</span> Section Time
+                <span style="margin-right: 4px; font-weight:bold">${
+                  (ratingInfo.matchesTimePreference && "✓") || "X"
+                }</span> Section Time
               </div>
             </div>`;
   const friendsTaken = document.createElement("div");
   friendsTaken.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsTaken.length
-    }</span> ${(ratingInfo.friendsTaken.length === 1 && "Friend") || "Friends"
-    } Took
+                <span style="margin-right: 4px; font-weight:bold">${
+                  ratingInfo.friendsTaken.length
+                }</span> ${
+    (ratingInfo.friendsTaken.length === 1 && "Friend") || "Friends"
+  } Took
               </div>
             </div>
           `;
@@ -509,9 +514,11 @@ async function appendRatingInfoToCell(
   friendsInterested.innerHTML = `
             <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
               <div style="color: #666;">
-                <span style="margin-right: 4px; font-weight:bold">${ratingInfo.friendsInterested.length
-    }</span> ${(ratingInfo.friendsInterested.length === 1 && "Friend") || "Friends"
-    } Interested
+                <span style="margin-right: 4px; font-weight:bold">${
+                  ratingInfo.friendsInterested.length
+                }</span> ${
+    (ratingInfo.friendsInterested.length === 1 && "Friend") || "Friends"
+  } Interested
               </div>
             </div>
           `;
@@ -558,8 +565,9 @@ async function appendRatingInfoToCell(
     enrollmentStatsDiv.innerHTML = `
               <div style="display: flex; gap: 20px; margin: 5px 0  5px 0;">
                 <div style="color: #666;">
-                  <span style="margin-right: 4px; font-weight:bold">Seats Available: </span> ${enrollmentStat || "N/A"
-      }
+                  <span style="margin-right: 4px; font-weight:bold">Seats Available: </span> ${
+                    enrollmentStat || "N/A"
+                  }
                 </div>
               </div>
             `;
@@ -598,7 +606,7 @@ function createRatingToolTip(ratingInfo) {
   );
   const scuEvalsDifficultyScore = scuEvalsDifficultyPercentile
     ? Math.abs(preferredDifficultyPercentile - scuEvalsDifficultyPercentile) *
-    100
+      100
     : undefined;
   const scuEvalsDifficultyColor = getRatingColor(
     scuEvalsDifficultyScore,
@@ -652,18 +660,20 @@ function createRatingToolTip(ratingInfo) {
             <div style="display: flex; gap: 20px; margin: 8px 0;">
               <div>
                 <span style="color: ${getRatingColor(
-    rmpQuality,
-    1,
-    5,
-    true
-  )}; font-size: 16px; font-weight: bold;">${rmpQuality?.toFixed(2) || "N/A"
-    }</span>
+                  rmpQuality,
+                  1,
+                  5,
+                  true
+                )}; font-size: 16px; font-weight: bold;">${
+    rmpQuality?.toFixed(2) || "N/A"
+  }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">quality</div>
               </div>
               <div>
-                <span style="color: ${rmpDifficultyColor};font-size: 16px; font-weight: bold;">${rmpDifficulty?.toFixed(2) || "N/A"
-    }</span>
+                <span style="color: ${rmpDifficultyColor};font-size: 16px; font-weight: bold;">${
+    rmpDifficulty?.toFixed(2) || "N/A"
+  }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">difficulty</div>
               </div>
@@ -674,28 +684,32 @@ function createRatingToolTip(ratingInfo) {
             </div>
             
             <div style="display: flex; gap: 20px; margin: 8px 0;">
-            ${(!userInfo.id &&
-      `<div style="white-space: normal; width: 180px;">You must be signed in to view SCU evals data. Sign-in with the extension popup. </div>`) ||
-    `
+            ${
+              (!userInfo.id &&
+                `<div style="white-space: normal; width: 180px;">You must be signed in to view SCU evals data. Sign-in with the extension popup. </div>`) ||
+              `
               <div>
-                <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${scuEvalsQuality?.toFixed(2) || "N/A"
-    }</span>
+                <span style="color: ${scuEvalsQualityColor}; font-size: 16px; font-weight: bold;">${
+                scuEvalsQuality?.toFixed(2) || "N/A"
+              }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">quality</div>
               </div>
               <div>
-                <span style="color: ${scuEvalsDifficultyColor}; font-size: 16px; font-weight: bold;">${scuEvalsDifficulty?.toFixed(2) || "N/A"
-    }</span>
+                <span style="color: ${scuEvalsDifficultyColor}; font-size: 16px; font-weight: bold;">${
+                scuEvalsDifficulty?.toFixed(2) || "N/A"
+              }</span>
                 <span style="color: #666;"> / 5</span>
                 <div style="color: #666; font-size: 12px;">difficulty</div>
               </div>
               <div>
-                <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${scuEvalsWorkload?.toFixed(2) || "N/A"
-    }</span>
+                <span style="color: ${scuEvalsWorkloadColor}; font-size: 16px; font-weight: bold;">${
+                scuEvalsWorkload?.toFixed(2) || "N/A"
+              }</span>
                 <div style="color: #666; font-size: 12px;">hrs / wk</div>
               </div>
               `
-    }
+            }
             </div>
           </div>
         </div>
@@ -730,10 +744,10 @@ function createFriendsToolTip(friendsTakenOrInterested) {
           "></div>
           <div style="position: relative; pointer-events: auto; width:max-content">
           ${friendsTakenOrInterested.reduce((acc, friend) => {
-    return (
-      acc + `<div style="color: #666; font-size:14px">${friend}</div>`
-    );
-  }, "")}
+            return (
+              acc + `<div style="color: #666; font-size:14px">${friend}</div>`
+            );
+          }, "")}
           </div>
         </div>
       `;
