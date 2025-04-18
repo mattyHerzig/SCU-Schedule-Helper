@@ -2,7 +2,7 @@ import { FIND_COURSE_SECTIONS_URL, page } from "../index.js";
 const MAX_LOGIN_TRIES = 5;
 
 export async function authenticate(username, password) {
-  const loginButton = "button::-p-text(Login)";
+  const loginButton = "button.login_btn > span";
 
   console.log("Starting authentication...");
   await page.goto(FIND_COURSE_SECTIONS_URL);
