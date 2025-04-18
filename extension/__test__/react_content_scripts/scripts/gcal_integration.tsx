@@ -6,7 +6,7 @@ const debounceDelay = 100;
 let debounceTimer: null | number;
 
 const isButtonAdded = () => {
-  return !!document.getElementById('gcal-button-container');
+  return !!document.getElementById("gcal-button-container");
 };
 
 const tryInjectingButton = () => {
@@ -15,11 +15,18 @@ const tryInjectingButton = () => {
   }
   debounceTimer = setTimeout(() => {
     if (isButtonAdded()) return;
-    const buttonBar = document.querySelector('.WLNM.WNNM[data-automation-id="buttonBar"]');
+    const titleElement = document.querySelector(
+      '[data-automation-id="pageHeaderTitleText"]'
+    );
+    // Only inject on the "View My Courses" page
+    if (!titleElement?.textContent?.includes("View My Courses")) return;
+    const buttonBar = document.querySelector(
+      '.WLNM.WNNM[data-automation-id="buttonBar"]'
+    );
     if (buttonBar) {
       const newListItem = document.createElement("li");
       newListItem.className = "WMNM";
-      newListItem.style.float = 'right';
+      newListItem.style.float = "right";
 
       const container = document.createElement("div");
       container.id = "gcal-button-container";
@@ -35,6 +42,5 @@ const observer = new MutationObserver(tryInjectingButton);
 
 observer.observe(document.body, {
   childList: true,
-  subtree: true
+  subtree: true,
 });
-
