@@ -1,3 +1,4 @@
+(function () {
 const FetchStatus = Object.freeze({
   NotFetched: 0,
   Fetching: 1,
@@ -12,6 +13,10 @@ const Difficulty = Object.freeze({
   VeryHard: 4,
 });
 
+const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
+const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
+const debounceDelay = 100;
+
 let evalsData = {};
 let userInfo = {};
 let inTooltip = false;
@@ -22,130 +27,130 @@ let friends = {};
 let currentUrl = window.location.href;
 let enrollmentStatsStatus = FetchStatus.NotFetched;
 let enrollmentStats = {};
-
+let debounceTimer;
 let prefferedDifficulty = Difficulty.VeryEasy;
 let preferredDifficultyPercentile = prefferedDifficulty / 4;
 
-const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
-const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
 
-chrome.storage.local.get(
-  [
-    "evals",
-    "userInfo",
-    "friendInterestedSections",
-    "friendCoursesTaken",
-    "friends",
-  ],
-  async (data) => {
-    userInfo = data.userInfo || {};
-    if (userInfo.preferences && userInfo.preferences.difficulty) {
-      prefferedDifficulty = userInfo.preferences.difficulty;
-      preferredDifficultyPercentile = prefferedDifficulty / 4;
-    }
-    if (
-      userInfo.preferences &&
-      !nullOrUndefined(userInfo.preferences.showRatings)
-    ) {
-      if (!userInfo.preferences.showRatings) return;
-    }
-    evalsData = data.evals || {};
-    friendInterestedSections = data.friendInterestedSections || {};
-    friendCoursesTaken = data.friendCoursesTaken || {};
-    friends = data.friends || {};
-
-    checkPage();
-    const observer = new MutationObserver(checkPage);
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-  }
-);
+const observer = new MutationObserver(checkPage);
+observer.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+});
 
 async function checkPage() {
-  if (currentUrl !== window.location.href) {
-    currentUrl = window.location.href;
-    enrollmentStatsStatus = FetchStatus.NotFetched;
-    enrollmentStats = {};
-    inTooltip = false;
-    inButton = false;
-  }
-  const pageTitle = document.querySelector(
-    '[data-automation-id="pageHeaderTitleText"]'
-  );
-  const isSavedSchedulePage =
-    pageTitle?.innerText === "View Student Registration Saved Schedule"
-      ? true
-      : false; // Saved Schedule Page
-  const isFindCoursesPage = document.querySelector(
-    '[data-automation-label="SCU Find Course Sections"]'
-  ); // Find Courses Page
-  if (isFindCoursesPage) {
-    await handleFindSectionsGrid();
-  } else if (isSavedSchedulePage) {
-    if (enrollmentStatsStatus === FetchStatus.NotFetched) {
-      enrollmentStatsStatus = FetchStatus.Fetching;
-      await findEnrollmentStatistics();
-      enrollmentStatsStatus = FetchStatus.Fetched;
-      await handleSavedSchedulePageGrid();
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(async () => {
+    if (currentUrl !== window.location.href) {
+      currentUrl = window.location.href;
+      enrollmentStatsStatus = FetchStatus.NotFetched;
+      enrollmentStats = {};
+      inTooltip = false;
+      inButton = false;
     }
-    if (enrollmentStatsStatus === FetchStatus.Fetched) {
-      await handleSavedSchedulePageGrid();
+    const pageTitle = document.querySelector(
+      '[data-automation-id="pageHeaderTitleText"]'
+    );
+    const isSavedSchedulePage =
+      pageTitle?.innerText === "View Student Registration Saved Schedule"
+        ? true
+        : false; // Saved Schedule Page
+    const isFindCoursesPage = document.querySelector(
+      '[data-automation-label="SCU Find Course Sections"]'
+    ); // Find Courses Page
+
+    if (isFindCoursesPage || isSavedSchedulePage) {
+      const data = await chrome.storage.local.get([
+        "evals",
+        "userInfo",
+        "friendInterestedSections",
+        "friendCoursesTaken",
+        "friends",
+      ]);
+      userInfo = data.userInfo || {};
+      if (userInfo.preferences && userInfo.preferences.difficulty) {
+        prefferedDifficulty = userInfo.preferences.difficulty;
+        preferredDifficultyPercentile = prefferedDifficulty / 4;
+      }
+      if (
+        userInfo.preferences &&
+        !nullOrUndefined(userInfo.preferences.showRatings)
+      ) {
+        if (!userInfo.preferences.showRatings) return;
+      }
+      evalsData = data.evals || {};
+      friendInterestedSections = data.friendInterestedSections || {};
+      friendCoursesTaken = data.friendCoursesTaken || {};
+      friends = data.friends || {};
     }
-  }
+    if (isFindCoursesPage) {
+      await handleFindSectionsGrid();
+    } else if (isSavedSchedulePage) {
+      if (enrollmentStatsStatus === FetchStatus.NotFetched) {
+        enrollmentStatsStatus = FetchStatus.Fetching;
+        await findEnrollmentStatistics();
+        enrollmentStatsStatus = FetchStatus.Fetched;
+        await handleSavedSchedulePageGrid();
+      }
+      if (enrollmentStatsStatus === FetchStatus.Fetched) {
+        await handleSavedSchedulePageGrid();
+      }
+    }
+  }, debounceDelay);
 }
 
 async function handleFindSectionsGrid() {
   const courseSectionRows = document.querySelectorAll("table tbody tr");
 
-  for (let i = 0; i < courseSectionRows.length; i++) {
-    const row = courseSectionRows[i];
-    const courseSectionCell = row.cells[0];
-    let courseText = courseSectionCell.innerText.trim();
-    if (courseText === "" || courseSectionCell.hasAttribute("has-ratings")) continue;
-    courseSectionCell.setAttribute("has-ratings", "true");
-    const instructorCell = row.cells[6];
-    let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const courseTitleHeight = courseSectionCell.firstElementChild 
-        ? window.getComputedStyle(courseSectionCell.firstElementChild).height 
+  await Promise.all(
+    Array.from(courseSectionRows).map(async (row) => {
+      const courseSectionCell = row.cells[0];
+      let courseText = courseSectionCell.innerText.trim();
+      if (courseText === "" || courseSectionCell.hasAttribute("has-ratings"))
+        return;
+      courseSectionCell.setAttribute("has-ratings", "true");
+      const instructorCell = row.cells[6];
+      let professorName = instructorCell.innerText.trim().split("\n")[0];
+      const courseTitleHeight = courseSectionCell.firstElementChild
+        ? window.getComputedStyle(courseSectionCell.firstElementChild).height
         : "0px";
-    const ratingsHeight = 121;
-    row.style.height = (parseInt(courseTitleHeight) + ratingsHeight) + "px";
-    await displayProfessorDifficulty(courseSectionCell, row, professorName, false);
-  }
+      const ratingsHeight = 121;
+      row.style.height = parseInt(courseTitleHeight) + ratingsHeight + "px";
+      await displayProfessorDifficulty(
+        courseSectionCell,
+        row,
+        professorName,
+        false
+      );
+    })
+  );
 }
 
 async function handleSavedSchedulePageGrid() {
   const courses = document.querySelectorAll('[data-testid="table"] tbody tr');
-  const displayPromises = [];
-  for (let i = 0; i < courses.length; i++) {
-    const courseRow = courses[i];
-    const courseCell = courseRow.cells[0];
-    let courseText = courseCell.innerText.trim();
-    if (courseText === "" || courseRow.cells.length < 10) continue;
-    if (courseCell.hasAttribute("has-ratings")) continue;
-    courseCell.setAttribute("has-ratings", "true");
-    const instructorCell = courseRow.cells[6];
-    let professorName = instructorCell.innerText.trim().split("\n")[0];
-    const pushDown = document.createElement("div");
-    pushDown.style.height = "100px";
 
-    courseCell.appendChild(pushDown);
-    const displayPromise = new Promise((resolve) => {
-      displayProfessorDifficulty(
+  await Promise.all(
+    Array.from(courses).map(async (courseRow) => {
+      const courseCell = courseRow.cells[0];
+      let courseText = courseCell.innerText.trim();
+      if (courseText === "" || courseRow.cells.length < 10) return;
+      if (courseCell.hasAttribute("has-ratings")) return;
+      courseCell.setAttribute("has-ratings", "true");
+      const instructorCell = courseRow.cells[6];
+      let professorName = instructorCell.innerText.trim().split("\n")[0];
+      const pushDown = document.createElement("div");
+      pushDown.style.height = "100px";
+
+      courseCell.appendChild(pushDown);
+      await displayProfessorDifficulty(
         courseCell,
         courseRow,
         professorName,
         true
-      ).then(() => {
-        courseCell.removeChild(pushDown);
-        resolve();
-      });
-    });
-    displayPromises.push(displayPromise);
-  }
-  await Promise.all(displayPromises);
+      );
+      courseCell.removeChild(pushDown);
+    })
+  );
 }
 
 async function displayProfessorDifficulty(
@@ -899,7 +904,7 @@ async function findEnrollmentStatistics() {
           )?.value;
 
           if (enrolledStats) {
-            if (enrolledStats.match(/\-?\d+ of \d+/)){
+            if (enrolledStats.match(/\-?\d+ of \d+/)) {
               let [enrolled, total] = enrolledStats.split(" of ");
               enrolledStats = `${enrolled}/${total}`;
             }
@@ -948,3 +953,4 @@ function findObjectByPropertyValue(obj, key, value) {
 function nullOrUndefined(object) {
   return object === null || object === undefined || isNaN(object);
 }
+})();
