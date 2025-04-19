@@ -1,4 +1,6 @@
-(function () {
+(async function () {
+  await chrome.runtime.sendMessage("runStartupChecks");
+
   const FetchStatus = Object.freeze({
     NotFetched: 0,
     Fetching: 1,
