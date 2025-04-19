@@ -53,6 +53,7 @@ const validDepartmentCodes = [
   "PHYS",
   "POLI",
   "PSYC",
+  "RELS",
   "RSOC",
   "SCTR",
   "SOCI",
@@ -117,29 +118,38 @@ function validateCatalogOutput(catalogFilename) {
     );
   }
   for (const course of universityCatalog.courses) {
-    if (!course.code) {
+    if (!course.courseCode) {
       console.error("Course code is missing");
       totalErrors++;
+    }
+    if (!course.courseCode.match(/^[A-Z]{4}[0-9]{1,4}[A-Z]{0,2}$/)) {
+      console.error(
+        `Course code ${course.courseCode} does not match regex expression.`
+      );
+      totalErrors++;
+    } else {
+      const [_, deptCode] = course.courseCode.match(
+        /^([A-Z]{4})[0-9]{1,3}[A-Z]{0,2}$/
+      );
+      if (!validDepartmentCodes.includes(deptCode)) {
+        console.error(
+          `Course code ${course.courseCode} has invalid department code ${deptCode}`
+        );
+        totalErrors++;
+      }
     }
     if (!course.name) {
       console.error("Course name is missing");
       totalErrors++;
     }
     if (!course.description) {
-      console.error("Course description is missing");
+      console.error(`Course description is missing for ${course.courseCode}`);
       totalErrors++;
     }
     if (course.numUnits < 0 || course.numUnits > 6) {
       console.error(
         `Course ${course.code} has invalid number of units ${course.numUnits}`
       );
-      totalErrors++;
-    }
-    if (!course.departmentCode) {
-      console.error("Course department code is missing");
-      totalErrors++;
-    } else if (!validDepartmentCodes.includes(course.departmentCode)) {
-      console.error(`Invalid course department code ${course.departmentCode}`);
       totalErrors++;
     }
     if (course.prerequisiteCourses) {
@@ -179,7 +189,7 @@ function validateCourseRequirementsExpression(courseRequirements) {
     return;
   }
   if (!balancedParentheses(courseRequirements)) {
-    console.error("Unbalanced parentheses in course requirements expression");
+    console.error("Unbalanced parentheses in course requirements expression", courseRequirements);
     totalErrors++;
   }
   try {
@@ -543,11 +553,11 @@ function hasUserTakenCourse(userId, courseCode) {
 }
 
 function coursesTakenFromRange(userId, courseCodeRange) {
-  if (!courseCodeRange.match(/^[A-Z]{4}[0-9]{1,3}-[0-9]{1,3}$/)) {
+  if (!courseCodeRange.match(/^[A-Z]{4}[0-9]{1,3}[A-Z]{0,2}-[0-9]{1,3}[A-Z]{0,2}$/)) {
     throw new Error(`Invalid course code range "${courseCodeRange}"`);
   }
   let [, department, start, end] = courseCodeRange.match(
-    /^([A-Z]{4})([0-9]{1,3})-([0-9]{1,3})$/
+    /^([A-Z]{4})([0-9]{1,3}[A-Z]{0,2})-([0-9]{1,3}[A-Z]{0,2})$/
   );
   if (start[0] === "0" || end[0] === "0") {
     throw new Error(

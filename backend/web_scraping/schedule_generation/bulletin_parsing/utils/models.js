@@ -499,8 +499,8 @@ export const Course = z
   .object({
     courseCode: CourseCode,
     name: z.string().describe("The full name of the course"),
-    description: z.string().describe("A description of the course"),
-    numUnits: z.number().describe("The number of units of the course"),
+    description: z.string().describe(`A description of the course. If this is a cross-listed course, and it has no description other than "See cross-listed course", then you can include the "See cross-listed course" as the description.`),
+    numUnits: z.string().describe(`The number of units of the course, i.e. "4" or a range of units of the form <lower>-<upper>, if the number of units can vary. For example, "2-5".`),
     prerequisiteCourses: z
       .string()
       .describe(
@@ -543,7 +543,7 @@ export const DepartmentOrProgramInfo = z.object({
   emphases: z.array(Emphasis),
   errors: z
     .array(z.string())
-    .describe("Any errors that are encountered when parsing the page"),
+    .describe("Any errors that are encountered when parsing the page, or anything that could not be parsed into the format (maybe the format would not allow it)."),
 });
 
 export const SchoolInfo = z.object({
@@ -567,8 +567,8 @@ export const SpecialProgramInfo = z.object({
 });
 
 export const CourseCatalog = z.object({
-  courses: z.array(Course),
+  courses: z.array(Course).describe("The courses from the page--only the ones that have a full description, not merely referenced. Courses that are cross-listed as another course can be included."),
   errors: z
     .array(z.string())
-    .describe("Any errors that are encountered when parsing the page"),
+    .describe("Any errors that are encountered when parsing the courses, or anything that could not be parsed into the format (maybe the format would not allow it). Please do explain."),
 });
