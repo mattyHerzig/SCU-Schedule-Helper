@@ -31,7 +31,7 @@ const BULLETIN_CHAPTERS = Object.freeze({
   HONOR_SOCIETIES_AND_AWARDS: 10,
 });
 
-const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate/";
+const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate";
 const RELEVANT_CHAPTERS = new Set([
   BULLETIN_CHAPTERS.COLLEGE_OF_ARTS_AND_SCIENCES,
   BULLETIN_CHAPTERS.LEAVEY_SCHOOL_OF_BUSINESS,
@@ -141,7 +141,7 @@ async function getAndProcessBulletinText(mode) {
   // Overrides for testing.
   // schoolOverviewPages = [];
   // departmentOverviewPages = [
-  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/art-and-art-history.html#f7994386b4fd",
+  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/gender-and-sexuality-studies.html#81c027c34540",
   // ];
   // specialProgramPages = [];
   for (const schoolPage of schoolOverviewPages) {
@@ -204,46 +204,59 @@ async function processBulletinChapterPage(link, pageType, mode) {
   const document = new jsdom.JSDOM(text).window.document;
   const mainContent = document.querySelector("main");
   let mainContentString = "";
-  let coursesSectionText = isolateAndRemoveCourses(mainContent);
+  let mainContentClone = mainContent.cloneNode(true);
+  isolateAndRemoveCourses(mainContent);
   for (const child of mainContent.children) {
     if (child.classList.contains("plink")) {
       // Skip links to other pages.
       continue;
     } else mainContentString += recursivelyGetTextFromElement(child) + "\n";
   }
+  let coursesSectionText = "";
+  for (const child of mainContentClone.children) {
+    if (child.classList.contains("plink")) {
+      // Skip links to other pages.
+      continue;
+    } else coursesSectionText += recursivelyGetTextFromElement(child) + "\n";
+  }
   const courses = divideCourseSectionsText(coursesSectionText);
   if (pageType === PageTypes.DEPARTMENT) {
     const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
-    await extractDataFromPage(
-      batchRequestId,
-      mainContentString,
-      EXTRACT_DEPT_INFO_PROMPT,
-      zodResponseFormat(DepartmentOrProgramInfo, "Department_Or_Program_Info"),
-      mainBatchRequestsFileStream
-    );
+    // await extractDataFromPage(
+    //   batchRequestId,
+    //   mainContentString,
+    //   EXTRACT_DEPT_INFO_PROMPT,
+    //   zodResponseFormat(DepartmentOrProgramInfo, "Department_Or_Program_Info"),
+    //   mainBatchRequestsFileStream
+    // );
   } else if (pageType === PageTypes.SCHOOL) {
     const batchRequestId =
       (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
-    await extractDataFromPage(
-      batchRequestId,
-      mainContentString,
-      EXTRACT_SCHOOL_INFO_PROMPT,
-      zodResponseFormat(SchoolInfo, "School_Info"),
-      mainBatchRequestsFileStream
-    );
+    // await extractDataFromPage(
+    //   batchRequestId,
+    //   mainContentString,
+    //   EXTRACT_SCHOOL_INFO_PROMPT,
+    //   zodResponseFormat(SchoolInfo, "School_Info"),
+    //   mainBatchRequestsFileStream
+    // );
   } else {
     const batchRequestId =
       (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
-    await extractDataFromPage(
-      batchRequestId,
-      mainContentString,
-      EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
-      zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
-      mainBatchRequestsFileStream
-    );
+    // await extractDataFromPage(
+    //   batchRequestId,
+    //   mainContentString,
+    //   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
+    //   zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
+    //   mainBatchRequestsFileStream
+    // );
   }
+  // const coursestxt = fs.createWriteStream("./local_data/courses.txt", {
+  //   flags: "a",
+  // });
   for (let i = 0; i < courses.length; i++) {
     const courseSection = courses[i];
+    // coursestxt.write(courseSection + "\n\n\n--------------------\n\n\n");
+
     const batchRequestId =
       (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
     await extractDataFromPage(
@@ -306,8 +319,8 @@ async function extractDataFromPage(
   );
 
   const responseData = completion.choices[0].message.parsed;
-  universityCatalog.courses.push(...(responseData.courses ?? []));
-  universityCatalog.errors.push(...(responseData.errors ?? []));
+  universityCatalog.courses.push(...(responseData?.courses ?? []));
+  universityCatalog.errors.push(...(responseData?.errors ?? []));
   if (prompt === EXTRACT_SCHOOL_INFO_PROMPT) {
     universityCatalog.schools.push(responseData);
   }
@@ -407,10 +420,17 @@ async function extractDataFromPageWithFunctionCalls(
 
 function divideCourseSectionsText(coursesText) {
   let courses = [];
-  let indexOfCoursesSection = findNextCoursesSection(coursesText, 0);
+  let firstCourseSection = findNextCoursesSection(coursesText, 0);
+  let indexOfCoursesSection = findNextCoursesSection(
+    coursesText,
+    firstCourseSection + 1
+  );
   if (indexOfCoursesSection === coursesText.length && coursesText.trim()) {
     courses.push(coursesText);
+  } else {
+    courses.push(coursesText.substring(0, indexOfCoursesSection));
   }
+
   while (indexOfCoursesSection !== coursesText.length) {
     let nextCoursesSection = findNextCoursesSection(
       coursesText,
@@ -511,7 +531,29 @@ function isolateAndRemoveCourses(pageMainElement) {
       }
 
       coursesSectionText += course.textContent + "\n";
-      coursesSectionText += course.nextElementSibling?.textContent + "\n\n";
+      let numParagraphsTried = 0;
+      let courseDescriptionElement = course.nextElementSibling;
+      while (
+        numParagraphsTried < 3 &&
+        courseDescriptionElement.tagName === "P" &&
+        courseDescriptionElement?.textContent?.trim() === ""
+      ) {
+        course.nextElementSibling?.remove();
+        numParagraphsTried++;
+        courseDescriptionElement = course.nextElementSibling;
+      }
+      if (
+        !courseDescriptionElement ||
+        courseDescriptionElement?.textContent?.trim() === "" ||
+        courseDescriptionElement?.tagName !== "P"
+      ) {
+        console.warn(
+          `Course element with title ${course.textContent} has no next element with text content`
+        );
+      } else {
+        coursesSectionText += courseDescriptionElement?.textContent + "\n\n";
+        courseDescriptionElement?.remove();
+      }
       // Remove these elements from the DOM
       if (
         course.previousElementSibling?.tagName === "A" &&
@@ -519,7 +561,6 @@ function isolateAndRemoveCourses(pageMainElement) {
       ) {
         course.previousElementSibling?.remove();
       }
-      course.nextElementSibling?.remove();
       course.remove();
       seenCourses.add(course.textContent);
     }

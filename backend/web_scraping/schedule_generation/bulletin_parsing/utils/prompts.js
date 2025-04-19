@@ -28,4 +28,5 @@ The page may include course sequences within a singular entry. These should stil
 If there are prerequisites and/or corequisites, these can be represented through expressions that combine sets of courses and/or course ranges, which are similar to boolean expressions. For example, if the course says students are required to take “one of the following courses as a prerequisite: ANTH 111, 112, 115”, this can be represented by the expression (ANTH111 | ANTH112 | ANTH115). Or, if all of the courses were required as prerequisites, it would be (ANTH111 & ANTH112 & ANTH115). Or if it said one could take either ANTH 110 and 111, or ANTH 112 and 115, this could be (ANTH110 & ANTH111) | (ANTH112 & ANTH115). 
 
 IMPORTANT: the prerequisites and corequisite fields can ONLY contain a valid boolean expression of course codes! If there are other types of requirements, such as a minimum number of units taken prior to taking the course, or a required supplement to the course, those should go in the other requirements section.
-`;
+
+If there are any courses that are merely referenced, but not fully described, please do not include these. For example, if page for the computer science department mentions a sociology course as part of the major requirements, do not include it.`;
