@@ -7,21 +7,37 @@ import {
   DepartmentOrProgramInfo,
   SchoolInfo,
   SpecialProgramInfo,
-} from "./utils/test_models.js";
+} from "./utils/models.js";
 import fs from "fs";
 import {
   EXTRACT_COURSES_PROMPT,
-  // EXTRACT_DEPT_INFO_PROMPT,
+  EXTRACT_DEPT_INFO_PROMPT,
   EXTRACT_SCHOOL_INFO_PROMPT,
   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
 } from "./utils/prompts.js";
-import {
-  EXTRACT_DEPT_INFO_PROMPT
-} from "./utils/test_prompts.js"
 import { DEPARTMENT_TOOLS } from "./utils/test_models.js";
 
+const BULLETIN_CHAPTERS = Object.freeze({
+  BULLETIN_OVERVIEW: 0,
+  UNIVERSITY_MISSION: 1,
+  LEARNING_RESOURCES: 2,
+  COLLEGE_OF_ARTS_AND_SCIENCES: 3,
+  LEAVEY_SCHOOL_OF_BUSINESS: 4,
+  SCHOOL_OF_ENGINEERING: 5,
+  UNIVERSITY_PROGRAMS: 6,
+  UNDERGRADUATE_ADMISSIONS: 7,
+  POLICIES_AND_REGULATIONS: 8,
+  TUITION_AND_FEES: 9,
+  HONOR_SOCIETIES_AND_AWARDS: 10,
+});
+
 const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate/";
-const RELEVANT_CHAPTERS = new Set([3, 4, 5, 6]);
+const RELEVANT_CHAPTERS = new Set([
+  BULLETIN_CHAPTERS.COLLEGE_OF_ARTS_AND_SCIENCES,
+  BULLETIN_CHAPTERS.LEAVEY_SCHOOL_OF_BUSINESS,
+  BULLETIN_CHAPTERS.SCHOOL_OF_ENGINEERING,
+  BULLETIN_CHAPTERS.UNIVERSITY_PROGRAMS,
+]);
 
 const PageTypes = {
   SCHOOL: "school",
@@ -29,13 +45,14 @@ const PageTypes = {
   SPECIAL_PROGRAM: "specialProgram",
 };
 
-const gpt4oBatchRequestsFileName = `./local_data/gpt_4o_requests_${Date.now()}.jsonl`;
-let gpt4oBatchRequestFileStream;
+const mainBatchRequestsFileName = `./local_data/main_batch_requests_${Date.now()}.jsonl`;
+let mainBatchRequestsFileStream;
 
-const gpt4oMiniBatchRequestsFileName = `./local_data/gpt_4o_mini_requests_${Date.now()}.jsonl`;
-let gpt4oMiniBatchRequestFileStream;
+const courseBatchRequestsFileName = `./local_data/courses_batch_requests_${Date.now()}.jsonl`;
+let courseBatchRequestFileStream;
 
-const usingGpt4oMini = false;
+const DEFAULT_MODEL = "o4-mini";
+const useSpecialModelForCourses = "";
 
 const universityCatalog = {
   schools: [],
@@ -52,33 +69,39 @@ async function main() {
   const mode = process.argv[2];
   if (!modes.includes(mode)) {
     console.error(
-      "Usage: node --env-file=/path/to/.env index.js <mode>, where mode is one of 'batch' or 'local'",
+      "Usage: node --env-file=/path/to/.env index.js <mode>, where mode is one of 'batch' or 'local'"
     );
     return;
   }
   if (mode !== "batch") await writeCatalog();
   else {
-    gpt4oBatchRequestFileStream = fs.createWriteStream(
-      gpt4oBatchRequestsFileName,
+    mainBatchRequestsFileStream = fs.createWriteStream(
+      mainBatchRequestsFileName,
       {
         flags: "a",
-      },
+      }
     );
-    if (usingGpt4oMini)
-      gpt4oMiniBatchRequestFileStream = fs.createWriteStream(
-        gpt4oMiniBatchRequestsFileName,
+    if (useSpecialModelForCourses)
+      courseBatchRequestFileStream = fs.createWriteStream(
+        courseBatchRequestsFileName,
         {
           flags: "a",
-        },
+        }
       );
   }
   await getAndProcessBulletinText(mode);
 }
 
 async function writeCatalog() {
+  if (!fs.existsSync("./local_data")) {
+    fs.mkdirSync("./local_data");
+  }
+  if (!fs.existsSync("./local_data/university_catalog.json")) {
+    fs.writeFileSync("./local_data/university_catalog.json", "{}");
+  }
   fs.writeFileSync(
     "./local_data/university_catalog.json",
-    JSON.stringify(universityCatalog, null, 2),
+    JSON.stringify(universityCatalog, null, 2)
   );
   console.log("Catalog file updated");
 }
@@ -93,7 +116,6 @@ async function getAndProcessBulletinText(mode) {
   let departmentOverviewPages = [];
   let specialProgramPages = [];
   for (const chapter of chapters) {
-    // continue;
     const chapterString = chapter.textContent.toLowerCase();
     const chapterPattern = /chapter (\d+)/;
     const chapterMatch = chapterString.match(chapterPattern);
@@ -108,7 +130,7 @@ async function getAndProcessBulletinText(mode) {
           continue; // These pages don't have any relevant info.
         allLinks.push(SCU_BULLETIN_URL + link.href);
       }
-      if (parseInt(chapterMatch[1]) === 6) {
+      if (parseInt(chapterMatch[1]) === BULLETIN_CHAPTERS.UNIVERSITY_PROGRAMS) {
         specialProgramPages.push(...allLinks);
         continue;
       }
@@ -116,11 +138,12 @@ async function getAndProcessBulletinText(mode) {
       departmentOverviewPages.push(...allLinks.slice(1));
     }
   }
-  schoolOverviewPages = [];
-  departmentOverviewPages = [
-    "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/musical-theatre.html#339634e37c1a",
-  ];
-  specialProgramPages = [];
+  // Overrides for testing.
+  // schoolOverviewPages = [];
+  // departmentOverviewPages = [
+  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/art-and-art-history.html#f7994386b4fd",
+  // ];
+  // specialProgramPages = [];
   for (const schoolPage of schoolOverviewPages) {
     await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode);
   }
@@ -128,50 +151,50 @@ async function getAndProcessBulletinText(mode) {
     await processBulletinChapterPage(
       specialProgramPage,
       PageTypes.SPECIAL_PROGRAM,
-      mode,
+      mode
     );
   }
   for (const departmentPage of departmentOverviewPages) {
     await processBulletinChapterPage(
       departmentPage,
       PageTypes.DEPARTMENT,
-      mode,
+      mode
     );
   }
 
   if (mode === "batch") {
     await createBatches();
-    gpt4oBatchRequestFileStream.end();
-    if (usingGpt4oMini) gpt4oMiniBatchRequestFileStream.end();
+    mainBatchRequestsFileStream.end();
+    if (useSpecialModelForCourses) courseBatchRequestFileStream.end();
   }
 }
 
 async function createBatches() {
-  const gpt4oRequestsFile = await openAIClient.files.create({
+  const requestsFile = await openAIClient.files.create({
     purpose: "batch",
-    file: fs.createReadStream(gpt4oBatchRequestsFileName),
+    file: fs.createReadStream(mainBatchRequestsFileName),
   });
-  const gpt4oBatch = await openAIClient.batches.create({
-    input_file_id: gpt4oRequestsFile.id,
+  const batch = await openAIClient.batches.create({
+    input_file_id: requestsFile.id,
     endpoint: "/v1/chat/completions",
     completion_window: "24h",
   });
 
-  console.log(`Created GPT-4o input file ${gpt4oRequestsFile.id}`);
-  console.log(`Created GPT-4o batch ${gpt4oBatch.id}`);
-  if (usingGpt4oMini) {
-    const gpt4oMiniRequestsFile = await openAIClient.files.create({
+  console.log(`Created input file with id ${requestsFile.id}`);
+  console.log(`Created batch with id ${batch.id}`);
+  if (useSpecialModelForCourses) {
+    const coursesRequestsFile = await openAIClient.files.create({
       purpose: "batch",
-      file: fs.createReadStream(gpt4oMiniBatchRequestsFileName),
+      file: fs.createReadStream(courseBatchRequestsFileName),
     });
-    const gpt4oMiniBatch = await openAIClient.batches.create({
-      input_file_id: gpt4oMiniRequestsFile.id,
+    const coursesBatch = await openAIClient.batches.create({
+      input_file_id: coursesRequestsFile.id,
       endpoint: "/v1/chat/completions",
       completion_window: "24h",
     });
 
-    console.log(`Created GPT-4o-mini input file ${gpt4oMiniRequestsFile.id}`);
-    console.log(`Created GPT-4o-mini batch ${gpt4oMiniBatch.id}`);
+    console.log(`Created courses input file ${coursesRequestsFile.id}`);
+    console.log(`Created courses batch ${coursesBatch.id}`);
   }
 }
 
@@ -184,50 +207,52 @@ async function processBulletinChapterPage(link, pageType, mode) {
   let coursesSectionText = isolateAndRemoveCourses(mainContent);
   for (const child of mainContent.children) {
     if (child.classList.contains("plink")) {
+      // Skip links to other pages.
       continue;
     } else mainContentString += recursivelyGetTextFromElement(child) + "\n";
   }
   const courses = divideCourseSectionsText(coursesSectionText);
   if (pageType === PageTypes.DEPARTMENT) {
     const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
-    await extractDataFromPageWithFunctionCalls(
+    await extractDataFromPage(
       batchRequestId,
       mainContentString,
       EXTRACT_DEPT_INFO_PROMPT,
       zodResponseFormat(DepartmentOrProgramInfo, "Department_Or_Program_Info"),
-      gpt4oBatchRequestFileStream,
+      mainBatchRequestsFileStream
     );
   } else if (pageType === PageTypes.SCHOOL) {
     const batchRequestId =
       (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
-    await extractDataFromPageWithFunctionCalls(
+    await extractDataFromPage(
       batchRequestId,
       mainContentString,
       EXTRACT_SCHOOL_INFO_PROMPT,
       zodResponseFormat(SchoolInfo, "School_Info"),
-      gpt4oBatchRequestFileStream,
+      mainBatchRequestsFileStream
     );
   } else {
     const batchRequestId =
       (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
-    await extractDataFromPageWithFunctionCalls(
+    await extractDataFromPage(
       batchRequestId,
       mainContentString,
       EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
       zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
-      gpt4oBatchRequestFileStream,
+      mainBatchRequestsFileStream
     );
   }
   for (let i = 0; i < courses.length; i++) {
     const courseSection = courses[i];
     const batchRequestId =
       (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
-    await extractDataFromPageWithFunctionCalls(
+    await extractDataFromPage(
       batchRequestId,
       courseSection,
       EXTRACT_COURSES_PROMPT,
       zodResponseFormat(CourseCatalog, "Course_Catalog"),
-      gpt4oBatchRequestFileStream,
+      mainBatchRequestsFileStream,
+      useSpecialModelForCourses || DEFAULT_MODEL
     );
   }
 }
@@ -238,7 +263,7 @@ async function extractDataFromPage(
   prompt,
   responseFormat,
   batchFile,
-  model = "gpt-4o",
+  model = DEFAULT_MODEL
 ) {
   const requestBody = {
     model,
@@ -256,7 +281,7 @@ async function extractDataFromPage(
       },
     ],
     response_format: responseFormat,
-    temperature: 0,
+    temperature: 1,
     // top_p: 0.1,
   };
 
@@ -267,7 +292,7 @@ async function extractDataFromPage(
         method: "POST",
         url: "/v1/chat/completions",
         body: { ...requestBody },
-      }) + "\n",
+      }) + "\n"
     );
     return;
   }
@@ -277,7 +302,7 @@ async function extractDataFromPage(
   });
 
   console.log(
-    `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`,
+    `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`
   );
 
   const responseData = completion.choices[0].message.parsed;
@@ -302,7 +327,7 @@ async function extractDataFromPageWithFunctionCalls(
   prompt,
   responseFormat,
   batchFile,
-  model = "gpt-4o",
+  model = "gpt-4o"
 ) {
   const messages = [
     {
@@ -333,7 +358,7 @@ async function extractDataFromPageWithFunctionCalls(
         method: "POST",
         url: "/v1/chat/completions",
         body: { ...requestBody },
-      }) + "\n",
+      }) + "\n"
     );
     return;
   }
@@ -362,7 +387,7 @@ async function extractDataFromPageWithFunctionCalls(
   }
 
   console.log(
-    `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`,
+    `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`
   );
 
   // const responseData = completion.choices[0].message.parsed;
@@ -389,17 +414,17 @@ function divideCourseSectionsText(coursesText) {
   while (indexOfCoursesSection !== coursesText.length) {
     let nextCoursesSection = findNextCoursesSection(
       coursesText,
-      indexOfCoursesSection + 1,
+      indexOfCoursesSection + 1
     );
     courses.push(
-      coursesText.substring(indexOfCoursesSection, nextCoursesSection),
+      coursesText.substring(indexOfCoursesSection, nextCoursesSection)
     );
     indexOfCoursesSection = nextCoursesSection;
   }
 
   let chunkedCourses = [];
   for (let i = 0; i < courses.length; i++) {
-    const expectedOutputTokens = countTokens(courses[i]);
+    const expectedOutputTokens = countTokens(courses[i]); // Input/output tokens should be roughly the same.
     if (expectedOutputTokens > 15000) {
       let currentCourseDescription = "";
       let currentCourseTokens = 0;
@@ -440,7 +465,7 @@ function divideCourseSectionsText(coursesText) {
 
 function isolateAndRemoveCourses(pageMainElement) {
   const potentialCourses = Array.from(
-    pageMainElement.querySelectorAll("h3 > span"),
+    pageMainElement.querySelectorAll("h3 > span")
   );
   let coursesSectionText = "";
   const seenCourses = new Set();
@@ -454,7 +479,7 @@ function isolateAndRemoveCourses(pageMainElement) {
     ) {
       if (!course.nextElementSibling || !course.previousElementSibling) {
         console.warn(
-          `Course element with title ${course.textContent} has no next or previous element`,
+          `Course element with title ${course.textContent} has no next or previous element`
         );
       }
       // This is a course, add it to the list of courses
