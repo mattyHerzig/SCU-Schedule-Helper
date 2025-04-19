@@ -68,7 +68,7 @@ let totalErrors = 0;
 
 function validateCatalogOutput(catalogFilename) {
   const universityCatalog = JSON.parse(
-    fs.readFileSync(catalogFilename, "utf-8").toString(),
+    fs.readFileSync(catalogFilename, "utf-8").toString()
   );
   for (const school of universityCatalog.schools) {
     if (!school.name) {
@@ -80,7 +80,7 @@ function validateCatalogOutput(catalogFilename) {
       totalErrors++;
     }
     validateCourseRequirementsExpression(
-      school.courseRequirements || school.courseRequirementsExpression,
+      school.courseRequirements || school.courseRequirementsExpression
     );
   }
   for (const deptOrProgram of universityCatalog.deptsAndPrograms) {
@@ -100,6 +100,53 @@ function validateCatalogOutput(catalogFilename) {
     }
     for (const emphasis of deptOrProgram.emphases) {
       validateAcademicProgramDetails(emphasis);
+    }
+  }
+  for (const specialProgram of universityCatalog.specialPrograms) {
+    if (!specialProgram.name) {
+      console.error("Special program name is missing");
+      totalErrors++;
+    }
+    if (!specialProgram.description) {
+      console.error("Special program description is missing");
+      totalErrors++;
+    }
+    validateCourseRequirementsExpression(
+      specialProgram.courseRequirements ||
+        specialProgram.courseRequirementsExpression
+    );
+  }
+  for (const course of universityCatalog.courses) {
+    if (!course.code) {
+      console.error("Course code is missing");
+      totalErrors++;
+    }
+    if (!course.name) {
+      console.error("Course name is missing");
+      totalErrors++;
+    }
+    if (!course.description) {
+      console.error("Course description is missing");
+      totalErrors++;
+    }
+    if (course.numUnits < 0 || course.numUnits > 6) {
+      console.error(
+        `Course ${course.code} has invalid number of units ${course.numUnits}`
+      );
+      totalErrors++;
+    }
+    if (!course.departmentCode) {
+      console.error("Course department code is missing");
+      totalErrors++;
+    } else if (!validDepartmentCodes.includes(course.departmentCode)) {
+      console.error(`Invalid course department code ${course.departmentCode}`);
+      totalErrors++;
+    }
+    if (course.prerequisiteCourses) {
+      validateCourseRequirementsExpression(course.prerequisitesCourses);
+    }
+    if (course.corequisiteCourses) {
+      validateCourseRequirementsExpression(course.corequisites);
     }
   }
   console.log(`Total errors: ${totalErrors}`);
@@ -123,7 +170,7 @@ function validateAcademicProgramDetails(programDetails) {
   }
   validateCourseRequirementsExpression(
     programDetails.courseRequirements ||
-      programDetails.courseRequirementsExpression,
+      programDetails.courseRequirementsExpression
   );
 }
 
@@ -147,7 +194,7 @@ function validateCourseRequirementsExpression(courseRequirements) {
   } catch (e) {
     totalErrors++;
     console.error(
-      `Error parsing course requirements: ${e.message}\nThe original expression: ${courseRequirements}\n\n`,
+      `Error parsing course requirements: ${e.message}\nThe original expression: ${courseRequirements}\n\n`
     );
   }
 }
@@ -163,7 +210,7 @@ function hasUserFulfilledCourseRequirements(
   deptParams = {
     min_unique_depts: null,
     max_courses_from_one_dept: null,
-  },
+  }
 ) {
   let lowerBound;
   let upperBound;
@@ -187,7 +234,7 @@ function hasUserFulfilledCourseRequirements(
       if (curChar === "@") {
         departmentDiversityParams = parseDepartmentDiversityParams(
           courseRequirementsExpression,
-          i,
+          i
         );
         i = departmentDiversityParams.end;
       } else {
@@ -210,7 +257,7 @@ function hasUserFulfilledCourseRequirements(
         console.log(token);
         console.log(lowerBound);
         throw new Error(
-          `Expression "${courseRequirementsExpression}" has invalid (NaN) bounds`,
+          `Expression "${courseRequirementsExpression}" has invalid (NaN) bounds`
         );
       }
       i--;
@@ -225,7 +272,7 @@ function hasUserFulfilledCourseRequirements(
       courseRequirementsExpression[i] !== "("
     ) {
       throw new Error(
-        `Expression "${courseRequirementsExpression}" has invalid subexpression (does not start with '(')`,
+        `Expression "${courseRequirementsExpression}" has invalid subexpression (does not start with '(')`
       );
     }
 
@@ -233,12 +280,12 @@ function hasUserFulfilledCourseRequirements(
       const endBracket = findEndBracket(courseRequirementsExpression, i);
       if (endBracket === -1) {
         throw new Error(
-          `Expression "${courseRequirementsExpression}" has unbalanced parentheses`,
+          `Expression "${courseRequirementsExpression}" has unbalanced parentheses`
         );
       }
       if (operator === "!") {
         const coursesToExclude = parseExclusionExpression(
-          courseRequirementsExpression.substring(i + 1, endBracket),
+          courseRequirementsExpression.substring(i + 1, endBracket)
         );
         coursesExcluded = new Set([...coursesExcluded, ...coursesToExclude]);
         i = endBracket;
@@ -248,7 +295,7 @@ function hasUserFulfilledCourseRequirements(
       const subexpression = hasUserFulfilledCourseRequirements(
         userId,
         courseRequirementsExpression.substring(i + 1, endBracket),
-        { auto: !lowerBound, lower: lowerBound, upper: upperBound },
+        { auto: !lowerBound, lower: lowerBound, upper: upperBound }
       );
       coursesFulfilled = new Set([
         ...coursesFulfilled,
@@ -261,7 +308,7 @@ function hasUserFulfilledCourseRequirements(
       } else {
         if (reachedFirstOperator) {
           throw new Error(
-            `Expression "${courseRequirementsExpression}" is missing an operator`,
+            `Expression "${courseRequirementsExpression}" is missing an operator`
           );
         }
         overallExpression = subexpression.fulfilled;
@@ -289,7 +336,7 @@ function hasUserFulfilledCourseRequirements(
       !courseRequirementsExpression[i].match(/[&|!\s]/)
     ) {
       throw new Error(
-        `Expression "${courseRequirementsExpression}" contains an invalid character or operator at position ${i}`,
+        `Expression "${courseRequirementsExpression}" contains an invalid character or operator at position ${i}`
       );
     }
 
@@ -321,7 +368,7 @@ function hasUserFulfilledCourseRequirements(
       } else {
         if (reachedFirstOperator) {
           throw new Error(
-            `Expression "${courseRequirementsExpression}" is missing an operator`,
+            `Expression "${courseRequirementsExpression}" is missing an operator`
           );
         }
         overallExpression = fulfilled;
@@ -341,7 +388,7 @@ function hasUserFulfilledCourseRequirements(
       operator = courseRequirementsExpression[i];
     } else {
       throw new Error(
-        `Expression "${courseRequirementsExpression}" has operator after an operator, or has an invalid character`,
+        `Expression "${courseRequirementsExpression}" has operator after an operator, or has an invalid character`
       );
     }
   }
@@ -350,7 +397,7 @@ function hasUserFulfilledCourseRequirements(
 
   filterCoursesFromSameDepartment(
     coursesFulfilled,
-    deptParams.max_courses_from_one_dept,
+    deptParams.max_courses_from_one_dept
   );
 
   while (coursesFulfilled.size > upperBound) {
@@ -397,7 +444,7 @@ function parseExclusionExpression(expression) {
       excludedCourses.add(course);
     } else {
       const [, department, start, end] = course.match(
-        /^([A-Z]{4})([0-9]{1,3})-([0-9]{1,3})$/,
+        /^([A-Z]{4})([0-9]{1,3})-([0-9]{1,3})$/
       );
       for (let i = parseInt(start); i <= parseInt(end); i++) {
         excludedCourses.add(department + i);
@@ -443,7 +490,7 @@ function parseDepartmentDiversityParams(expression, start) {
   }
   if (expression[start] !== "{") {
     throw new Error(
-      `Expression "${expression}" has invalid department diversity parameters`,
+      `Expression "${expression}" has invalid department diversity parameters`
     );
   }
   let end = start;
@@ -452,14 +499,14 @@ function parseDepartmentDiversityParams(expression, start) {
   }
   if (expression[end] !== "}") {
     throw new Error(
-      `Expression "${expression}" has invalid department diversity parameters`,
+      `Expression "${expression}" has invalid department diversity parameters`
     );
   }
   //   console.log(
   //     surroundPropertiesWithQuotes(expression.substring(start, end + 1)),
   //   );
   const { min_unique_depts, max_courses_from_one_dept } = JSON.parse(
-    surroundPropertiesWithQuotes(expression.substring(start, end + 1)),
+    surroundPropertiesWithQuotes(expression.substring(start, end + 1))
   );
   return { min_unique_depts, max_courses_from_one_dept, end };
 }
@@ -500,11 +547,11 @@ function coursesTakenFromRange(userId, courseCodeRange) {
     throw new Error(`Invalid course code range "${courseCodeRange}"`);
   }
   let [, department, start, end] = courseCodeRange.match(
-    /^([A-Z]{4})([0-9]{1,3})-([0-9]{1,3})$/,
+    /^([A-Z]{4})([0-9]{1,3})-([0-9]{1,3})$/
   );
   if (start[0] === "0" || end[0] === "0") {
     throw new Error(
-      `Invalid course code range "${courseCodeRange}", course number cannot start with 0`,
+      `Invalid course code range "${courseCodeRange}", course number cannot start with 0`
     );
   }
   if (userId === "test") {

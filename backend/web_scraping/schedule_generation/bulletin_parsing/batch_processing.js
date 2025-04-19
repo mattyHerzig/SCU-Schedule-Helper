@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import fs from "fs";
-import sqlite from "node:sqlite";
+// import sqlite from "node:sqlite";
 
 const universityCatalog = {
   schools: [],
@@ -65,7 +65,7 @@ function mergeBatchResults(batchFilenames) {
     "./local_data/full_university_catalog.json",
     JSON.stringify(universityCatalog),
   );
-  makeSQLiteDB("full_university_catalog.json");
+  // makeSQLiteDB("full_university_catalog.json");
 }
 
 /*
@@ -418,4 +418,4 @@ function getDeptCode(deptOrProgram) {
         : "";
 }
 
-mergeBatchResults(["batch_67737bc7ab2081909c4096e12286a3e3_output.jsonl"]);
+mergeBatchResults(["batch_68033e88faa88190a16e8db2d2f0736e_output.jsonl"]);
