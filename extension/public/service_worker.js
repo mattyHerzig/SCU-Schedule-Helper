@@ -117,7 +117,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse(response);
       });
       break;
-
     case "runStartupChecks":
       runStartupChecks().then(() => {
         sendResponse();
