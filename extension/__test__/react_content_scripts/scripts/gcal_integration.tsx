@@ -2,6 +2,9 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import GoogleCalendarButton from "../components/gcal_integration/GoogleCalendarButton";
 
+console.log("GCal Integration script loaded.");
+const targetUrl = "https://www.myworkday.com/scu/d/task/2998$28771.htmld";
+
 const isButtonAdded = () => {
   return !!document.getElementById('gcal-button-container');
 };
@@ -24,8 +27,14 @@ const injectButton = () => {
   }
 };
 
+const checkUrlAndRun = () => {
+  if (window.location.href === targetUrl) {
+    injectButton();
+  }
+};
+
 const observer = new MutationObserver(() => {
-  injectButton();
+  checkUrlAndRun();
 });
 
 observer.observe(document.body, {

@@ -2,6 +2,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import CurrentCourseImporter from "../components/current_courses/CurrentCourseImporter";
 
+console.log("Current Courses script loaded.");
+
 let messageReceived = false;
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message !== "importCurrentCourses" || messageReceived) {
