@@ -10,6 +10,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.788.0",
+    "@aws-sdk/client-s3": "^3.787.0",
     "exceljs": "^4.4.0",
     "jsdom": "^26.0.0",
     "openai": "^4.95.1",
