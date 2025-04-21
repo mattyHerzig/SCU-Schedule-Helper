@@ -21,11 +21,20 @@ export async function getAndProcessNameMappings() {
   await searchBox[0].type(process.env.ACADEMIC_PERIOD);
   await searchBox[0].press("Enter");
   await page.waitForSelector('input[type="checkbox"]');
-  (await page.$('input[type="checkbox"]')).click();
+  const checkbox = await page.$('input[type="checkbox"]');
+  if(!checkbox) {
+    console.error("Checkbox not found. Exiting.");
+    return;
+  }
+  await checkbox.click();
   await page.waitForSelector('[data-automation-id="selectedItem"]');
 
   // Click out of the search box to close it.
-  const header = await page.$('[data-automation-id="pageHeaderTitleText"]');
+  const header = await page.$('[data-automation-id="pageHeader"]');
+  if(!header) {
+    console.error("Header not found. Exiting.");
+    return;
+  }
   await header.click();
 
   // Click on the academic level search box.

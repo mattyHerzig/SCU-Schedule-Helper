@@ -3,7 +3,7 @@ import puppeteer from "puppeteer";
 const MAX_LOGIN_TRIES = 5;
 
 export async function authenticate(username, password) {
-  const loginButton = "button::-p-text(Login)";
+  const loginButton = "button.login_btn > span";
   const browser = await puppeteer.launch({ args: ["--incognito"] });
   const page = await browser.newPage();
 

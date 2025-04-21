@@ -1,14 +1,22 @@
-export function validResponse (response) {
+export const notModifiedResponse = {
+  statusCode: 304,
+  headers: {
+    "Content-Type": "application/json",
+  },
+};
+
+export function validResponse(headers, response) {
   return {
     statusCode: 200,
     headers: {
       "Content-Type": "application/json",
+      ...headers,
     },
     body: JSON.stringify(response),
   };
-};
+}
 
-export function unauthorizedError (message) {
+export function unauthorizedError(message) {
   return {
     statusCode: 401,
     headers: {
@@ -18,7 +26,7 @@ export function unauthorizedError (message) {
       message: `Authorization failed: ${message}`,
     }),
   };
-};
+}
 
 export const internalServerError = {
   statusCode: 500,

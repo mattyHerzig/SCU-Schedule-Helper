@@ -1,52 +1,57 @@
 import { fetchWithAuth } from "./authorization.js";
-import { PROD_EVALS_ENDPOINT, PROD_NAME_MAPPINGS_ENDPOINT } from "./constants.js";
+import {
+  PROD_EVALS_ENDPOINT,
+  PROD_NAME_MAPPINGS_ENDPOINT,
+} from "./constants.js";
 
 /**
  * Fetches the evals object from the server, then decodes, decompresses, and stores it in local storage.
  * @returns {Promise<void>}
  */
 export async function downloadEvals() {
-  const currentExpirationDate = (
-    await chrome.storage.local.get("evalsExpirationDate")
-  ).evalsExpirationDate;
-  if (currentExpirationDate && new Date() < new Date(currentExpirationDate)) {
-    await chrome.storage.local.set({
-      isDownloadingEvals: false,
-    });
-    return;
-  }
-  const evalsResponse = await fetchWithAuth(PROD_EVALS_ENDPOINT);
-  if (!evalsResponse || !evalsResponse.ok) {
+  const evalsLastModifiedDate = (
+    await chrome.storage.local.get("evalsLastModifiedDate")
+  ).evalsLastModifiedDate;
+  const evalsResponse = await fetchWithAuth(PROD_EVALS_ENDPOINT, {
+    headers: evalsLastModifiedDate
+      ? {
+          "If-Modified-Since": evalsLastModifiedDate,
+        }
+      : {},
+  });
+  if (!evalsResponse || !evalsResponse.ok || evalsResponse.status === 304) {
     await chrome.storage.local.set({
       isDownloadingEvals: false,
     });
     return;
   }
   const evalsObject = await evalsResponse.json();
-  const evalsExpirationDate = evalsObject.dataExpirationDate;
   const evals = await decodeAndDecompress(evalsObject.data);
   await chrome.storage.local.set({
     evals,
-    evalsExpirationDate,
+    evalsLastModifiedDate: evalsResponse.headers.get("last-modified"),
     isDownloadingEvals: false,
   });
 }
 
 export async function downloadProfessorNameMappings() {
-  const currentExpirationDate = (
-    await chrome.storage.local.get("mappingsExpirationDate")
-  ).mappingsExpirationDate;
-  if (currentExpirationDate && new Date() < new Date(currentExpirationDate)) {
-    return;
-  }
-  const response = await fetchWithAuth(PROD_NAME_MAPPINGS_ENDPOINT);
-  if (!response || !response.ok) {
+  let mappingsLastModifiedDate = (
+    await chrome.storage.local.get("mappingsLastModifiedDate")
+  ).mappingsLastModifiedDate;
+  const response = await fetchWithAuth(PROD_NAME_MAPPINGS_ENDPOINT, {
+    headers: mappingsLastModifiedDate
+      ? {
+          "If-Modified-Since": mappingsLastModifiedDate,
+        }
+      : {},
+  });
+  if (!response || !response.ok || response.status === 304) {
     return;
   }
   const mappingsResponse = await response.json();
   await chrome.storage.local.set({
     professorNameMappings: mappingsResponse.data,
-    mappingsExpirationDate: mappingsResponse.dataExpirationDate,
+    mappingsLastModifiedDate: response.headers.get("last-modified"),
   });
 }
 
@@ -58,7 +63,7 @@ async function decodeAndDecompress(base64EncodedGzippedData) {
   }
 
   const decompressedStream = new Response(binaryData).body.pipeThrough(
-    new DecompressionStream("gzip"),
+    new DecompressionStream("gzip")
   );
   const decompressedText = await new Response(decompressedStream).text();
   const jsonData = JSON.parse(decompressedText);
