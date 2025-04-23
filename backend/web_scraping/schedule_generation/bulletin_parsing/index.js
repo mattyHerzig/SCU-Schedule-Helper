@@ -1,3 +1,4 @@
+import fs from "fs";
 import OpenAI from "openai";
 import jsdom from "jsdom";
 import { zodResponseFormat } from "openai/helpers/zod";
@@ -8,14 +9,12 @@ import {
   SchoolInfo,
   SpecialProgramInfo,
 } from "./utils/models.js";
-import fs from "fs";
 import {
   EXTRACT_COURSES_PROMPT,
   EXTRACT_DEPT_INFO_PROMPT,
   EXTRACT_SCHOOL_INFO_PROMPT,
   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
 } from "./utils/prompts.js";
-import { DEPARTMENT_TOOLS } from "./utils/test_models.js";
 
 const BULLETIN_CHAPTERS = Object.freeze({
   BULLETIN_OVERVIEW: 0,
@@ -38,11 +37,23 @@ const RELEVANT_CHAPTERS = new Set([
   BULLETIN_CHAPTERS.SCHOOL_OF_ENGINEERING,
   BULLETIN_CHAPTERS.UNIVERSITY_PROGRAMS,
 ]);
+// From empirical testing: if we allow more than ~5,000 tokens, the model
+// complains that there is too much text to process.
+const MAX_TOKENS_PER_SECTION = 5_000;
+
+const PATHWAYS_OVERVIEW_PAGE = "https://www.scu.edu/provost/core/integrations/pathways/pathway-listings--courses/"
+
+const CORE_CURRICULUM_PAGES = [
+  "https://www.scu.edu/provost/core/foundations/",
+  "https://www.scu.edu/provost/core/explorations/",
+  "https://www.scu.edu/provost/core/integrations/",
+]
 
 const PageTypes = {
   SCHOOL: "school",
   DEPARTMENT: "dept",
   SPECIAL_PROGRAM: "specialProgram",
+  CORE_CURRICULUM: "coreCurriculum",
 };
 
 const mainBatchRequestsFileName = `./local_data/main_batch_requests_${Date.now()}.jsonl`;
@@ -141,26 +152,33 @@ async function getAndProcessBulletinText(mode) {
   // Overrides for testing.
   // schoolOverviewPages = [];
   // departmentOverviewPages = [
-  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/gender-and-sexuality-studies.html#81c027c34540",
+  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/modern-languages-and-literatures.html#0fe0bb2f41c3",
   // ];
   // specialProgramPages = [];
-  for (const schoolPage of schoolOverviewPages) {
-    await processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode);
-  }
-  for (const specialProgramPage of specialProgramPages) {
-    await processBulletinChapterPage(
-      specialProgramPage,
-      PageTypes.SPECIAL_PROGRAM,
-      mode
-    );
-  }
-  for (const departmentPage of departmentOverviewPages) {
-    await processBulletinChapterPage(
-      departmentPage,
-      PageTypes.DEPARTMENT,
-      mode
-    );
-  }
+
+  await Promise.all(
+    schoolOverviewPages.map((schoolPage) =>
+      processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode)
+    )
+  );
+  await Promise.all(
+    departmentOverviewPages.map((departmentPage) =>
+      processBulletinChapterPage(
+        departmentPage,
+        PageTypes.DEPARTMENT,
+        mode
+      )
+    )
+  )
+  await Promise.all(
+    specialProgramPages.map((specialProgramPage) =>
+      processBulletinChapterPage(
+        specialProgramPage,
+        PageTypes.SPECIAL_PROGRAM,
+        mode
+      )
+    )
+  );
 
   if (mode === "batch") {
     await createBatches();
@@ -168,6 +186,20 @@ async function getAndProcessBulletinText(mode) {
     if (useSpecialModelForCourses) courseBatchRequestFileStream.end();
   }
 }
+
+async function getAndProcessCoreCurriculumText(mode) {
+  CORE_CURRICULUM_PAGES.push(...(await getPathwaysPages()));
+  await Promise.all(
+    CORE_CURRICULUM_PAGES.map((coreCurriculumPage) =>
+      processBulletinChapterPage(
+        coreCurriculumPage,
+        PageTypes.CORE_CURRICULUM,
+        mode
+      )
+    )
+  );
+}
+
 
 async function createBatches() {
   const requestsFile = await openAIClient.files.create({
@@ -207,67 +239,73 @@ async function processBulletinChapterPage(link, pageType, mode) {
   let mainContentClone = mainContent.cloneNode(true);
   isolateAndRemoveCourses(mainContent);
   for (const child of mainContent.children) {
-    if (child.classList.contains("plink")) {
+    if (child.classList.contains("plink"))
       // Skip links to other pages.
       continue;
-    } else mainContentString += recursivelyGetTextFromElement(child) + "\n";
+    else mainContentString += recursivelyGetTextFromElement(child) + "\n";
   }
   let coursesSectionText = "";
-  for (const child of mainContentClone.children) {
-    if (child.classList.contains("plink")) {
-      // Skip links to other pages.
-      continue;
-    } else coursesSectionText += recursivelyGetTextFromElement(child) + "\n";
+  // Core curriculum pages won't contain any courses.
+  if (pageType !== PageTypes.CORE_CURRICULUM) {
+    for (const child of mainContentClone.children) {
+      if (child.classList.contains("plink"))
+        continue;
+      else coursesSectionText += recursivelyGetTextFromElement(child) + "\n";
+    }
   }
   const courses = divideCourseSectionsText(coursesSectionText);
+  const requests = []
   if (pageType === PageTypes.DEPARTMENT) {
     const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
-    // await extractDataFromPage(
+    // requests.push(extractDataFromPage(
     //   batchRequestId,
     //   mainContentString,
     //   EXTRACT_DEPT_INFO_PROMPT,
     //   zodResponseFormat(DepartmentOrProgramInfo, "Department_Or_Program_Info"),
     //   mainBatchRequestsFileStream
-    // );
+    // ));
   } else if (pageType === PageTypes.SCHOOL) {
     const batchRequestId =
       (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
-    // await extractDataFromPage(
+    // requests.push(extractDataFromPage(
     //   batchRequestId,
     //   mainContentString,
     //   EXTRACT_SCHOOL_INFO_PROMPT,
     //   zodResponseFormat(SchoolInfo, "School_Info"),
     //   mainBatchRequestsFileStream
-    // );
+    // ));
   } else {
     const batchRequestId =
       (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
-    // await extractDataFromPage(
+    // requests.push(extractDataFromPage(
     //   batchRequestId,
     //   mainContentString,
     //   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
     //   zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
     //   mainBatchRequestsFileStream
-    // );
+    // ));
   }
-  // const coursestxt = fs.createWriteStream("./local_data/courses.txt", {
-  //   flags: "a",
-  // });
-  for (let i = 0; i < courses.length; i++) {
-    const courseSection = courses[i];
-    // coursestxt.write(courseSection + "\n\n\n--------------------\n\n\n");
-
-    const batchRequestId =
-      (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
-    await extractDataFromPage(
-      batchRequestId,
-      courseSection,
-      EXTRACT_COURSES_PROMPT,
-      zodResponseFormat(CourseCatalog, "Course_Catalog"),
-      mainBatchRequestsFileStream,
-      useSpecialModelForCourses || DEFAULT_MODEL
-    );
-  }
+  const coursestxt = fs.createWriteStream("./local_data/courses.txt");
+  requests.push(
+    courses.map((courseSection, i) => {
+      const courseSectionText = courseSection.replace(/\n+/g, "\n");
+      coursestxt.write(courseSectionText + "\n\n\n--------------------\n\n\n");
+      const batchRequestId =
+        (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
+      return extractDataFromPage(
+        batchRequestId,
+        courseSectionText,
+        EXTRACT_COURSES_PROMPT,
+        zodResponseFormat(CourseCatalog, "Course_Catalog"),
+        useSpecialModelForCourses
+          ? courseBatchRequestFileStream
+          : mainBatchRequestsFileStream,
+        useSpecialModelForCourses || DEFAULT_MODEL,
+        "low"
+      );
+    })
+  );
+  await Promise.all(requests);
 }
 
 async function extractDataFromPage(
@@ -276,10 +314,12 @@ async function extractDataFromPage(
   prompt,
   responseFormat,
   batchFile,
-  model = DEFAULT_MODEL
+  model = DEFAULT_MODEL,
+  reasoning_effort = "medium"
 ) {
   const requestBody = {
     model,
+    reasoning_effort,
     messages: [
       {
         role: "system",
@@ -321,14 +361,19 @@ async function extractDataFromPage(
   const responseData = completion.choices[0].message.parsed;
   universityCatalog.courses.push(...(responseData?.courses ?? []));
   universityCatalog.errors.push(...(responseData?.errors ?? []));
-  if (prompt === EXTRACT_SCHOOL_INFO_PROMPT) {
-    universityCatalog.schools.push(responseData);
-  }
-  if (prompt === EXTRACT_DEPT_INFO_PROMPT) {
-    universityCatalog.deptsAndPrograms.push(responseData);
-  }
-  if (prompt === EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT) {
-    universityCatalog.specialPrograms.push(responseData);
+  switch(prompt) {
+    
+    case EXTRACT_SCHOOL_INFO_PROMPT:
+      universityCatalog.schools.push(responseData);
+      break;
+    case EXTRACT_DEPT_INFO_PROMPT:
+      universityCatalog.deptsAndPrograms.push(responseData);
+      break;
+    case EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT:
+      universityCatalog.specialPrograms.push(responseData);
+      break;
+    default:
+      break;
   }
   await writeCatalog();
 }
@@ -386,7 +431,7 @@ async function extractDataFromPageWithFunctionCalls(
     !(
       completion.choices[0].finish_reason === "tool_calls" &&
       completion.choices[0].message.tool_calls[0].function.name ===
-        "save_department_or_program_info"
+      "save_department_or_program_info"
     )
   ) {
     // Console log the completion and respond to any tool calls.
@@ -444,35 +489,40 @@ function divideCourseSectionsText(coursesText) {
 
   let chunkedCourses = [];
   for (let i = 0; i < courses.length; i++) {
-    const expectedOutputTokens = countTokens(courses[i]); // Input/output tokens should be roughly the same.
-    if (expectedOutputTokens > 15000) {
-      let currentCourseDescription = "";
-      let currentCourseTokens = 0;
+    // Expected output tokens = input tokens, because the parsed
+    // courses contain the same amount of info, roughly.
+    const expectedOutputTokens = countTokens(courses[i]);
+    if (expectedOutputTokens > MAX_TOKENS_PER_SECTION) {
       let currentSection = "";
       let currentSectionTokens = 0;
       const lines = courses[i].split("\n");
       for (let i = 0; i < lines.length; i++) {
+        // Wait for a line with course number and title (i.e. a good place to split).
         while (
           i < lines.length &&
           lines[i] &&
-          !lines[i].match(/^\d{1,4}\. .*$/)
+          !lines[i].match(/^\d{1,4}[A-Z]{0,2}\. .*$/)
         ) {
-          // Wait for the first line to be a course number and title.
-          currentCourseDescription += lines[i] + "\n";
-          currentCourseTokens += countTokens(lines[i]);
+          // Otherwise, just keep adding lines.
+          currentSection += lines[i] + "\n";
+          currentSectionTokens += countTokens(lines[i]);
           i++;
         }
-        if (currentCourseTokens + currentSectionTokens > 15000) {
+        // If we are at a good place to split, and we have gone over the limit, split.
+        if (currentSectionTokens > MAX_TOKENS_PER_SECTION) {
           chunkedCourses.push(currentSection);
           currentSection = "";
           currentSectionTokens = 0;
-          if (i < lines.length) currentCourseDescription = lines[i] + "\n";
-          currentCourseTokens = countTokens(lines[i]);
-        } else if (i < lines.length) {
-          currentSection += currentCourseDescription;
-          currentSectionTokens += currentCourseTokens;
-          currentCourseDescription = lines[i] + "\n";
-          currentCourseTokens = countTokens(lines[i]);
+          if (i < lines.length) {
+            // Start a new section with the current line.
+            currentSection = lines[i] + "\n";
+            currentSectionTokens = countTokens(lines[i]);
+          }
+        }
+        // We are at a good place to split, but we have not gone over the limit, so keep adding. 
+        else if (i < lines.length) {
+          currentSection += lines[i] + "\n";
+          currentSectionTokens += countTokens(lines[i]);
         }
       }
       if (currentSection) chunkedCourses.push(currentSection);
@@ -589,6 +639,14 @@ function recursivelyGetTextFromElement(element) {
     }
   }
   return text;
+}
+
+async function getPathwaysPages() {
+  const response = await fetch(PATHWAYS_OVERVIEW_PAGE);
+  const text = await response.text();
+  const document = new jsdom.JSDOM(text).window.document;
+  const links = Array.from(document.querySelectorAll("h4 > a"));
+  return links.map((link) => link.href);
 }
 
 function findNextCoursesSection(pageText, startIndex) {

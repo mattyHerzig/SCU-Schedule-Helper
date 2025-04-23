@@ -341,9 +341,8 @@ export const MajorMinorCourseRequirements = (isMajor) =>
     .string()
     .describe(
       COURSE_REQS_DESC +
-        ` ALSO, because this is for a ${
-          isMajor ? "major" : "minor"
-        }, this expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.`
+      ` ALSO, because this is for a ${isMajor ? "major" : "minor"
+      }, this expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.`
     );
 
 export const UnitRequirements = z
@@ -405,7 +404,7 @@ export const Minor = z.object({
     ),
   courseRequirementsExpression: z.string().describe(
     COURSE_REQS_BASIC_DESC +
-      `
+    `
     ALSO, because this is for a minor, this expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.`
   ),
   unitRequirements: UnitRequirements,
@@ -529,6 +528,19 @@ export const Course = z
   })
   .describe("A course object.");
 
+export const CoreCurriculumRequirement = z.object({
+  requirementName: z
+    .string()
+    .describe("A short, descriptive name of the requirement"),
+  requirementDescription: z
+    .string()
+    .describe("A summary/description of the requirement, e.g. goals of the requirement, learning objectives, etc."),
+  appliesTo: z.string().describe("The name of the program that this requirement applies to, potentially school and degree/major type"),
+  fulfilledBy: z.array(
+    CourseCode
+  ).describe("A list of course codes that fulfill this requirement, if applicable."),
+})
+
 export const DepartmentOrProgramInfo = z.object({
   name: z
     .string()
@@ -571,4 +583,11 @@ export const CourseCatalog = z.object({
   errors: z
     .array(z.string())
     .describe("Any errors that are encountered when parsing the courses, or anything that could not be parsed into the format (maybe the format would not allow it). Please do explain."),
+});
+
+export const CoreCurriculumRequirements = z.object({
+  requirements: z.array(CoreCurriculumRequirement).describe("The core curriculum requirements. Note that sequence requirements should be listed as separate requirements. For example, C&I 1 and 2 are separate. Also, if the requirement is differs between programs, then those should also be separate."),
+  errors: z
+    .array(z.string())
+    .describe("Any errors that are encountered when parsing the core curriculum requirements, or anything that could not be parsed into the format (maybe the format would not allow it). Please do explain."),
 });
