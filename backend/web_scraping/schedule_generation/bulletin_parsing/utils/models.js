@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 export const CourseCode = z.string().describe(
-  `A course code containing the 4-letter department code and a course number, with no space in-between and no leading zeroes for the course number, like CSCI183 or MATH14. 
-    Note that a department code must always be a four-letter, all-caps string, such as CSCI, MATH, or RSOC. It is the string that precedes all course codes within that department. Sometimes, the department code is not explicitly listed on the page. For this reason, here is a list of all department codes and their corresponding subjects:
+  `A course code containing the 4-letter department code and a course number, with no space in-between and no leading zeroes for the course number, like CSCI163 or MATH14. 
+    Note that a department code must always be a four-letter, all-caps string, such as CSCI, MATH, or RSOC. But, the department code is not always explicitly listed with the course number/title. 
+    Instead, the general form for the title of a course is "<course number>. <course name>", for example, "163. Data Structures and Algorithms" corresponds to the course code CSCI163.
+    For this reason, here is a list of all department codes and their corresponding subjects, so that you may infer them:
 ACTG -> Accounting
 AERO -> Aerospace Studies
 AMTH -> Applied Mathematics
@@ -64,6 +66,9 @@ THTR -> Theatre
 UGST -> Undergraduate Studies
 UNIV -> University Programs
 WGST -> Women's and Gender Studies
+
+Also note that the course number may contain some letters, such as CSCI183A or MATH14GR. These letters should be included.
+If the course requires concurrent enrollment in a lab, the course code for the lab should generally be <courseCode>L; for example if MATH14 had a lab, it would be MATH14L, unless otherwise stated.
 `
 );
 
@@ -499,7 +504,7 @@ export const Course = z
     courseCode: CourseCode,
     name: z.string().describe("The full name of the course"),
     description: z.string().describe(`A description of the course. If this is a cross-listed course, and it has no description other than "See cross-listed course", then you can include the "See cross-listed course" as the description.`),
-    numUnits: z.string().describe(`The number of units of the course, i.e. "4" or a range of units of the form <lower>-<upper>, if the number of units can vary. For example, "2-5".`),
+    numUnits: z.string().describe(`The number of units of the course, i.e. "4" or a range of units of the form <lower>-<upper>, if the number of units can vary. For example, "2-5". If not given put, "N/A"`),
     prerequisiteCourses: z
       .string()
       .describe(
@@ -535,11 +540,28 @@ export const CoreCurriculumRequirement = z.object({
   requirementDescription: z
     .string()
     .describe("A summary/description of the requirement, e.g. goals of the requirement, learning objectives, etc."),
-  appliesTo: z.string().describe("The name of the program that this requirement applies to, potentially school and degree/major type"),
+  appliesTo: z.string().describe(`The name of the program that this requirement applies to, potentially school and degree/major type, or "All" if it could apply to any program.
+    Note the different schools:
+    College of Arts and Sciences
+    Leavey School of Business
+    School of Engineering
+    `),
   fulfilledBy: z.array(
-    CourseCode
-  ).describe("A list of course codes that fulfill this requirement, if applicable."),
-})
+    z.string().describe("A course code containing the 4-letter department code and a course number, with no space in-between and no leading zeroes for the course number, like CSCI163 or MATH14. Note that the course number can also include letters after it, such as in MATH14A")
+  ).describe("A list of course codes that fulfill this requirement, if applicable. This must be filled out even if the list is extensive."),
+});
+
+export const Pathway = z.object({
+  name: z
+    .string()
+    .describe("The name of the pathway, but should not include the word 'pathway'"),
+  description: z
+    .string()
+    .describe("A summary/description of the pathway"),
+  associatedCourses: z
+    .array(z.string().describe("A course code containing the 4-letter department code and a course number, with no space in-between and no leading zeroes for the course number, like CSCI163 or MATH14. Note that the course number can also include letters after it, such as in MATH14A"))
+    .describe("A list of courses that are associated with the pathway"),
+});
 
 export const DepartmentOrProgramInfo = z.object({
   name: z
@@ -579,14 +601,14 @@ export const SpecialProgramInfo = z.object({
 });
 
 export const CourseCatalog = z.object({
-  courses: z.array(Course).describe("The courses from the page--only the ones that have a full description, not merely referenced. Courses that are cross-listed as another course can be included."),
+  courses: z.array(Course).describe("The courses from the page--only the ones that have a full description, not merely referenced. Courses that are cross-listed as another course should be included."),
   errors: z
     .array(z.string())
     .describe("Any errors that are encountered when parsing the courses, or anything that could not be parsed into the format (maybe the format would not allow it). Please do explain."),
 });
 
 export const CoreCurriculumRequirements = z.object({
-  requirements: z.array(CoreCurriculumRequirement).describe("The core curriculum requirements. Note that sequence requirements should be listed as separate requirements. For example, C&I 1 and 2 are separate. Also, if the requirement is differs between programs, then those should also be separate."),
+  requirements: z.array(CoreCurriculumRequirement).describe("The core curriculum requirements. Note that sequence requirements should be listed as separate requirements. For example, C&I 1 and 2 are separate. Also, even if a requirement differs between programs--even if it has the same name--there should be separate entries for each school. All requirements from the page MUST be included even if the page is very long."),
   errors: z
     .array(z.string())
     .describe("Any errors that are encountered when parsing the core curriculum requirements, or anything that could not be parsed into the format (maybe the format would not allow it). Please do explain."),

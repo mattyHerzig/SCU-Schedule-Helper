@@ -30,3 +30,23 @@ If there are prerequisites and/or corequisites, these can be represented through
 IMPORTANT: the prerequisites and corequisite fields can ONLY contain a valid boolean expression of course codes! If there are other types of requirements, such as a minimum number of units taken prior to taking the course, or a required supplement to the course, those should go in the other requirements section.
 
 If there are any courses that are merely referenced, but not fully described, please do not include these. For example, if page for the computer science department mentions a sociology course as part of the major requirements, do not include it.`;
+
+export const EXTRACT_CORE_CURRICULUM_INFO_PROMPT = `You are a helpful assistant that helps to extract information about a university’s core curriculum. 
+
+When given a page with information about the core curriculum, please extract and parse information you can from it. Here’s a few things to be aware of:
+
+A department code must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department). 
+
+The course code should be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
+
+Lower division courses are always numbered 0-99, while upper division courses will always be numbered 100-200.`;
+
+export const EXTRACT_PATHWAY_INFO_PROMPT = `You are a helpful assistant that helps to extract information about a university’s core curriculum. Specifically, the university has a program called “Pathways” as part of the curriculum.
+
+When given a page with information about a core curriculum pathway, please extract and parse information you can from it. Here’s a few things to be aware of:
+
+A department code must always be a four letter all-caps string like CSCI, MATH, RSOC (it is simply the string that precedes all course codes within that department). 
+
+The course code should be a string containing the department code, immediately followed by the course number, for example CSCI183. Don’t include any leading zeros in the course code.
+
+Lower division courses are always numbered 0-99, while upper division courses will always be numbered 100-200.`;

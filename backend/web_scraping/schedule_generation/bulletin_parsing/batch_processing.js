@@ -42,18 +42,21 @@ function mergeBatchResults(batchFilenames) {
             result.response.body.choices[0].message.content
           );
           if (data === null) {
-            console.log(result.response.body.choices[0].message.refusal);
-            console.error(`Error parsing line ${i} of ${filename}`);
-            console.log(
-              result.custom_id.substring(result.custom_id.indexOf("AT_") + 3)
-            );
+            console.error(`Refusal on line ${i} of ${filename}, for ${result.custom_id.substring(result.custom_id.indexOf("AT_") + 3)}`);
+            console.log(result.response.body.choices[0].message.refusal, "\n");
             badLinks.add(
               result.custom_id.substring(result.custom_id.indexOf("AT_") + 3)
             );
             continue;
           }
           universityCatalog.errors.push(...(data.errors || []));
-          delete data.errors;
+          if(data.errors && data.errors.length > 0) {
+            console.error(`Errors on line ${i} of ${filename}, for ${result.custom_id}`);
+            console.error(data.errors, "\n");
+            badLinks.add(
+              result.custom_id.substring(result.custom_id.indexOf("AT_") + 3)
+            );
+          }
           if (result.custom_id.includes("SCHOOL_INFO")) {
             universityCatalog.schools.push(data);
           }
@@ -92,8 +95,8 @@ function mergeBatchResults(batchFilenames) {
             }
           }
         } catch (e) {
-          console.error(`Error parsing line ${i} of ${filename}`);
-          console.error(e);
+          console.error(`Error parsing line ${i} of ${filename}, for ${result.custom_id}`);
+          console.error(e, "\n");
         }
       }
     }
@@ -116,4 +119,4 @@ function getDeptCode(deptOrProgram) {
     : "";
 }
 
-mergeBatchResults(["batch_680405201870819093f880748ffbac11_output.jsonl"]);
+mergeBatchResults(["batch_68094fee66808190baa05d4f203fe821_output.jsonl"]);

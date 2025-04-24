@@ -4,14 +4,18 @@ import jsdom from "jsdom";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { get_encoding } from "tiktoken";
 import {
+  CoreCurriculumRequirements,
   CourseCatalog,
   DepartmentOrProgramInfo,
+  Pathway,
   SchoolInfo,
   SpecialProgramInfo,
 } from "./utils/models.js";
 import {
+  EXTRACT_CORE_CURRICULUM_INFO_PROMPT,
   EXTRACT_COURSES_PROMPT,
   EXTRACT_DEPT_INFO_PROMPT,
+  EXTRACT_PATHWAY_INFO_PROMPT,
   EXTRACT_SCHOOL_INFO_PROMPT,
   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
 } from "./utils/prompts.js";
@@ -30,23 +34,26 @@ const BULLETIN_CHAPTERS = Object.freeze({
   HONOR_SOCIETIES_AND_AWARDS: 10,
 });
 
-const SCU_BULLETIN_URL = "https://www.scu.edu/bulletin/undergraduate";
+const SCU_URL = "https://www.scu.edu";
+const SCU_BULLETIN_URL = `${SCU_URL}/bulletin/undergraduate`;
 const RELEVANT_CHAPTERS = new Set([
   BULLETIN_CHAPTERS.COLLEGE_OF_ARTS_AND_SCIENCES,
   BULLETIN_CHAPTERS.LEAVEY_SCHOOL_OF_BUSINESS,
   BULLETIN_CHAPTERS.SCHOOL_OF_ENGINEERING,
   BULLETIN_CHAPTERS.UNIVERSITY_PROGRAMS,
 ]);
-// From empirical testing: if we allow more than ~5,000 tokens, the model
+// From empirical testing: if we allow more than ~4,000 tokens, the model
 // complains that there is too much text to process.
-const MAX_TOKENS_PER_SECTION = 5_000;
+const MAX_TOKENS_PER_SECTION = 3_500;
+const DEFAULT_MODEL = "o4-mini";
+const DEFAULT_REASONING_EFFORT = "medium";
 
 const PATHWAYS_OVERVIEW_PAGE = "https://www.scu.edu/provost/core/integrations/pathways/pathway-listings--courses/"
-
 const CORE_CURRICULUM_PAGES = [
   "https://www.scu.edu/provost/core/foundations/",
   "https://www.scu.edu/provost/core/explorations/",
   "https://www.scu.edu/provost/core/integrations/",
+  "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
 ]
 
 const PageTypes = {
@@ -54,7 +61,63 @@ const PageTypes = {
   DEPARTMENT: "dept",
   SPECIAL_PROGRAM: "specialProgram",
   CORE_CURRICULUM: "coreCurriculum",
+  PATHWAY: "pathway",
 };
+
+const PAGE_PARAMS = {
+  [PageTypes.SCHOOL]: {
+    name: "school",
+    custom_id: "SCHOOL_INFO",
+    prompt: EXTRACT_SCHOOL_INFO_PROMPT,
+    responseFormat: zodResponseFormat(SchoolInfo, "School_Info"),
+    model: DEFAULT_MODEL,
+    reasoning_effort: DEFAULT_REASONING_EFFORT,
+  },
+  [PageTypes.DEPARTMENT]: {
+    name: "department",
+    custom_id: "DEPT_INFO",
+    prompt: EXTRACT_DEPT_INFO_PROMPT,
+    responseFormat: zodResponseFormat(
+      DepartmentOrProgramInfo,
+      "Department_Or_Program_Info"
+    ),
+    model: DEFAULT_MODEL,
+    reasoning_effort: DEFAULT_REASONING_EFFORT,
+  },
+  [PageTypes.SPECIAL_PROGRAM]: {
+    name: "specialProgram",
+    custom_id: "SPECIAL_PROGRAM_INFO",
+    prompt: EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
+    responseFormat: zodResponseFormat(
+      SpecialProgramInfo,
+      "Special_Program_Info"
+    ),
+    model: DEFAULT_MODEL,
+    reasoning_effort: DEFAULT_REASONING_EFFORT,
+  },
+  [PageTypes.CORE_CURRICULUM]: {
+    name: "coreCurriculum",
+    custom_id: "CORE_CURRICULUM_INFO",
+    prompt: EXTRACT_CORE_CURRICULUM_INFO_PROMPT,
+    responseFormat: zodResponseFormat(
+      CoreCurriculumRequirements,
+      "Core_Curriculum_Requirements"
+    ),
+    model: DEFAULT_MODEL,
+    reasoning_effort: "medium",
+  },
+  [PageTypes.PATHWAY]: {
+    name: "pathway",
+    custom_id: "PATHWAY_INFO",
+    prompt: EXTRACT_PATHWAY_INFO_PROMPT,
+    responseFormat: zodResponseFormat(
+      Pathway,
+      "Pathway"
+    ),
+    model: DEFAULT_MODEL,
+    reasoning_effort: "low",
+  },
+}
 
 const mainBatchRequestsFileName = `./local_data/main_batch_requests_${Date.now()}.jsonl`;
 let mainBatchRequestsFileStream;
@@ -62,7 +125,6 @@ let mainBatchRequestsFileStream;
 const courseBatchRequestsFileName = `./local_data/courses_batch_requests_${Date.now()}.jsonl`;
 let courseBatchRequestFileStream;
 
-const DEFAULT_MODEL = "o4-mini";
 const useSpecialModelForCourses = "";
 
 const universityCatalog = {
@@ -70,6 +132,10 @@ const universityCatalog = {
   deptsAndPrograms: [],
   specialPrograms: [],
   courses: [],
+  coreCurriculum: {
+    requirements: [],
+    pathways: [],
+  },
   errors: [],
 };
 
@@ -100,7 +166,16 @@ async function main() {
         }
       );
   }
-  await getAndProcessBulletinText(mode);
+  await Promise.all([
+    // getAndProcessBulletinText(mode),
+    getAndProcessCoreCurriculumText(mode),
+  ]);
+
+  if (mode === "batch") {
+    await createBatches();
+    mainBatchRequestsFileStream.end();
+    if (useSpecialModelForCourses) courseBatchRequestFileStream.end();
+  }
 }
 
 async function writeCatalog() {
@@ -152,18 +227,18 @@ async function getAndProcessBulletinText(mode) {
   // Overrides for testing.
   // schoolOverviewPages = [];
   // departmentOverviewPages = [
-  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/modern-languages-and-literatures.html#0fe0bb2f41c3",
+  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/psychology.html#cbd09cb3c353",
   // ];
   // specialProgramPages = [];
 
   await Promise.all(
     schoolOverviewPages.map((schoolPage) =>
-      processBulletinChapterPage(schoolPage, PageTypes.SCHOOL, mode)
+      processPage(schoolPage, PageTypes.SCHOOL, mode)
     )
   );
   await Promise.all(
     departmentOverviewPages.map((departmentPage) =>
-      processBulletinChapterPage(
+      processPage(
         departmentPage,
         PageTypes.DEPARTMENT,
         mode
@@ -172,30 +247,29 @@ async function getAndProcessBulletinText(mode) {
   )
   await Promise.all(
     specialProgramPages.map((specialProgramPage) =>
-      processBulletinChapterPage(
+      processPage(
         specialProgramPage,
         PageTypes.SPECIAL_PROGRAM,
         mode
       )
     )
   );
-
-  if (mode === "batch") {
-    await createBatches();
-    mainBatchRequestsFileStream.end();
-    if (useSpecialModelForCourses) courseBatchRequestFileStream.end();
-  }
 }
 
 async function getAndProcessCoreCurriculumText(mode) {
-  CORE_CURRICULUM_PAGES.push(...(await getPathwaysPages()));
   await Promise.all(
     CORE_CURRICULUM_PAGES.map((coreCurriculumPage) =>
-      processBulletinChapterPage(
+      processPage(
         coreCurriculumPage,
         PageTypes.CORE_CURRICULUM,
         mode
       )
+    )
+  );
+  const pathwaysPages = await getPathwaysPages();
+  await Promise.all(
+    pathwaysPages.map((pathwayPage) =>
+      processPage(pathwayPage, PageTypes.PATHWAY, mode)
     )
   );
 }
@@ -230,11 +304,11 @@ async function createBatches() {
   }
 }
 
-async function processBulletinChapterPage(link, pageType, mode) {
+async function processPage(link, pageType, mode) {
   const response = await fetch(link);
   const text = await response.text();
   const document = new jsdom.JSDOM(text).window.document;
-  const mainContent = document.querySelector("main");
+  const mainContent = document.querySelector(pageType !== PageTypes.CORE_CURRICULUM ? "main" : "#content");
   let mainContentString = "";
   let mainContentClone = mainContent.cloneNode(true);
   isolateAndRemoveCourses(mainContent);
@@ -246,70 +320,56 @@ async function processBulletinChapterPage(link, pageType, mode) {
   }
   let coursesSectionText = "";
   // Core curriculum pages won't contain any courses.
-  if (pageType !== PageTypes.CORE_CURRICULUM) {
+  if (pageType !== PageTypes.CORE_CURRICULUM && pageType !== PageTypes.PATHWAY) {
     for (const child of mainContentClone.children) {
       if (child.classList.contains("plink"))
         continue;
       else coursesSectionText += recursivelyGetTextFromElement(child) + "\n";
     }
   }
+  // console.log("Main content:\n\n ", mainContentString);
   const courses = divideCourseSectionsText(coursesSectionText);
   const requests = []
-  if (pageType === PageTypes.DEPARTMENT) {
-    const batchRequestId = (mode === "batch" && `DEPT_INFO_AT_${link}`) || null;
-    // requests.push(extractDataFromPage(
-    //   batchRequestId,
-    //   mainContentString,
-    //   EXTRACT_DEPT_INFO_PROMPT,
-    //   zodResponseFormat(DepartmentOrProgramInfo, "Department_Or_Program_Info"),
-    //   mainBatchRequestsFileStream
-    // ));
-  } else if (pageType === PageTypes.SCHOOL) {
-    const batchRequestId =
-      (mode === "batch" && `SCHOOL_INFO_AT_${link}`) || null;
-    // requests.push(extractDataFromPage(
-    //   batchRequestId,
-    //   mainContentString,
-    //   EXTRACT_SCHOOL_INFO_PROMPT,
-    //   zodResponseFormat(SchoolInfo, "School_Info"),
-    //   mainBatchRequestsFileStream
-    // ));
-  } else {
-    const batchRequestId =
-      (mode === "batch" && `SPECIAL_PROGRAM_INFO_AT_${link}`) || null;
-    // requests.push(extractDataFromPage(
-    //   batchRequestId,
-    //   mainContentString,
-    //   EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT,
-    //   zodResponseFormat(SpecialProgramInfo, "Special_Program_Info"),
-    //   mainBatchRequestsFileStream
-    // ));
-  }
-  const coursestxt = fs.createWriteStream("./local_data/courses.txt");
+  const batchRequestId = (mode === "batch" && `${PAGE_PARAMS[pageType].custom_id}_AT_${link}`) || null;
   requests.push(
-    courses.map((courseSection, i) => {
-      const courseSectionText = courseSection.replace(/\n+/g, "\n");
-      coursestxt.write(courseSectionText + "\n\n\n--------------------\n\n\n");
-      const batchRequestId =
-        (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
-      return extractDataFromPage(
-        batchRequestId,
-        courseSectionText,
-        EXTRACT_COURSES_PROMPT,
-        zodResponseFormat(CourseCatalog, "Course_Catalog"),
-        useSpecialModelForCourses
-          ? courseBatchRequestFileStream
-          : mainBatchRequestsFileStream,
-        useSpecialModelForCourses || DEFAULT_MODEL,
-        "low"
-      );
-    })
+    extractDataFromPage(
+      batchRequestId,
+      link,
+      mainContentString,
+      PAGE_PARAMS[pageType].prompt,
+      PAGE_PARAMS[pageType].responseFormat,
+      mainBatchRequestsFileStream,
+      PAGE_PARAMS[pageType].model,
+      PAGE_PARAMS[pageType].reasoning_effort
+    )
   );
+  // const coursestxt = fs.createWriteStream("./local_data/courses.txt");
+  if (pageType !== PageTypes.CORE_CURRICULUM && pageType !== PageTypes.PATHWAY)
+    requests.push(
+      courses.map((courseSection, i) => {
+        const courseSectionText = courseSection.replace(/\n+/g, "\n");
+        // coursestxt.write(courseSectionText + "\n\n\n--------------------\n\n\n");
+        const batchRequestId =
+          (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
+        return extractDataFromPage(
+          batchRequestId,
+          link,
+          courseSectionText,
+          EXTRACT_COURSES_PROMPT,
+          zodResponseFormat(CourseCatalog, "Course_Catalog"),
+          useSpecialModelForCourses
+            ? courseBatchRequestFileStream
+            : mainBatchRequestsFileStream,
+          useSpecialModelForCourses || DEFAULT_MODEL,
+        );
+      })
+    );
   await Promise.all(requests);
 }
 
 async function extractDataFromPage(
   batchRequestId,
+  pageLink,
   pageText,
   prompt,
   responseFormat,
@@ -327,7 +387,7 @@ async function extractDataFromPage(
       },
       {
         role: "user",
-        content: `Here is the page:
+        content: `Here is the page, which comes from the link ${pageLink}:
         <page>
         ${pageText}
         </page>`,
@@ -335,7 +395,6 @@ async function extractDataFromPage(
     ],
     response_format: responseFormat,
     temperature: 1,
-    // top_p: 0.1,
   };
 
   if (batchRequestId) {
@@ -361,8 +420,10 @@ async function extractDataFromPage(
   const responseData = completion.choices[0].message.parsed;
   universityCatalog.courses.push(...(responseData?.courses ?? []));
   universityCatalog.errors.push(...(responseData?.errors ?? []));
-  switch(prompt) {
-    
+  if(responseData?.errors && responseData.errors.length > 0) {
+    console.error(`Errors experienced on page ${pageLink}`);
+  }
+  switch (prompt) {
     case EXTRACT_SCHOOL_INFO_PROMPT:
       universityCatalog.schools.push(responseData);
       break;
@@ -371,6 +432,12 @@ async function extractDataFromPage(
       break;
     case EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT:
       universityCatalog.specialPrograms.push(responseData);
+      break;
+    case EXTRACT_CORE_CURRICULUM_INFO_PROMPT:
+      universityCatalog.coreCurriculum.requirements.push(responseData?.requirements);
+      break;
+    case EXTRACT_PATHWAY_INFO_PROMPT:
+      universityCatalog.coreCurriculum.pathways.push(responseData);
       break;
     default:
       break;
@@ -486,7 +553,6 @@ function divideCourseSectionsText(coursesText) {
     );
     indexOfCoursesSection = nextCoursesSection;
   }
-
   let chunkedCourses = [];
   for (let i = 0; i < courses.length; i++) {
     // Expected output tokens = input tokens, because the parsed
@@ -500,7 +566,6 @@ function divideCourseSectionsText(coursesText) {
         // Wait for a line with course number and title (i.e. a good place to split).
         while (
           i < lines.length &&
-          lines[i] &&
           !lines[i].match(/^\d{1,4}[A-Z]{0,2}\. .*$/)
         ) {
           // Otherwise, just keep adding lines.
@@ -548,9 +613,9 @@ function isolateAndRemoveCourses(pageMainElement) {
       !seenCourses.has(course.textContent)
     ) {
       if (!course.nextElementSibling || !course.previousElementSibling) {
-        console.warn(
-          `Course element with title ${course.textContent} has no next or previous element`
-        );
+        // console.warn(
+        //   `Course element with title ${course.textContent} has no next or previous element`
+        // );
       }
       // This is a course, add it to the list of courses
       // If the prev element is a section header for the course, add that too.
@@ -646,7 +711,7 @@ async function getPathwaysPages() {
   const text = await response.text();
   const document = new jsdom.JSDOM(text).window.document;
   const links = Array.from(document.querySelectorAll("h4 > a"));
-  return links.map((link) => link.href);
+  return links.map((link) => SCU_URL + link.href);
 }
 
 function findNextCoursesSection(pageText, startIndex) {
