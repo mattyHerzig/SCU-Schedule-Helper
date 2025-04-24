@@ -31,11 +31,16 @@ async function makeSQLiteDB(catalogJsonFilename) {
     "CREATE TABLE IF NOT EXISTS specialPrograms (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, otherOfferingSchedule TEXT, historicalBestProfessors TEXT, historicalOfferingSeasons TEXT);"
+    "CREATE TABLE IF NOT EXISTS courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, historicalBestProfessors TEXT, fulfillsCoreRequirements TEXT);"
   );
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS coreCurriculumRequirements (name TEXT, description TEXT, appliesTo TEXT, fulfilledBy TEXT);"
+  )
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS coreCurriculumPathways (name TEXT, description TEXT, associatedCourses TEXT);"
+  )
 
   for (const school of catalog.schools) {
-    // console.log(school);
     db.prepare(
       "INSERT INTO schools (name, description, courseRequirementsExpression, unitRequirements, otherRequirements) VALUES (?, ?, ?, ?, ?);"
     ).run(
@@ -108,14 +113,20 @@ async function makeSQLiteDB(catalogJsonFilename) {
       specialProgram.name,
       specialProgram.description,
       specialProgram.courseRequirements ||
-        specialProgram.courseRequirementsExpression,
+      specialProgram.courseRequirementsExpression,
       JSON.stringify(specialProgram.unitRequirements),
       JSON.stringify(specialProgram.otherRequirements)
     );
   }
   for (const course of catalog.courses) {
+    let offeringSchedule = `Expected schedule: ${course.otherOfferingSchedule || course.offeringSchedule}; historically, ${getHistoricalOfferingSeasons(course.courseCode)}`;
+    const fulfillsCoreRequirements = Array.from(new Set(catalog.coreCurriculum.requirements.filter(
+      (req) =>
+        req.fulfilledBy &&
+        req.fulfilledBy.includes(course.courseCode)
+    ).map((req) => `"${req.requirementName}"`)));
     db.prepare(
-      "INSERT INTO courses (courseCode, name, description, numUnits, prerequisiteCourses, corequisiteCourses, otherRequirements, otherNotes, offeringSchedule, otherOfferingSchedule, historicalBestProfessors, historicalOfferingSeasons) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+      "INSERT INTO courses (courseCode, name, description, numUnits, prerequisiteCourses, corequisiteCourses, otherRequirements, otherNotes, offeringSchedule, historicalBestProfessors, fulfillsCoreRequirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
     ).run(
       course.courseCode,
       course.name,
@@ -125,10 +136,30 @@ async function makeSQLiteDB(catalogJsonFilename) {
       course.corequisiteCourses,
       JSON.stringify(course.otherRequirements),
       course.otherNotes,
-      course.offeringSchedule,
-      course.otherOfferingSchedule,
+      offeringSchedule,
       getHistoricalBestProfessors(course.courseCode),
-      getHistoricalOfferingSeasons(course.courseCode)
+      fulfillsCoreRequirements.length > 0
+        ? fulfillsCoreRequirements.join(", ")
+        : null
+    );
+  }
+  for (const coreCurriculumRequirement of catalog.coreCurriculum.requirements) {
+    db.prepare(
+      "INSERT INTO coreCurriculumRequirements (name, description, appliesTo, fulfilledBy) VALUES (?, ?, ?, ?);"
+    ).run(
+      coreCurriculumRequirement.requirementName,
+      coreCurriculumRequirement.requirementDescription,
+      coreCurriculumRequirement.appliesTo,
+      JSON.stringify(coreCurriculumRequirement.fulfilledBy)
+    );
+  }
+  for (const coreCurriculumPathway of catalog.coreCurriculum.pathways) {
+    db.prepare(
+      "INSERT INTO coreCurriculumPathways (name, description, associatedCourses) VALUES (?, ?, ?);"
+    ).run(
+      coreCurriculumPathway.name,
+      coreCurriculumPathway.description,
+      JSON.stringify(coreCurriculumPathway.associatedCourses)
     );
   }
   db.close();
@@ -137,33 +168,15 @@ async function makeSQLiteDB(catalogJsonFilename) {
 function getHistoricalBestProfessors(courseCode) {
   const courseEval = aggregateCourseEvals[courseCode];
   if (!courseEval) {
-    console.error(`No course evaluations found for ${courseCode}`);
+    // console.error(`No course evaluations found for ${courseCode}`);
     return null;
   }
   const bestProfs = courseEval.professors
     .filter((professor) => {
       const professorEntry = aggregateCourseEvals[professor][courseCode];
       // Make sure professor has taught within last 2 years
-      const lastTaughtQuarter = professorEntry.recentTerms[0];
-      const lastSeasonTaught = lastTaughtQuarter.split(" ")[0];
-      const lastYearTaught = parseInt(lastTaughtQuarter.split(" ")[1]);
-      const lastMonthTaught =
-        lastSeasonTaught === "Winter"
-          ? 3
-          : lastSeasonTaught === "Spring"
-          ? 6
-          : lastSeasonTaught === "Summer"
-          ? 8
-          : 12;
-
-      const lastDateTaught = new Date(
-        `${lastYearTaught}-${lastMonthTaught}-01`
-      );
-      const currentQuarterDate = new Date();
-      const msPerDay = 86400000;
-      const daysSinceLastTaught =
-        (currentQuarterDate - lastDateTaught) / msPerDay;
-      return daysSinceLastTaught <= 730; // 2 years in days
+      const lastTermTaught = professorEntry.recentTerms[0];
+      return termWithinDays(lastTermTaught, 730);
     })
     .sort((profA, profB) => {
       const profAEval = aggregateCourseEvals[profA][courseCode];
@@ -194,24 +207,46 @@ function getHistoricalBestProfessors(courseCode) {
 function getHistoricalOfferingSeasons(courseCode) {
   const courseEval = aggregateCourseEvals[courseCode];
   if (!courseEval) {
-    console.error(`No course evaluations found for ${courseCode}`);
+    // console.error(`No course evaluations found for ${courseCode}`);
     return null;
   }
   const offeringSeasons = {};
   for (const professor of courseEval.professors) {
     const professorEntry = aggregateCourseEvals[professor][courseCode];
     for (const term of professorEntry.recentTerms) {
-      const [season, year] = term.split(" ");
-      offeringSeasons[season] = (offeringSeasons[season] || 0) + 1;
+      const season = term.split(" ")[0];
+      if (termWithinDays(term, 730))
+        offeringSeasons[season] = (offeringSeasons[season] || 0) + 1;
     }
   }
   return (
-    "Offered " +
+    "in the past 2 years, was offered " +
     Object.entries(offeringSeasons)
       .map(([season, count]) => `${count} times during ${season}`)
       .join(", ") +
     "."
   );
+}
+
+function termWithinDays(term, days) {
+  const [season, year] = term.split(" ");
+  const month =
+    season === "Winter"
+      ? 3
+      : season === "Spring"
+        ? 6
+        : season === "Summer"
+          ? 8
+          : 12;
+
+  const dateOfTerm = new Date(
+    `${year}-${month}-01`
+  );
+  const currentQuarterDate = new Date();
+  const msPerDay = 86400000;
+  const daysSinceTerm =
+    (currentQuarterDate - dateOfTerm) / msPerDay;
+  return daysSinceTerm <= days;
 }
 
 makeSQLiteDB("full_university_catalog.json");

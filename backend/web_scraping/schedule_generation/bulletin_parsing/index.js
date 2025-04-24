@@ -420,7 +420,7 @@ async function extractDataFromPage(
   const responseData = completion.choices[0].message.parsed;
   universityCatalog.courses.push(...(responseData?.courses ?? []));
   universityCatalog.errors.push(...(responseData?.errors ?? []));
-  if(responseData?.errors && responseData.errors.length > 0) {
+  if (responseData?.errors && responseData.errors.length > 0) {
     console.error(`Errors experienced on page ${pageLink}`);
   }
   switch (prompt) {
@@ -434,7 +434,7 @@ async function extractDataFromPage(
       universityCatalog.specialPrograms.push(responseData);
       break;
     case EXTRACT_CORE_CURRICULUM_INFO_PROMPT:
-      universityCatalog.coreCurriculum.requirements.push(responseData?.requirements);
+      universityCatalog.coreCurriculum.requirements.push(...(responseData.requirements));
       break;
     case EXTRACT_PATHWAY_INFO_PROMPT:
       universityCatalog.coreCurriculum.pathways.push(responseData);

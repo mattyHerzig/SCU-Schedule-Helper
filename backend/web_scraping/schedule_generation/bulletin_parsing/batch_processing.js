@@ -6,6 +6,10 @@ const universityCatalog = {
   deptsAndPrograms: [],
   specialPrograms: [],
   courses: [],
+  coreCurriculum: {
+    requirements: [],
+    pathways: [],
+  },
   errors: [],
 };
 
@@ -50,7 +54,7 @@ function mergeBatchResults(batchFilenames) {
             continue;
           }
           universityCatalog.errors.push(...(data.errors || []));
-          if(data.errors && data.errors.length > 0) {
+          if (data.errors && data.errors.length > 0) {
             console.error(`Errors on line ${i} of ${filename}, for ${result.custom_id}`);
             console.error(data.errors, "\n");
             badLinks.add(
@@ -94,6 +98,12 @@ function mergeBatchResults(batchFilenames) {
               }
             }
           }
+          if(result.custom_id.includes("CORE_CURRICULUM_INFO")) {
+            universityCatalog.coreCurriculum.requirements.push(...(data.requirements || []));
+          }
+          if (result.custom_id.includes("PATHWAY_INFO")) {
+            universityCatalog.coreCurriculum.pathways.push(data);
+          }
         } catch (e) {
           console.error(`Error parsing line ${i} of ${filename}, for ${result.custom_id}`);
           console.error(e, "\n");
@@ -113,10 +123,10 @@ function getDeptCode(deptOrProgram) {
   return deptOrProgram.majors.length > 0
     ? deptOrProgram.majors[0].departmentCode
     : deptOrProgram.minors.length > 0
-    ? deptOrProgram.minors[0].departmentCode
-    : deptOrProgram.emphases.length > 0
-    ? deptOrProgram.emphases[0].departmentCode
-    : "";
+      ? deptOrProgram.minors[0].departmentCode
+      : deptOrProgram.emphases.length > 0
+        ? deptOrProgram.emphases[0].departmentCode
+        : "";
 }
 
-mergeBatchResults(["batch_68094fee66808190baa05d4f203fe821_output.jsonl"]);
+mergeBatchResults(["core_curriculum.jsonl", "courses.jsonl"]);

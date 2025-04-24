@@ -400,7 +400,20 @@ async function main() {
               - historicalBestProfessors - Past professors rated highly for the course
               - historicalOfferingSeasons - Seasons in which the course was offered previously
               - fulfillsGeneralEducationRequirement - Indicates what general education requirement(s) the course fulfills, i.e. core curriculum, explorations, integrations, pathways, etc, if any. 
-          
+
+              coreCurriculumRequirements
+              - name - Name of the requirement
+              - description - Description of the requirement
+              - appliesTo - Indicates who the requirement applies to (usually "All", or "College of Arts and Sciences", "Leavey School of Business", "School of Engineering", or a combination)
+              - fulfilledBy - List of course codes that fulfill the requirement, or "N/A" if the requirement is not fulfilled by a course (e.g. just a general requirement)
+              - fulfillsCoreReqs - Comma-separated list of core curriculum requirements that this class fulfills
+              coreCurriculumPathways
+              - name - Name of the pathway
+              - description - Description of the pathway
+              - associatedCourses - List of course codes that can be taken to fulfill the pathway
+
+              Note that the requirements for the pathways in general are in the coreCurriculumRequirements table, but the specific courses that can be taken to fulfill the pathway are in the coreCurriculumPathways table.
+
               Note that you are encouraged to use lots of SQL queries, and don't be afraid to list lots of rows if you can't seem to find what you're looking for.
               Also, we recommend using Select * because there's a lot of information in the database that you might not be aware of, and it can help you find what you're looking for.
               We recommend using the get_course_sequences function to help plan courses / schedules for the user (especially if there are courses involving recursive prerequisites), and the get_user_context function to get general information on the user--this is almost always helpful just in general to answer most queries).

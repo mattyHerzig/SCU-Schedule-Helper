@@ -548,7 +548,7 @@ export const CoreCurriculumRequirement = z.object({
     `),
   fulfilledBy: z.array(
     z.string().describe("A course code containing the 4-letter department code and a course number, with no space in-between and no leading zeroes for the course number, like CSCI163 or MATH14. Note that the course number can also include letters after it, such as in MATH14A")
-  ).describe("A list of course codes that fulfill this requirement, if applicable. This must be filled out even if the list is extensive."),
+  ).describe(`A list of course codes that fulfill this requirement, if applicable. This must be filled out even if the list is extensive. Or, if it is a general requirement with no specific courses, just put "N/A"`),
 });
 
 export const Pathway = z.object({
