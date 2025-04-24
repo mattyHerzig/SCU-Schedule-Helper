@@ -399,14 +399,14 @@ async function main() {
               - otherOfferingSchedule - If "Other", specifies the offering schedule
               - historicalBestProfessors - Past professors rated highly for the course
               - historicalOfferingSeasons - Seasons in which the course was offered previously
-              - fulfillsGeneralEducationRequirement - Indicates what general education requirement(s) the course fulfills, i.e. core curriculum, explorations, integrations, pathways, etc, if any. 
-
+              - fulfillsCoreRequirements - Comma-separated list of core curriculum requirements that this class fulfills, note that sometimes the requirements themselves contain commas, so each requirement is put inside quotes
+              
               coreCurriculumRequirements
               - name - Name of the requirement
               - description - Description of the requirement
               - appliesTo - Indicates who the requirement applies to (usually "All", or "College of Arts and Sciences", "Leavey School of Business", "School of Engineering", or a combination)
               - fulfilledBy - List of course codes that fulfill the requirement, or "N/A" if the requirement is not fulfilled by a course (e.g. just a general requirement)
-              - fulfillsCoreReqs - Comma-separated list of core curriculum requirements that this class fulfills
+              
               coreCurriculumPathways
               - name - Name of the pathway
               - description - Description of the pathway
