@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import fs from "fs";
-
+ 
+//TODO: ADD src links to each object, add school name to the department/ program objects based on link
 const universityCatalog = {
   schools: [],
   deptsAndPrograms: [],

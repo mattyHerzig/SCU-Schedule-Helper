@@ -71,7 +71,7 @@ const PAGE_PARAMS = {
     prompt: EXTRACT_SCHOOL_INFO_PROMPT,
     responseFormat: zodResponseFormat(SchoolInfo, "School_Info"),
     model: DEFAULT_MODEL,
-    reasoning_effort: DEFAULT_REASONING_EFFORT,
+    reasoning_effort: "high",
   },
   [PageTypes.DEPARTMENT]: {
     name: "department",
@@ -82,7 +82,7 @@ const PAGE_PARAMS = {
       "Department_Or_Program_Info"
     ),
     model: DEFAULT_MODEL,
-    reasoning_effort: DEFAULT_REASONING_EFFORT,
+    reasoning_effort: "high",
   },
   [PageTypes.SPECIAL_PROGRAM]: {
     name: "specialProgram",
@@ -93,7 +93,7 @@ const PAGE_PARAMS = {
       "Special_Program_Info"
     ),
     model: DEFAULT_MODEL,
-    reasoning_effort: DEFAULT_REASONING_EFFORT,
+    reasoning_effort: "high",
   },
   [PageTypes.CORE_CURRICULUM]: {
     name: "coreCurriculum",
@@ -104,7 +104,7 @@ const PAGE_PARAMS = {
       "Core_Curriculum_Requirements"
     ),
     model: DEFAULT_MODEL,
-    reasoning_effort: "medium",
+    reasoning_effort: DEFAULT_REASONING_EFFORT,
   },
   [PageTypes.PATHWAY]: {
     name: "pathway",
@@ -115,7 +115,7 @@ const PAGE_PARAMS = {
       "Pathway"
     ),
     model: DEFAULT_MODEL,
-    reasoning_effort: "low",
+    reasoning_effort: DEFAULT_REASONING_EFFORT,
   },
 }
 
@@ -167,7 +167,7 @@ async function main() {
       );
   }
   await Promise.all([
-    // getAndProcessBulletinText(mode),
+    getAndProcessBulletinText(mode),
     getAndProcessCoreCurriculumText(mode),
   ]);
 
@@ -327,7 +327,6 @@ async function processPage(link, pageType, mode) {
       else coursesSectionText += recursivelyGetTextFromElement(child) + "\n";
     }
   }
-  // console.log("Main content:\n\n ", mainContentString);
   const courses = divideCourseSectionsText(coursesSectionText);
   const requests = []
   const batchRequestId = (mode === "batch" && `${PAGE_PARAMS[pageType].custom_id}_AT_${link}`) || null;
@@ -445,91 +444,6 @@ async function extractDataFromPage(
   await writeCatalog();
 }
 
-// An experimental version to test accuracy when using function calls (tools).
-async function extractDataFromPageWithFunctionCalls(
-  batchRequestId,
-  pageText,
-  prompt,
-  responseFormat,
-  batchFile,
-  model = "gpt-4o"
-) {
-  const messages = [
-    {
-      role: "system",
-      content: prompt,
-    },
-    {
-      role: "user",
-      content: `Here is the page:
-      <page>
-      ${pageText}
-      </page>`,
-    },
-  ];
-  const requestBody = {
-    model,
-    messages,
-    temperature: 0,
-    tools: DEPARTMENT_TOOLS,
-    parallel_tool_calls: false,
-    // top_p: 0.1,
-  };
-
-  if (batchRequestId) {
-    batchFile.write(
-      JSON.stringify({
-        custom_id: batchRequestId,
-        method: "POST",
-        url: "/v1/chat/completions",
-        body: { ...requestBody },
-      }) + "\n"
-    );
-    return;
-  }
-
-  let completion = await openAIClient.chat.completions.create({
-    ...requestBody,
-  });
-
-  console.log(JSON.stringify(completion.choices, null, 2));
-
-  if (
-    !(
-      completion.choices[0].finish_reason === "tool_calls" &&
-      completion.choices[0].message.tool_calls[0].function.name ===
-      "save_department_or_program_info"
-    )
-  ) {
-    // Console log the completion and respond to any tool calls.
-    const toolCall = completion.choices[0].message.tool_calls?.[0];
-    if (toolCall) {
-      console.log(`made request to ${toolCall.function.name}`);
-      console.log(JSON.stringify(toolCall.function, null, 2));
-    }
-  } else {
-    console.log("went directly to save_department_or_program_info");
-  }
-
-  console.log(
-    `Used ${completion.usage?.prompt_tokens} input tokens, and ${completion.usage?.completion_tokens} output tokens`
-  );
-
-  // const responseData = completion.choices[0].message.parsed;
-  // universityCatalog.courses.push(...(responseData.courses ?? []));
-  // universityCatalog.errors.push(...(responseData.errors ?? []));
-  // if (prompt === EXTRACT_SCHOOL_INFO_PROMPT) {
-  //   universityCatalog.schools.push(responseData);
-  // }
-  // if (prompt === EXTRACT_DEPT_INFO_PROMPT) {
-  //   universityCatalog.deptsAndPrograms.push(responseData);
-  // }
-  // if (prompt === EXTRACT_SPECIAL_PROGRAM_INFO_PROMPT) {
-  //   universityCatalog.specialPrograms.push(responseData);
-  // }
-  await writeCatalog();
-}
-
 function divideCourseSectionsText(coursesText) {
   let courses = [];
   let firstCourseSection = findNextCoursesSection(coursesText, 0);
@@ -613,9 +527,9 @@ function isolateAndRemoveCourses(pageMainElement) {
       !seenCourses.has(course.textContent)
     ) {
       if (!course.nextElementSibling || !course.previousElementSibling) {
-        // console.warn(
-        //   `Course element with title ${course.textContent} has no next or previous element`
-        // );
+        console.warn(
+          `Course element with title ${course.textContent} has no next or previous element`
+        );
       }
       // This is a course, add it to the list of courses
       // If the prev element is a section header for the course, add that too.
@@ -663,7 +577,7 @@ function isolateAndRemoveCourses(pageMainElement) {
         courseDescriptionElement?.tagName !== "P"
       ) {
         console.warn(
-          `Course element with title ${course.textContent} has no next element with text content`
+          `Course element with title ${course.textContent} may not have a description.`
         );
       } else {
         coursesSectionText += courseDescriptionElement?.textContent + "\n\n";

@@ -395,10 +395,8 @@ async function main() {
               - corequisiteCourses - List of corequisite course codes
               - otherRequirements - Additional enrollment requirements
               - otherNotes - Miscellaneous notes about the course
-              - offeringSchedule - What type of offering schedule ("Normal", "Alternate", "On Demand", or "Other")
-              - otherOfferingSchedule - If "Other", specifies the offering schedule
+              - offeringSchedule - The offering schedule for the course
               - historicalBestProfessors - Past professors rated highly for the course
-              - historicalOfferingSeasons - Seasons in which the course was offered previously
               - fulfillsCoreRequirements - Comma-separated list of core curriculum requirements that this class fulfills, note that sometimes the requirements themselves contain commas, so each requirement is put inside quotes
               
               coreCurriculumRequirements
