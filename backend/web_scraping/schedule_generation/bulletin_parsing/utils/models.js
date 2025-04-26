@@ -356,10 +356,6 @@ export const UnitRequirements = z
     "Requirements on the number units of a certain type that must be taken, if applicable"
   );
 
-export const OtherRequirements = z
-  .array(OtherRequirement)
-  .describe("Any other requirements that are not yet covered.");
-
 export const OtherNotes = z
   .array(z.string())
   .describe(
@@ -388,7 +384,7 @@ export const Emphasis = z.object({
     .describe("The four-letter department code for the emphasis, like CSCI"),
   courseRequirementsExpression: z.string().describe(COURSE_REQS_BASIC_DESC),
   unitRequirements: UnitRequirements,
-  otherRequirements: OtherRequirement,
+  otherRequirements: z.array(OtherRequirement),
   otherNotes: OtherNotes,
 });
 
@@ -413,7 +409,7 @@ export const Minor = z.object({
     ALSO, because this is for a minor, this expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.`
   ),
   unitRequirements: UnitRequirements,
-  otherRequirements: OtherRequirement,
+  otherRequirements: z.array(OtherRequirement),
   otherNotes: OtherNotes,
 });
 
@@ -495,7 +491,7 @@ WGST -> Women's and Gender Studies
     ),
   courseRequirementsExpression: MajorMinorCourseRequirements(true),
   unitRequirements: UnitRequirements,
-  otherRequirements: OtherRequirement,
+  otherRequirements: z.array(OtherRequirement),
   otherNotes: OtherNotes,
 });
 
@@ -587,7 +583,7 @@ export const SchoolInfo = z.object({
     .describe("A summary.description of the school or college."),
   courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
-  otherRequirements: OtherRequirement,
+  otherRequirements: z.array(OtherRequirement),
 });
 
 export const SpecialProgramInfo = z.object({
@@ -597,7 +593,7 @@ export const SpecialProgramInfo = z.object({
     .describe("A summary/description of the special program."),
   courseRequirementsExpression: CourseRequirements,
   unitRequirements: UnitRequirements,
-  otherRequirements: OtherRequirement,
+  otherRequirements: z.array(OtherRequirement),
 });
 
 export const CourseCatalog = z.object({

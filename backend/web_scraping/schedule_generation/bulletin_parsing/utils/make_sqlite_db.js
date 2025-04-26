@@ -12,59 +12,61 @@ async function makeSQLiteDB(catalogJsonFilename) {
   );
   const db = new sqlite.DatabaseSync("./local_data/university_catalog.db");
   db.exec(
-    "CREATE TABLE IF NOT EXISTS schools (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT);"
-  );
-  // majors and minors are foreign keys to deptsAndPrograms
-  db.exec(
-    "CREATE TABLE IF NOT EXISTS deptsAndPrograms (name TEXT, description TEXT, majors TEXT, minors TEXT, emphases TEXT);"
+    "CREATE TABLE IF NOT EXISTS Schools (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS majors (name TEXT, description TEXT, deptCode TEXT, requiresEmphasis INTEGER, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT);"
+    "CREATE TABLE IF NOT EXISTS DeptsAndPrograms (name TEXT, description TEXT, majors TEXT, minors TEXT, emphases TEXT, school TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS minors (name TEXT, description TEXT, deptCode TEXT, requiresEmphasis INTEGER, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT);"
+    "CREATE TABLE IF NOT EXISTS Majors (name TEXT, description TEXT, deptCode TEXT, requiresEmphasis INTEGER, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS emphases (name TEXT, description TEXT, appliesTo TEXT, nameOfWhichItAppliesTo TEXT, deptCode TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT);"
+    "CREATE TABLE IF NOT EXISTS Minors (name TEXT, description TEXT, deptCode TEXT, requiresEmphasis INTEGER, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS specialPrograms (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT);"
+    "CREATE TABLE IF NOT EXISTS Emphases (name TEXT, description TEXT, appliesTo TEXT, nameOfWhichItAppliesTo TEXT, deptCode TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, historicalBestProfessors TEXT, fulfillsCoreRequirements TEXT);"
+    "CREATE TABLE IF NOT EXISTS SpecialPrograms (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS coreCurriculumRequirements (name TEXT, description TEXT, appliesTo TEXT, fulfilledBy TEXT);"
-  )
+    "CREATE TABLE IF NOT EXISTS Courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, historicalBestProfessors TEXT, fulfillsCoreRequirements TEXT, src TEXT);"
+  );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS coreCurriculumPathways (name TEXT, description TEXT, associatedCourses TEXT);"
-  )
+    "CREATE TABLE IF NOT EXISTS CoreCurriculumRequirements (name TEXT, description TEXT, appliesTo TEXT, fulfilledBy TEXT, src TEXT);"
+  );
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS CoreCurriculumPathways (name TEXT, description TEXT, associatedCourses TEXT, src TEXT);"
+  );
 
   for (const school of catalog.schools) {
     db.prepare(
-      "INSERT INTO schools (name, description, courseRequirementsExpression, unitRequirements, otherRequirements) VALUES (?, ?, ?, ?, ?);"
+      "INSERT INTO Schools (name, description, courseRequirementsExpression, unitRequirements, otherRequirements, src) VALUES (?, ?, ?, ?, ?, ?);"
     ).run(
       school.name,
       school.description,
-      school.courseRequirements || school.courseRequirementsExpression,
+      school.courseRequirementsExpression,
       JSON.stringify(school.unitRequirements),
-      JSON.stringify(school.otherRequirements)
+      JSON.stringify(school.otherRequirements),
+      school.src
     );
   }
   for (const deptOrProgram of catalog.deptsAndPrograms) {
     db.prepare(
-      "INSERT INTO deptsAndPrograms (name, description, majors, minors, emphases) VALUES (?, ?, ?, ?, ?);"
+      "INSERT INTO DeptsAndPrograms (name, description, majors, minors, emphases, school, src) VALUES (?, ?, ?, ?, ?, ?, ?);"
     ).run(
       deptOrProgram.name,
       deptOrProgram.description,
       deptOrProgram.majors.map((major) => major.name).join(", "),
       deptOrProgram.minors.map((minor) => minor.name).join(", "),
-      deptOrProgram.emphases.map((emphasis) => emphasis.name).join(", ")
+      deptOrProgram.emphases.map((emphasis) => emphasis.name).join(", "),
+      deptOrProgram.school,
+      deptOrProgram.src
     );
 
     for (const major of deptOrProgram.majors) {
       db.prepare(
-        "INSERT INTO majors (name, description, deptCode, requiresEmphasis, courseRequirementsExpression, unitRequirements, otherRequirements, otherNotes) VALUES (?, ?, ?, ?, ?, ?, ?, ?);"
+        "INSERT INTO Majors (name, description, deptCode, requiresEmphasis, courseRequirementsExpression, unitRequirements, otherRequirements, otherNotes, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"
       ).run(
         major.name,
         major.description,
@@ -73,49 +75,52 @@ async function makeSQLiteDB(catalogJsonFilename) {
         major.courseRequirementsExpression,
         JSON.stringify(major.unitRequirements),
         JSON.stringify(major.otherRequirements),
-        major.otherNotes.join("\n")
+        major.otherNotes.join("\n"),
+        major.src
       );
     }
     for (const minor of deptOrProgram.minors) {
       db.prepare(
-        "INSERT INTO minors (name, description, deptCode, requiresEmphasis, courseRequirementsExpression, unitRequirements, otherRequirements, otherNotes) VALUES (?, ?, ?, ?, ?, ?, ?, ?);"
+        "INSERT INTO Minors (name, description, deptCode, requiresEmphasis, courseRequirementsExpression, unitRequirements, otherRequirements, otherNotes, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"
       ).run(
         minor.name,
         minor.description,
         minor.departmentCode,
         minor.requiresEmphasis ? 1 : 0,
-        minor.courseRequirements || minor.courseRequirementsExpression,
+        minor.courseRequirementsExpression,
         JSON.stringify(minor.unitRequirements),
         JSON.stringify(minor.otherRequirements),
-        minor.otherNotes.join("\n")
+        minor.otherNotes.join("\n"),
+        minor.src
       );
     }
     for (const emphasis of deptOrProgram.emphases) {
       db.prepare(
-        "INSERT INTO emphases (name, description, appliesTo, nameOfWhichItAppliesTo, deptCode, courseRequirementsExpression, unitRequirements, otherRequirements, otherNotes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"
+        "INSERT INTO Emphases (name, description, appliesTo, nameOfWhichItAppliesTo, deptCode, courseRequirementsExpression, unitRequirements, otherRequirements, otherNotes, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
       ).run(
         emphasis.name,
         emphasis.description,
         emphasis.appliesTo,
         emphasis.nameOfWhichItAppliesTo,
         emphasis.departmentCode,
-        emphasis.courseRequirements || emphasis.courseRequirementsExpression,
+        emphasis.courseRequirementsExpression,
         JSON.stringify(emphasis.unitRequirements),
         JSON.stringify(emphasis.otherRequirements),
-        emphasis.otherNotes.join("\n")
+        emphasis.otherNotes.join("\n"),
+        emphasis.src
       );
     }
   }
   for (const specialProgram of catalog.specialPrograms) {
     db.prepare(
-      "INSERT INTO specialPrograms (name, description, courseRequirementsExpression, unitRequirements, otherRequirements) VALUES (?, ?, ?, ?, ?);"
+      "INSERT INTO SpecialPrograms (name, description, courseRequirementsExpression, unitRequirements, otherRequirements, src) VALUES (?, ?, ?, ?, ?, ?);"
     ).run(
       specialProgram.name,
       specialProgram.description,
-      specialProgram.courseRequirements ||
       specialProgram.courseRequirementsExpression,
       JSON.stringify(specialProgram.unitRequirements),
-      JSON.stringify(specialProgram.otherRequirements)
+      JSON.stringify(specialProgram.otherRequirements),
+      specialProgram.src
     );
   }
   for (const course of catalog.courses) {
@@ -126,7 +131,7 @@ async function makeSQLiteDB(catalogJsonFilename) {
         req.fulfilledBy.includes(course.courseCode)
     ).map((req) => `"${req.requirementName}"`)));
     db.prepare(
-      "INSERT INTO courses (courseCode, name, description, numUnits, prerequisiteCourses, corequisiteCourses, otherRequirements, otherNotes, offeringSchedule, historicalBestProfessors, fulfillsCoreRequirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+      "INSERT INTO Courses (courseCode, name, description, numUnits, prerequisiteCourses, corequisiteCourses, otherRequirements, otherNotes, offeringSchedule, historicalBestProfessors, fulfillsCoreRequirements, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
     ).run(
       course.courseCode,
       course.name,
@@ -140,26 +145,29 @@ async function makeSQLiteDB(catalogJsonFilename) {
       getHistoricalBestProfessors(course.courseCode),
       fulfillsCoreRequirements.length > 0
         ? fulfillsCoreRequirements.join(", ")
-        : null
+        : null,
+      course.src
     );
   }
   for (const coreCurriculumRequirement of catalog.coreCurriculum.requirements) {
     db.prepare(
-      "INSERT INTO coreCurriculumRequirements (name, description, appliesTo, fulfilledBy) VALUES (?, ?, ?, ?);"
+      "INSERT INTO CoreCurriculumRequirements (name, description, appliesTo, fulfilledBy, src) VALUES (?, ?, ?, ?, ?);"
     ).run(
       coreCurriculumRequirement.requirementName,
       coreCurriculumRequirement.requirementDescription,
       coreCurriculumRequirement.appliesTo,
-      JSON.stringify(coreCurriculumRequirement.fulfilledBy)
+      JSON.stringify(coreCurriculumRequirement.fulfilledBy),
+      coreCurriculumRequirement.src
     );
   }
   for (const coreCurriculumPathway of catalog.coreCurriculum.pathways) {
     db.prepare(
-      "INSERT INTO coreCurriculumPathways (name, description, associatedCourses) VALUES (?, ?, ?);"
+      "INSERT INTO CoreCurriculumPathways (name, description, associatedCourses, src) VALUES (?, ?, ?, ?);"
     ).run(
       coreCurriculumPathway.name,
       coreCurriculumPathway.description,
-      JSON.stringify(coreCurriculumPathway.associatedCourses)
+      JSON.stringify(coreCurriculumPathway.associatedCourses),
+      coreCurriculumPathway.src
     );
   }
   db.close();
@@ -249,4 +257,4 @@ function termWithinDays(term, days) {
   return daysSinceTerm <= days;
 }
 
-makeSQLiteDB("full_university_catalog.json");
+makeSQLiteDB("full_university_catalog_v2.json");

@@ -311,7 +311,7 @@ const TOOLS = [
       query: z
         .string()
         .describe(
-          `SQL query to run on the university catalog SQLite database, for example: "SELECT * FROM courses WHERE courseCode = 'CS101'"`
+          `SQL query to run on the university catalog SQLite database, for example: "SELECT * FROM Courses WHERE courseCode = 'CS101'"`
         ),
     }),
     function: runSQLQuery,
@@ -325,30 +325,30 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-async function main() {
-  // console based application for user queries
-  console.log("Welcome to the Course Assistant!");
-  let messages = [
-    {
-      role: "system",
-      content: `You are a helpful assistant that helps students at Santa Clara University navigate their course catalog. You can answer questions about courses, majors, minors, and other academic requirements. You can also help students generate long-term course plans and suggest courses they should take next.
+const messages = [
+  {
+    role: "system",
+    content: `You are a helpful assistant that helps students at Santa Clara University navigate their course catalog. You can answer questions about courses, majors, minors, and other academic requirements. You can also help students generate long-term course plans and suggest courses they should take next.
           You are encouraged to make SQL queries to the university catalog database to get information about courses, majors, minors, and other academic requirements. You can also call functions to get user context information and suggested course ordering.
           The SQL database schema is as follows:
-              schools
+              Schools
               - name - Name of the school
               - description - Brief overview of the school
               - courseRequirementsExpression - Logical expression of required courses
               - unitRequirements - Number of required units
               - otherRequirements - Any additional academic requirements
+              - src - Source of the data
 
-              deptsAndPrograms
+              DeptsAndPrograms
               - name - Department or program name
               - description - Overview of the department or program
               - majors - Comma-separated list of related majors
               - minors - Comma-separated list of related minors
               - emphases - Comma-separated list of emphases under the department/program
+              - school - Name of the school the department/program belongs to
+              - src - Source of the data
 
-              majors
+              Majors
               - name - Name of the major
               - description - Description of the major
               - deptCode - Department code offering the major
@@ -357,8 +357,9 @@ async function main() {
               - unitRequirements - Number of required units
               - otherRequirements - Any additional academic requirements
               - otherNotes - Miscellaneous notes about the major
+              - src - Source of the data
 
-              minors
+              Minors
               - name - Name of the minor
               - description - Description of the minor
               - deptCode - Department code offering the minor
@@ -367,8 +368,9 @@ async function main() {
               - unitRequirements - Number of required units
               - otherRequirements - Any additional academic requirements
               - otherNotes - Miscellaneous notes about the minor
+              - src - Source of the data
 
-              emphases
+              Emphases
               - name - Name of the emphasis
               - description - Description of the emphasis
               - appliesTo - Indicates if the emphasis is for a major, minor, or other. Allows for "Major", "Minor", or "Other"
@@ -378,15 +380,17 @@ async function main() {
               - unitRequirements - Number of required units
               - otherRequirements - Any additional academic requirements
               - otherNotes - Miscellaneous notes about the emphasis
+              - src - Source of the data
 
-              specialPrograms
+              SpecialPrograms
               - name - Name of the special program
               - description - Description of the program
               - courseRequirementsExpression - Logical expression of required courses
               - unitRequirements - Number of required units
               - otherRequirements - Any additional academic requirements
+              - src - Source of the data
 
-              courses
+              Courses
               - courseCode - Unique code identifying the course
               - name - Course name
               - description - Overview of course content
@@ -398,19 +402,22 @@ async function main() {
               - offeringSchedule - The offering schedule for the course
               - historicalBestProfessors - Past professors rated highly for the course
               - fulfillsCoreRequirements - Comma-separated list of core curriculum requirements that this class fulfills, note that sometimes the requirements themselves contain commas, so each requirement is put inside quotes
+              - src - Source of the data
               
-              coreCurriculumRequirements
+              CoreCurriculumRequirements
               - name - Name of the requirement
               - description - Description of the requirement
               - appliesTo - Indicates who the requirement applies to (usually "All", or "College of Arts and Sciences", "Leavey School of Business", "School of Engineering", or a combination)
               - fulfilledBy - List of course codes that fulfill the requirement, or "N/A" if the requirement is not fulfilled by a course (e.g. just a general requirement)
+              - src - Source of the data
               
-              coreCurriculumPathways
+              CoreCurriculumPathways
               - name - Name of the pathway
               - description - Description of the pathway
               - associatedCourses - List of course codes that can be taken to fulfill the pathway
+              - src - Source of the data
 
-              Note that the requirements for the pathways in general are in the coreCurriculumRequirements table, but the specific courses that can be taken to fulfill the pathway are in the coreCurriculumPathways table.
+              Note that the requirements for the pathways in general are in the CoreCurriculumRequirements table, but the specific courses that can be taken to fulfill the pathway are in the CoreCurriculumPathways table.
 
               Note that you are encouraged to use lots of SQL queries, and don't be afraid to list lots of rows if you can't seem to find what you're looking for.
               Also, we recommend using Select * because there's a lot of information in the database that you might not be aware of, and it can help you find what you're looking for.
@@ -418,8 +425,12 @@ async function main() {
               Although the SQL database and some of the functions provide information in a very syntactic way, you should try to respond to the user in plain english, assuming they will not understand anything that looks too syntactic. 
               You should also feel free to ask the user clarifying questions if you need more information.
               `,
-    },
-  ];
+  },
+];
+
+async function main() {
+  // console based application for user queries
+  console.log("Welcome to the Course Assistant!");
   let userQuery = await rl.question("How can I assist you today?\n\n");
 
   // process user query and call appropriate function using openai API
