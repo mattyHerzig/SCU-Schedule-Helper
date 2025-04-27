@@ -1,5 +1,5 @@
-import { fetchWithAuth } from "./authorization.js";
-import { PROD_EVALS_ENDPOINT, PROD_NAME_MAPPINGS_ENDPOINT } from "./constants.js";
+import { fetchWithAuth } from "./authorization.ts";
+import { PROD_EVALS_ENDPOINT, PROD_NAME_MAPPINGS_ENDPOINT } from "./constants.ts";
 
 /**
  * Fetches the evals object from the server, then decodes, decompresses, and stores it in local storage.

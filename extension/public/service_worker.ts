@@ -1,15 +1,18 @@
+/// <reference lib="webworker" />
+declare const self: ServiceWorkerGlobalScope;
+
 import {
   signIn,
   signOut,
   updateSubscriptionAndRefreshUserData,
-} from "./utils/authorization.js";
-import { PROD_SERVER_URL } from "./utils/constants.js";
+} from "./utils/authorization.ts";
+import { PROD_SERVER_URL } from "./utils/constants.ts";
 import {
   downloadEvals,
   downloadProfessorNameMappings,
-} from "./utils/evalsAndMappings.js";
-import { handleNotification, subscribe } from "./utils/notifications.js";
-import { getRmpRatings } from "./utils/rmp.js";
+} from "./utils/evalsAndMappings.ts";
+import { handleNotification, subscribe } from "./utils/notifications.ts";
+import { getRmpRatings } from "./utils/rmp.ts";
 import {
   importCurrentCourses,
   deleteAccount,
@@ -18,9 +21,9 @@ import {
   refreshInterestedSections,
   refreshUserData,
   updateUser,
-} from "./utils/user.js";
+} from "./utils/user.ts";
 
-chrome.runtime.onInstalled.addListener(async (object) => {
+chrome.runtime.onInstalled.addListener(async (object: chrome.runtime.InstalledDetails) => {
   let internalUrl = chrome.runtime.getURL("landing_page/index.html");
 
   if (object.reason === chrome.runtime.OnInstalledReason.INSTALL) {
@@ -41,7 +44,7 @@ chrome.runtime.onInstalled.addListener(async (object) => {
   }
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
   if (request.url !== undefined) {
     fetch(request.url)
       .then((response) => response.text())
@@ -123,14 +126,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
-self.addEventListener("push", function (event) {
+self.addEventListener("push", function (event: PushEvent) {
   console.log(
-    `Push had this data: "${JSON.stringify(event.data.json(), null, 2)}"`
+    `Push had this data: "${JSON.stringify(event?.data?.json(), null, 2)}"`
   );
-  handleNotification(event.data.json());
+  handleNotification(event?.data?.json());
 });
 
-self.addEventListener("activate", async (event) => {
+self.addEventListener("activate", async (event: ExtendableEvent) => {
   // Set refresh date to 4 days from now.
   await chrome.storage.local.set({
     refreshSelfDataDate: new Date(
@@ -140,7 +143,7 @@ self.addEventListener("activate", async (event) => {
   await subscribe();
 });
 
-async function runStartupChecks() {
+async function runStartupChecks(): Promise<void> {
   const refreshSelfDataDate = (
     await chrome.storage.local.get("refreshSelfDataDate")
   ).refreshSelfDataDate;
@@ -162,7 +165,7 @@ async function runStartupChecks() {
   await refreshInterestedSections();
 }
 
-async function handleFeedbackSubmission(data) {
+async function handleFeedbackSubmission(data: any): Promise<{ ok: boolean; message: string }> {
   try {
     const response = await fetch(`${PROD_SERVER_URL}/feedback`, {
       method: "POST",

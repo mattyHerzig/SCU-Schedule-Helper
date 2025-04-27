@@ -1,30 +1,30 @@
-const FetchStatus = Object.freeze({
-  NotFetched: 0,
-  Fetching: 1,
-  Fetched: 2,
-});
+enum FetchStatus {
+  NotFetched = 0,
+  Fetching = 1,
+  Fetched = 2,
+}
 
-const Difficulty = Object.freeze({
-  VeryEasy: 0,
-  Easy: 1,
-  Medium: 2,
-  Hard: 3,
-  VeryHard: 4,
-});
+enum Difficulty {
+  VeryEasy = 0,
+  Easy = 1,
+  Medium = 2,
+  Hard = 3,
+  VeryHard = 4,
+}
 
-let evalsData = {};
-let userInfo = {};
-let inTooltip = false;
-let inButton = false;
-let friendInterestedSections = {};
-let friendCoursesTaken = {};
-let friends = {};
-let currentUrl = window.location.href;
-let enrollmentStatsStatus = FetchStatus.NotFetched;
-let enrollmentStats = {};
+let evalsData: any = {};
+let userInfo: any = {};
+let inTooltip: boolean = false;
+let inButton: boolean = false;
+let friendInterestedSections: Record<string, any> = {};
+let friendCoursesTaken: Record<string, any> = {};
+let friends: Record<string, any> = {};
+let currentUrl: string = window.location.href;
+let enrollmentStatsStatus: FetchStatus = FetchStatus.NotFetched;
+let enrollmentStats: any = {};
 
-let prefferedDifficulty = Difficulty.VeryEasy;
-let preferredDifficultyPercentile = prefferedDifficulty / 4;
+let prefferedDifficulty: Difficulty = Difficulty.VeryEasy;
+let preferredDifficultyPercentile: number = prefferedDifficulty / 4;
 
 const courseTakenPattern = /P{(.*?)}C{(.*?)}T{(.*?)}/; // P{profName}C{courseCode}T{termName}
 const interestedSectionPattern = /P{(.*?)}S{(.*?)}M{(.*?)}/; // P{profName}S{full section string}M{meetingPattern}E{expirationTimestamp}
@@ -37,7 +37,7 @@ chrome.storage.local.get(
     "friendCoursesTaken",
     "friends",
   ],
-  async (data) => {
+  async (data: any): Promise<void> => {
     userInfo = data.userInfo || {};
     if (userInfo.preferences && userInfo.preferences.difficulty) {
       prefferedDifficulty = userInfo.preferences.difficulty;
@@ -63,7 +63,7 @@ chrome.storage.local.get(
   }
 );
 
-async function checkPage() {
+async function checkPage(): Promise<void> {
   if (currentUrl !== window.location.href) {
     currentUrl = window.location.href;
     enrollmentStatsStatus = FetchStatus.NotFetched;
@@ -71,14 +71,14 @@ async function checkPage() {
     inTooltip = false;
     inButton = false;
   }
-  const pageTitle = document.querySelector(
+  const pageTitle = document.querySelector<HTMLElement>(
     '[data-automation-id="pageHeaderTitleText"]'
   );
   const isSavedSchedulePage =
     pageTitle?.innerText === "View Student Registration Saved Schedule"
       ? true
       : false; // Saved Schedule Page
-  const isFindCoursesPage = document.querySelector(
+  const isFindCoursesPage = document.querySelector<HTMLElement>(
     '[data-automation-label="SCU Find Course Sections"]'
   ); // Find Courses Page
   if (isFindCoursesPage) {
@@ -96,8 +96,8 @@ async function checkPage() {
   }
 }
 
-async function handleFindSectionsGrid() {
-  const courseSectionRows = document.querySelectorAll("table tbody tr");
+async function handleFindSectionsGrid(): Promise<void> {
+  const courseSectionRows = document.querySelectorAll<HTMLTableRowElement>("table tbody tr");
 
   for (let i = 0; i < courseSectionRows.length; i++) {
     const row = courseSectionRows[i];
@@ -122,8 +122,8 @@ async function handleFindSectionsGrid() {
   }
 }
 
-async function handleSavedSchedulePageGrid() {
-  const courses = document.querySelectorAll('[data-testid="table"] tbody tr');
+async function handleSavedSchedulePageGrid(): Promise<void> {
+  const courses = document.querySelectorAll<HTMLTableRowElement>('[data-testid="table"] tbody tr');
   const displayPromises = [];
   for (let i = 0; i < courses.length; i++) {
     const courseRow = courses[i];
@@ -138,7 +138,7 @@ async function handleSavedSchedulePageGrid() {
     pushDown.style.height = "100px";
 
     courseCell.appendChild(pushDown);
-    const displayPromise = new Promise((resolve) => {
+    const displayPromise = new Promise<void>((resolve) => {
       displayProfessorDifficulty(
         courseCell,
         courseRow,
@@ -155,11 +155,11 @@ async function handleSavedSchedulePageGrid() {
 }
 
 async function displayProfessorDifficulty(
-  courseSectionCell,
-  mainSectionRow,
-  professorName,
-  isSavedSchedulePage
-) {
+  courseSectionCell: HTMLElement,
+  mainSectionRow: HTMLTableRowElement,
+  professorName: string,
+  isSavedSchedulePage: boolean
+): Promise<void> {
   const difficultyContainer = document.createElement("div");
   difficultyContainer.style.fontSize = "1em";
   difficultyContainer.style.color = "gray";

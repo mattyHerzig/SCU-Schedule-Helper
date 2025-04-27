@@ -1,10 +1,13 @@
-import { subscribe } from "./notifications.js";
-import { PROD_AUTH_TOKEN_ENDPOINT, PROD_USER_ENDPOINT } from "./constants.js";
+/// <reference lib="webworker" />
+declare const self: ServiceWorkerGlobalScope;
+
+import { subscribe } from "./notifications.ts";
+import { PROD_AUTH_TOKEN_ENDPOINT, PROD_USER_ENDPOINT } from "./constants.ts";
 import {
   downloadEvals,
   downloadProfessorNameMappings,
-} from "./evalsAndMappings.js";
-import { refreshUserData } from "./user.js";
+} from "./evalsAndMappings.ts";
+import { refreshUserData } from "./user.ts";
 
 const sizePattern = /(.*)=s\d+-c/;
 
@@ -12,7 +15,7 @@ const sizePattern = /(.*)=s\d+-c/;
  * Triggers the OAuth flow to sign in the user, and creates an account for the user, using the OAuth info provided by Google.
  * @returns {Promise<string | null>} Error message or null if successful
  */
-export async function signIn() {
+export async function signIn(): Promise<string | null> {
   let oAuthToken;
   try {
     await chrome.identity.clearAllCachedAuthTokens();
@@ -39,11 +42,11 @@ export async function signIn() {
   const data = await response.json();
 
   if (response.status !== 200) {
-    await chrome.identity.removeCachedAuthToken({
-      token: oAuthToken,
+    chrome.identity.removeCachedAuthToken({
+      token: oAuthToken!,
     });
     await fetch(
-      `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(oAuthToken)}`,
+      `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(oAuthToken!)}`,
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -104,7 +107,7 @@ export async function signIn() {
     }
     return updateError;
   } else if (!createdUser.ok) {
-    return `Error creating account. ${createdUser.message}`;
+    return `Error creating account. ${createdUserData.message || 'Unknown error.'}`;
   }
 
   await chrome.storage.local.set({
@@ -129,7 +132,7 @@ export async function signIn() {
   return null;
 }
 
-export async function updateSubscriptionAndRefreshUserData(subscription) {
+export async function updateSubscriptionAndRefreshUserData(subscription: string): Promise<string | null> {
   const response = await fetchWithAuth(`${PROD_USER_ENDPOINT}`, {
     method: "PUT",
     body: JSON.stringify({
@@ -152,7 +155,7 @@ export async function updateSubscriptionAndRefreshUserData(subscription) {
  * Signs out the user by clearing all local and sync storage.
  * Leaves the user's preferences in tact.
  */
-export async function signOut() {
+export async function signOut(): Promise<void> {
   const currentUserInfo = (await chrome.storage.local.get("userInfo"))
     ?.userInfo || {
     coursesTaken: [],
@@ -191,7 +194,7 @@ export async function signOut() {
  * @param {*} retries Number of times to retry the request if it fails with a 401.
  * @returns {Promise<Response | null>} The response object from the fetch.
  */
-export async function fetchWithAuth(endpoint, requestInit = {}, retries = 1) {
+export async function fetchWithAuth(endpoint: string, requestInit: RequestInit = {}, retries: number = 1): Promise<Response | null> {
   const accessTokenData = await chrome.storage.sync.get([
     "accessToken",
     "accessTokenExpirationDate",
@@ -209,7 +212,8 @@ export async function fetchWithAuth(endpoint, requestInit = {}, retries = 1) {
   if (!requestInit.headers) {
     requestInit.headers = {};
   }
-  requestInit.headers.Authorization = `Bearer ${accessTokenData.accessToken}`;
+  // Ensure headers is a string-to-string map before setting Authorization
+  (requestInit.headers as Record<string, string>)["Authorization"] = `Bearer ${accessTokenData.accessToken}`;
   const response = await fetch(endpoint, {
     ...requestInit,
   });
@@ -220,7 +224,7 @@ export async function fetchWithAuth(endpoint, requestInit = {}, retries = 1) {
   return response;
 }
 
-async function refreshAccessToken() {
+async function refreshAccessToken(): Promise<string | null> {
   const refreshTokenData = await chrome.storage.sync.get("refreshToken");
   if (!refreshTokenData.refreshToken) {
     return null;
