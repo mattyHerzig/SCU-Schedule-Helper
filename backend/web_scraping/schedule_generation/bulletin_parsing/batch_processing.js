@@ -56,7 +56,6 @@ function mergeBatchResults(batchFilenames) {
           if (data.errors && data.errors.length > 0) {
             console.error(`Errors on line ${i} of ${filename}, for ${result.custom_id}`);
             console.error(data.errors, "\n");
-            console.log("Has this error been resolved? (y/n)");
             badLinks.add(
               result.custom_id.substring(result.custom_id.indexOf("AT_") + 3)
             );
@@ -128,7 +127,6 @@ function mergeBatchResults(batchFilenames) {
       }
     }
   }
-  console.log("Bad links: ", badLinks);
   fs.writeFileSync(CATALOG_OUTPUT_FILE,
     JSON.stringify(universityCatalog, null, 2),
   );
@@ -142,4 +140,4 @@ function toTitleCase(str) {
     .join(" ");
 };
 
-mergeBatchResults(["full_batch.jsonl"]);
+mergeBatchResults(["departments_batch.jsonl"]);

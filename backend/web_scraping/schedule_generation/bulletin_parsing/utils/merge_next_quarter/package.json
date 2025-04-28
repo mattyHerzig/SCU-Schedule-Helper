@@ -1,0 +1,16 @@
+{
+  "name": "merge_next_quarter",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-xlsx": "^0.24.0",
+    "puppeteer": "^24.7.2"
+  }
+}

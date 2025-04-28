@@ -30,7 +30,7 @@ async function makeSQLiteDB(catalogJsonFilename) {
     "CREATE TABLE IF NOT EXISTS SpecialPrograms (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS Courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, historicalBestProfessors TEXT, fulfillsCoreRequirements TEXT, src TEXT);"
+    "CREATE TABLE IF NOT EXISTS Courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, nextQuarterOfferings TEXT, historicalBestProfessors TEXT, fulfillsCoreRequirements TEXT, src TEXT);"
   );
   db.exec(
     "CREATE TABLE IF NOT EXISTS CoreCurriculumRequirements (name TEXT, description TEXT, appliesTo TEXT, fulfilledBy TEXT, src TEXT);"
@@ -131,7 +131,7 @@ async function makeSQLiteDB(catalogJsonFilename) {
         req.fulfilledBy.includes(course.courseCode)
     ).map((req) => `"${req.requirementName}"`)));
     db.prepare(
-      "INSERT INTO Courses (courseCode, name, description, numUnits, prerequisiteCourses, corequisiteCourses, otherRequirements, otherNotes, offeringSchedule, historicalBestProfessors, fulfillsCoreRequirements, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+      "INSERT INTO Courses (courseCode, name, description, numUnits, prerequisiteCourses, corequisiteCourses, otherRequirements, otherNotes, offeringSchedule, nextQuarterOfferings, historicalBestProfessors, fulfillsCoreRequirements, src) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
     ).run(
       course.courseCode,
       course.name,
@@ -142,6 +142,7 @@ async function makeSQLiteDB(catalogJsonFilename) {
       JSON.stringify(course.otherRequirements),
       course.otherNotes,
       offeringSchedule,
+      JSON.stringify(course.nextQuarterOfferings),
       getHistoricalBestProfessors(course.courseCode),
       fulfillsCoreRequirements.length > 0
         ? fulfillsCoreRequirements.join(", ")

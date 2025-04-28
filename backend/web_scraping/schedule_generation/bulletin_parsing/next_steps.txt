@@ -1,0 +1,8 @@
+1. Structured department requirements might be hard for the model to interpret--could consider 
+adding a "plain english" version, and structured version is only for algorithmic purposes
+
+2. Create the verifier function for grad requirements.
+
+3. maybe structure the SQL db slightly differently so that next quarter offerings is its own table?
+
+4. Add PKs to each table?

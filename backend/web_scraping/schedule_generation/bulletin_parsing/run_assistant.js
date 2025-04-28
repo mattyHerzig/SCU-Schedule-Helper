@@ -73,7 +73,7 @@ async function getUserContext() {
   // TODO: add key points from conversational history to the user context.
   return JSON.stringify({
     userMajors: ["Computer Science"],
-    userEmphases: [],
+    userEmphases: ["Software Engineering"],
     userMinors: [],
     userCoursesTaken: mappedCoursesTaken,
   });
@@ -306,7 +306,7 @@ const TOOLS = [
       explanation: z
         .string()
         .describe(
-          "Plain english explanation of the SQL query, for example: 'Get all courses that are offered in the Fall quarter'"
+          "Plain english explanation of the SQL query, that the user can understand. For example: 'Getting all the courses that are offered in the next quarter...'"
         ),
       query: z
         .string()
@@ -399,7 +399,8 @@ const messages = [
               - corequisiteCourses - List of corequisite course codes
               - otherRequirements - Additional enrollment requirements
               - otherNotes - Miscellaneous notes about the course
-              - offeringSchedule - The offering schedule for the course
+              - offeringSchedule - The generally offering schedule for the course, based on historical data.
+              - nextQuarterOfferings - The offerings for the course in the next quarter, including full section names and professors/locations, etc.
               - historicalBestProfessors - Past professors rated highly for the course
               - fulfillsCoreRequirements - Comma-separated list of core curriculum requirements that this class fulfills, note that sometimes the requirements themselves contain commas, so each requirement is put inside quotes
               - src - Source of the data
@@ -424,6 +425,8 @@ const messages = [
               We recommend using the get_course_sequences function to help plan courses / schedules for the user (especially if there are courses involving recursive prerequisites), and the get_user_context function to get general information on the user--this is almost always helpful just in general to answer most queries).
               Although the SQL database and some of the functions provide information in a very syntactic way, you should try to respond to the user in plain english, assuming they will not understand anything that looks too syntactic. 
               You should also feel free to ask the user clarifying questions if you need more information.
+              Note that most students cannot take more than 19 units per quarter, so if you are generating a schedule for them, you should try to keep the number of units per quarter under 19, unless they have explicitly said they are planning on overloading
+              We also recommend mixing in some electives or other courses that are not required for their major/minor/emphasis, as students often like to take a variety of courses and not just the ones that are required for their major/minor/emphasis, e.g. core requirements or pathways courses.
               `,
   },
 ];
