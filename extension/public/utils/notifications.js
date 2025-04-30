@@ -46,7 +46,7 @@ export async function handleNotification(notification) {
       await handleFriendRequestAccepted(data.userId);
       break;
     case "FriendRequestReceived":
-      await addFriendRequestLocally(data.userId, "incoming");
+      await addFriendRequestLocally(data.userId, "incoming", "FriendRequestReceived");
       break;
     case "FriendRequestRemoved":
       await removeFriendRequestLocally(data.userId, data.type);
@@ -64,7 +64,7 @@ export async function handleNotification(notification) {
       await refreshUserData(data.items);
       break;
     case "SelfProfileDeleted":
-      await signOut();
+      await signOut(true);
       break;
     default:
       break;
@@ -72,7 +72,7 @@ export async function handleNotification(notification) {
 }
 
 async function handleFriendRequestAccepted(friendId) {
-  const addFriendError = await addFriendLocally(friendId, "outgoing");
+  const addFriendError = await addFriendLocally(friendId, "outgoing", "FriendRequestAccepted");
   if (addFriendError) {
     console.error("Error adding friend: ", addFriendError);
     return;
@@ -97,6 +97,15 @@ async function handleFriendProfileUpdated(friendId) {
   });
   await clearFriendCourseAndSectionIndexes(friendId);
   await updateFriendCourseAndSectionIndexes(friendId, friendProfile.coursesTaken, friendProfile.interestedSections);
+  await chrome.notifications.create(
+    {
+      type: "basic",
+      iconUrl: "/images/icon-128.png",
+      title: "Friend Profile Updated",
+      message: `${friendProfile.name} updated their profile.`,
+      priority: 2,
+    },
+  );
 }
 
 function urlB64ToUint8Array(base64String) {

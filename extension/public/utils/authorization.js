@@ -162,7 +162,7 @@ export async function updateSubscriptionAndRefreshUserData(subscription) {
  * Signs out the user by clearing all local and sync storage.
  * Leaves the user's preferences in tact.
  */
-export async function signOut() {
+export async function signOut(sendNotification = false) {
   const currentUserInfo = (await chrome.storage.local.get("userInfo"))
     ?.userInfo || {
     coursesTaken: [],
@@ -192,6 +192,14 @@ export async function signOut() {
   await chrome.storage.local.set({
     userInfo: currentUserInfo,
   });
+  if(sendNotification) {
+    await chrome.notifications.create({
+      type: "basic",
+      iconUrl: "/images/icon-128.png",
+      title: "Login Expired",
+      message: "You have been signed out of SCU Schedule Helper.",
+    });
+  }
 }
 
 export async function getCalendarOAuthToken() {
@@ -266,7 +274,7 @@ async function refreshAccessToken() {
   const data = await response.json();
   if (response.status !== 200) {
     console.error("Error refreshing access token:", data.message);
-    await signOut();
+    await signOut(true);
     return null;
   }
   await chrome.storage.sync.set({

@@ -209,7 +209,7 @@ export async function deleteAccount() {
   return null;
 }
 
-export async function addFriendLocally(friendId, friendReqType) {
+export async function addFriendLocally(friendId, friendReqType, notificationType = "") {
   const getFriendProfileResponse = await fetchWithAuth(
     `${PROD_USER_ENDPOINT}/${friendId}`,
   );
@@ -242,6 +242,15 @@ export async function addFriendLocally(friendId, friendReqType) {
     },
     [friendReqsKey]: currentFriendRequests,
   });
+  if (notificationType === "FriendRequestAccepted") {
+    await chrome.notifications.create({
+      type: "basic",
+      iconUrl: "/images/icon-128.png",
+      title: "Friend Request Accepted",
+      message: `${friendProfile.name} accepted your friend request.`,
+      priority: 2,
+    });
+  }
   return null;
 }
 
@@ -264,7 +273,7 @@ export async function updateFriendCourseAndSectionIndexes(
     const courseCode = courseMatch[2]
       .substring(0, courseMatch[2].indexOf("-"))
       .replace(/\s/g, "");
-	if(!courseCode.match(COURSE_CODE_PATTERN)) continue;
+    if (!courseCode.match(COURSE_CODE_PATTERN)) continue;
     const curCourseIndex = friendCoursesTaken[courseCode] || {};
     const curProfIndex = friendCoursesTaken[profName] || {};
     curCourseIndex[friendId] = course; // A friend should only have one course entry per course code.
@@ -332,7 +341,7 @@ export async function clearFriendCourseAndSectionIndexes(friendId) {
   });
 }
 
-export async function addFriendRequestLocally(friendId, type) {
+export async function addFriendRequestLocally(friendId, type, notificationType = "") {
   const getUserPublicProfileResponse = await fetchWithAuth(
     `${PROD_USER_ENDPOINT}/${friendId}`,
   );
@@ -354,6 +363,16 @@ export async function addFriendRequestLocally(friendId, type) {
   await chrome.storage.local.set({
     [friendRequestsKey]: existingFriendRequests,
   });
+  if(notificationType === "FriendRequestReceived") {
+    console.log("creating chrome notification");
+    await chrome.notifications.create({
+      type: "basic",
+      iconUrl: "/images/icon-128.png",
+      title: "Friend Request Received",
+      message: `${userData.name} sent you a friend request.`,
+      priority: 2,
+    });
+  }
 }
 
 export async function removeFriendLocally(friendId) {
@@ -430,7 +449,7 @@ async function openTabAndSendMessage(url, message) {
         const response = await chrome.tabs.sendMessage(createdTab.id, message);
         chrome.tabs.onUpdated.removeListener(tabListener);
         return response;
-      } catch (ignore) {}
+      } catch (ignore) { }
     }
     return true;
   }
