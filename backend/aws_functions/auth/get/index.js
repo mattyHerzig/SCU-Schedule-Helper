@@ -6,10 +6,18 @@ import {
   validResponse,
 } from "./model.js";
 
+import {
+  BatchWriteItemCommand,
+  DynamoDBClient,
+  GetItemCommand,
+  PutItemCommand,
+} from "@aws-sdk/client-dynamodb";
+
+
 const ERRORS = {
-  NO_AUTH: "no authorization provided.",
-  BAD_HEADER:
-    "authorization header must provide an issued refresh token or a Google OAuth token.",
+  NO_AUTH: "no form of authorization provided.",
+  BAD_COOKIES:
+    "cookies must contain an issued refresh token.",
   GOOGLE_OAUTH_ERROR: "error fetching your info from Google",
   BAD_SCOPES: "you must grant permission to all the scopes requested.",
   BAD_EMAIL: "invalid email (not in scu.edu).",
@@ -18,6 +26,13 @@ const ERRORS = {
   INVALID_TOKEN_TYPE:
     "invalid token type (provided access token, expected refresh token)",
 };
+
+const ddbRegion = process.env.AWS_DDB_REGION;
+const dynamoDBClient = new DynamoDBClient({
+  region: ddbRegion,
+  maxAttempts: 5,
+  retryMode: "standard",
+});
 
 export async function handler(event, context) {
   const userAuthorization = await getUserAuthorization(event);
@@ -40,16 +55,20 @@ async function getUserAuthorization(event) {
     const code = event.queryStringParameters.code;
     return verifyAndStoreGoogleOAuthToken(code);
   }
-  const authType = authorizationHeader.split(" ")[0];
-  if (
-    authorizationHeader.split(" ").length !== 2 ||
-    !["OAuth", "Bearer"].includes(authType)
-  ) {
-    return {
-      authError: ERRORS.BAD_HEADER,
-    };
-  } else if (authType === "Bearer")
-    return verifyRefreshToken(authorizationHeader.split(" ")[1]);
+  // Otherwise, check for refresh token in cookies.
+  const cookies = event.multiValueHeaders.cookie;
+  if (!cookies) return { authError: ERRORS.NO_AUTH };
+  const refreshToken = cookies.find((cookie) =>
+    cookie.startsWith("refreshToken=")
+  );
+  if (!refreshToken) return { authError: ERRORS.BAD_COOKIES };
+  const refreshTokenValue = refreshToken.split("=")[1];
+  const refreshTokenDecoded = jwtLib.decode(refreshTokenValue);
+  if (!refreshTokenDecoded) return { authError: ERRORS.BAD_REFRESH_TOKEN };
+  if (refreshTokenDecoded.type !== "refresh")
+    return { authError: ERRORS.INVALID_TOKEN_TYPE };
+  const userId = refreshTokenDecoded.sub;
+  return { userId };
 }
 
 async function verifyAndStoreGoogleOAuthToken(code) {
@@ -63,9 +82,9 @@ async function verifyAndStoreGoogleOAuthToken(code) {
       method: "POST",
     });
     const tokenResponse = await response.json();
-    if (tokenResponse.error) {
+    if (tokenResponse.error || response.status !== 200) {
       return {
-        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${tokenResponse.error_description})`,
+        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${tokenResponse.error_description || "unknown error"})`,
       };
     }
     const accessToken = tokenResponse.access_token;
@@ -73,11 +92,10 @@ async function verifyAndStoreGoogleOAuthToken(code) {
     const accessTokenExpDate = new Date(
       Date.now() + tokenResponse.expires_in * 1000
     );
-    if (tokenResponse.refresh_token_expires_in) {
-      const refreshTokenExpDate = new Date(
-        Date.now() + tokenResponse.refresh_token_expires_in * 1000
-      );
-    }
+    const refreshTokenExpDate = new Date(
+      Date.now() + tokenResponse.refresh_token_expires_in * 1000
+    );
+
     if (tokenResponse.scope) {
       const scopes = tokenResponse.scope.split(" ");
       if (
@@ -92,6 +110,28 @@ async function verifyAndStoreGoogleOAuthToken(code) {
       }
     }
 
+    return await storeOAuthToken(accessToken);
+
+  } catch (error) {
+    console.error("INTERNAL: Error fetching Google info:", error);
+    return {
+      authError: `${ERRORS.GOOGLE_OAUTH_ERROR}, please try again.`,
+    };
+  }
+}
+
+async function storeOAuthToken(accessToken) {
+  try {
+    const response = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+    const personInfo = await response.json();
+
     if (personInfo.error) {
       return {
         authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${personInfo.error_description})`,
@@ -105,15 +145,34 @@ async function verifyAndStoreGoogleOAuthToken(code) {
         authError: ERRORS.EMAIL_NOT_VERIFIED,
       };
     } else {
-      return {
-        userId: personInfo.email.split("@")[0],
-        oAuthInfo: new OAuthInfo(
+      const userId = personInfo.email.split("@")[0];
+      const oauthTokensItem = {
+        pk: { S: `u#${userId}` },
+        sk: { S: "oauth#google#tokens" },
+        accessToken: { S: accessToken },
+        refreshToken: { S: refreshToken },
+        accessTokenExpDate: { S: accessTokenExpDate.toISOString() },
+        refreshTokenExpDate: { S: refreshTokenExpDate.toISOString() },
+      }
+
+      const putItemCommand = new PutItemCommand({
+        TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
+        Item: oauthTokensItem,
+      });
+      const putItemResponse = await dynamoDBClient.send(putItemCommand);
+      if (putItemResponse.$metadata.httpStatusCode !== 200) {
+        throw new Error(
+          `error storing OAuth tokens in DynamoDB (received HTTP status code from DynamoDB: ${putItemResponse.$metadata.httpStatusCode}).`,
+        );
+      }
+      else return {
+        userId, oAuthInfo: new OAuthInfo(
           personInfo.email,
           personInfo.name,
-          personInfo.picture
-        ),
+          personInfo.picture,
+        )
       };
-    }
+    };
   } catch (error) {
     console.error("INTERNAL: Error fetching Google info:", error);
     return {
@@ -121,6 +180,7 @@ async function verifyAndStoreGoogleOAuthToken(code) {
     };
   }
 }
+
 
 function generateDataAccessToken(userId) {
   return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, {

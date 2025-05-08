@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.804.0",
     "jsonwebtoken": "^9.0.2"
   }
 }
