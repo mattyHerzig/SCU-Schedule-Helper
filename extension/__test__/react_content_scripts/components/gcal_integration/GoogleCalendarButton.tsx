@@ -25,7 +25,7 @@ const MEETING_PATTERN_REGEX =
   /(.*) \| (\d{1,2}:\d{1,2} (?:AM|PM)) - (\d{1,2}:\d{1,2} (?:AM|PM)) \| (.*)/;
 const DAYS_OF_WEEK_STRINGS = ["Su", "M", "T", "W", "Th", "F", "Sa"];
 
-export default function GoogleCalendarButton() {
+export default function GoogleCalendarButton({ panel }: { panel: Element }) {
   const [status, setStatus] = useState<string>("");
   const [errors, setErrors] = useState<string[]>([]);
   const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -53,7 +53,7 @@ export default function GoogleCalendarButton() {
     try {
       setIsModalOpen(true);
       setStatus("Checking for courses...");
-      const courses = getRelevantCourses(setErrors);
+      const courses = getRelevantCourses(panel, setErrors);
       if (!courses || !courses.length) {
         setStatus("No courses found.");
         return;
@@ -141,9 +141,10 @@ export default function GoogleCalendarButton() {
 }
 
 function getRelevantCourses(
+  panel: Element,
   setErrors: React.Dispatch<React.SetStateAction<string[]>>
 ): CourseEvent[] {
-  const tables = getEnrolledCoursesTables();
+  const tables = getEnrolledCoursesTables(panel);
   const courses: CourseEvent[] = [];
   for (const table of tables) {
     const rows = Array.from(
@@ -180,10 +181,14 @@ function getRelevantCourses(
       startDate.setDate(
         startDate.getDate() + calcStartDateOffset(startDate, courseDaysOfWeek)
       );
-
       const endTime = meetingPatternRegexMatch[3].trim();
       const endDate = new Date(
-        `${startDate.toISOString().split("T")[0]} ${endTime}`
+        `${startDate.toLocaleString('en-CA', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          timeZone: 'America/Los_Angeles'
+        })} ${endTime}`
       );
 
       const actualCourseEndDate = getSundayBeforeDate(

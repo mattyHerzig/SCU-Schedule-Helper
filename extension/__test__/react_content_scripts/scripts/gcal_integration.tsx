@@ -1,3 +1,4 @@
+/// <reference lib="webworker" />
 import React from "react";
 import { createRoot } from "react-dom/client";
 import GoogleCalendarButton from "../components/gcal_integration/GoogleCalendarButton";
@@ -20,20 +21,33 @@ const tryInjectingButton = () => {
     );
     // Only inject on the "View My Courses" page
     if (!titleElement?.textContent?.includes("View My Courses")) return;
-    const buttonBar = document.querySelector(
-      '.WLNM.WNNM[data-automation-id="buttonBar"]'
+    const panels = document.querySelectorAll(
+      '[data-automation-id="panel"]'
     );
-    if (buttonBar) {
-      const newListItem = document.createElement("li");
-      newListItem.className = "WMNM";
-      newListItem.style.float = "right";
+    const buttonBars = document.querySelectorAll(
+      '[data-automation-id="buttonBar"]'
+    );
+    for (const buttonBar of buttonBars) {
+      const panel = buttonBar.closest('[data-automation-id="panel"]');
 
+      if (!buttonBar) {
+        console.error("Button bar not found for panel: ", panel);
+        return;
+      }
+      const buttonClassName = buttonBar.querySelector('li')?.className;
+      if (!buttonClassName) {
+        console.error("Button class name not found");
+        return;
+      }
+      const newListItem = document.createElement("li");
+      newListItem.className = buttonClassName;
+      newListItem.style.float = "right";
       const container = document.createElement("div");
       container.id = "gcal-button-container";
       newListItem.appendChild(container);
       buttonBar.insertBefore(newListItem, buttonBar.firstChild);
       const root = createRoot(container);
-      root.render(<GoogleCalendarButton />);
+      root.render(<GoogleCalendarButton panel={panel!} />);
     }
   }, debounceDelay);
 };
