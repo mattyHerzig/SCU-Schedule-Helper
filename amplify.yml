@@ -1,0 +1,17 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend/academic-advisor
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/academic-advisor/out
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/academic-advisor/node_modules/**/*
