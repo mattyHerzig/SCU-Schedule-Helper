@@ -9,7 +9,7 @@ frontend:
       commands:
         - npm run build
   artifacts:
-    baseDirectory: frontend/academic-advisor/out
+    baseDirectory: frontend/academic-advisor/.next
     files:
       - '**/*'
   cache:
