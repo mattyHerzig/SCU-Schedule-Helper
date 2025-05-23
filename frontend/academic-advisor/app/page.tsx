@@ -11,6 +11,7 @@ import { ChatMessage } from "./components/chat-message"
 import { ProgressIndicator } from "./components/progress-indicator"
 import { useAuth } from "./components/auth-provider"
 import { ProfileButton } from "./components/profile-button"
+import ProtectedPage from "./components/protected-page"
 
 interface Message {
   id: string
@@ -31,7 +32,7 @@ interface StatusUpdate {
   timestamp: Date
 }
 
-export default function ChatPage() {
+function ChatPage() {
   const { signOut } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
@@ -67,11 +68,11 @@ export default function ChatPage() {
     const updatedConversation = currentConversation
       ? { ...currentConversation, messages: updatedMessages }
       : {
-          id: "temp-id", // Will be replaced with the actual ID from the server
-          title: "New Conversation",
-          messages: updatedMessages,
-          createdAt: new Date(),
-        }
+        id: "temp-id", // Will be replaced with the actual ID from the server
+        title: "New Conversation",
+        messages: updatedMessages,
+        createdAt: new Date(),
+      }
 
     setCurrentConversation(updatedConversation)
     if (currentConversation) {
@@ -162,15 +163,19 @@ export default function ChatPage() {
             assistantMessage += chunk[i]
 
             // Update the assistant message in real-time
-            const realtimeMessages = [
+            const realtimeMessages: Message[] = [
               ...updatedMessages,
               { id: "temp-assistant", role: "assistant", content: assistantMessage },
             ]
 
-            setCurrentConversation((prev) => ({
-              ...prev!,
-              messages: realtimeMessages,
-            }))
+            setCurrentConversation((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    messages: realtimeMessages,
+                  }
+                : prev
+            )
           }
         }
       }
@@ -299,6 +304,7 @@ export default function ChatPage() {
     }
   }
 
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar
@@ -354,5 +360,13 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <ProtectedPage>
+      <ChatPage />
+    </ProtectedPage>
   )
 }

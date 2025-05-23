@@ -5,35 +5,64 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { useAuth } from "@/app/utils/auth"
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
   const nextPath = searchParams.get("next") || "/"
 
-  // Check if we're in the OAuth callback flow
-  const isOAuthCallback = searchParams.has("code")
+  // Get error and next path from URL
+  const errorParam = searchParams.get("error")
 
+  // Set error from URL parameter
   useEffect(() => {
-    // If there's an OAuth error, display it
-    if (searchParams.get("error")) {
-      setError(`Authentication error: ${searchParams.get("error_description") || searchParams.get("error")}`)
-      setIsLoading(false)
-      return
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
     }
+  }, [errorParam])
 
-    // Handle OAuth callback
-    if (isOAuthCallback) {
-      setIsLoading(true)
-      // The middleware will handle the auth code and set cookies
-      // We just need to redirect to the home page or the next path
-      setTimeout(() => {
-        router.push(nextPath)
-      }, 1000)
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      router.push(nextPath)
     }
-  }, [isOAuthCallback, searchParams, router, nextPath])
+  }, [user, nextPath, router])
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const code = searchParams.get("code")
+    if (code) {
+      setIsLoading(true)
+
+      // Exchange code for tokens
+      fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }),
+        credentials: "include",
+      })
+        .then((response) => {
+          if (response.ok) {
+            router.push(nextPath)
+          } else {
+            return response.json().then((data) => {
+              throw new Error(data.message || "Authentication failed")
+            })
+          }
+        })
+        .catch((error) => {
+          console.error("Login error:", error)
+          setError(error.message)
+          setIsLoading(false)
+        })
+    }
+  }, [searchParams, nextPath, router])
 
   const handleGoogleSignIn = () => {
     setIsLoading(true)
@@ -51,11 +80,7 @@ export default function LoginPage() {
       prompt: "select_account",
       access_type: "offline",
       hd: "scu.edu", // Restrict to SCU domain
-    }
-
-    // Add next parameter if it exists
-    if (nextPath && nextPath !== "/") {
-      params["state"] = nextPath
+      state: nextPath, // Pass the next path as state
     }
 
     // Add parameters to URL
@@ -65,37 +90,6 @@ export default function LoginPage() {
 
     // Redirect to Google OAuth
     window.location.href = googleAuthUrl.toString()
-  }
-
-  // If we're in the callback flow, show loading or error
-  if (isOAuthCallback) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Card className="w-[400px] shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold" style={{ color: "#802a25" }}>
-              SCU Schedule Helper
-            </CardTitle>
-            <CardDescription>{error ? "Authentication Error" : "Signing in..."}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center p-6">
-            {error ? (
-              <div className="text-center text-red-500 mb-4">
-                <p>{error}</p>
-                <Button className="mt-4" onClick={() => router.push("/login")} style={{ backgroundColor: "#802a25" }}>
-                  Try Again
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" style={{ color: "#802a25" }} />
-                <p className="text-gray-600">Verifying your authentication...</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    )
   }
 
   // Initial login screen

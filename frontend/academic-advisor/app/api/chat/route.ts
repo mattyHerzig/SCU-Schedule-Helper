@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
 import OpenAI from "openai"
 import sqlite3 from "sqlite3"
-import {Database, open} from "sqlite"
+import { Database, open } from "sqlite"
 import jwt from "jsonwebtoken"
 import { z } from "zod"
 import { zodFunction } from "openai/helpers/zod.mjs"
@@ -48,16 +48,13 @@ const DEPT_MAPPINGS: Record<string, string> = {
 
 // Helper function to get user ID from request
 function getUserIdFromRequest(request: NextRequest): string | null {
-  // Try to get from header first (set by middleware)
-  const userId = request.headers.get("User-ID")
-  if (userId) return userId
-
-  // Fallback to extracting from access token
+  // Get access token from cookies
   const accessToken = request.cookies.get("accessToken")?.value
   if (!accessToken) return null
 
   try {
     const decoded = jwt.verify(accessToken, process.env.JWT_SECRET || "default_secret") as jwt.JwtPayload
+    if (decoded.type !== "access") return null
     return decoded.sub as string
   } catch (error) {
     console.error("Error decoding access token:", error)

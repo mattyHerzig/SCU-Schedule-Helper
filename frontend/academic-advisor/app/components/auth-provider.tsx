@@ -1,36 +1,33 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
-import { useRouter } from "next/navigation"
+import { createContext, useContext, type ReactNode } from "react"
+import { useAuth as useAuthHook } from "@/app/utils/auth"
 
 interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
+  userId: string | null
   signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true) // Default to true since middleware handles auth
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const router = useRouter()
+  const { user, loading, signOut } = useAuthHook()
+  const isAuthenticated = !!user
 
-  const signOut = async (): Promise<void> => {
-    try {
-      await fetch("/api/auth/signout", {
-        method: "POST",
-        credentials: "include",
-      })
-    } catch (error) {
-      console.error("Sign out error:", error)
-    } finally {
-      setIsAuthenticated(false)
-      router.push("/login")
-    }
-  }
-
-  return <AuthContext.Provider value={{ isAuthenticated, isLoading, signOut }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isLoading: loading,
+        userId: user?.userId || null,
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

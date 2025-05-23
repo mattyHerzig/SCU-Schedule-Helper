@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: true,
     sameSite: "strict",
-    domain: ".scu-schedule-helper.me",
+    domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
     expires: new Date(0),
     path: "/",
   })
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: true,
     sameSite: "strict",
-    domain: ".scu-schedule-helper.me",
+    domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
     expires: new Date(0),
     path: "/",
   })

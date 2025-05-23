@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-amplify/adapter-nextjs": "^1.6.2",
     "@aws-sdk/client-dynamodb": "^3.812.0",
     "@google/genai": "^1.0.0",
     "@hookform/resolvers": "^3.9.1",
@@ -40,6 +41,7 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "autoprefixer": "^10.4.20",
+    "aws-amplify": "^6.14.4",
     "better-sqlite3": "^11.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -49,7 +51,7 @@
     "input-otp": "1.4.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",
-    "next": "^15.4.0-canary.42",
+    "next": "^15.3.2",
     "next-themes": "^0.4.4",
     "openai": "^4.102.0",
     "react": "^19",
