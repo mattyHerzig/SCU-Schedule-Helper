@@ -1,17 +1,55 @@
 import jwtLib from "jsonwebtoken";
 import {
-  GetAuthTokenResponse,
-  OAuthInfo,
-  unauthorizedError,
-  validResponse,
-} from "./model.js";
-
-import {
   BatchWriteItemCommand,
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
 } from "@aws-sdk/client-dynamodb";
+
+class OAuthInfo {
+  constructor(email, name, photoUrl, refreshTokenExpirationDate) {
+    this.email = email;
+    this.name = name;
+    this.photoUrl = photoUrl;
+    this.refreshTokenExpirationDate;
+  }
+}
+
+function validResponseWithRefresh(authToken) {
+  return {
+    statusCode: 204,
+    multiValueHeaders: {
+      "Set-Cookie": [
+        `accessToken=${authToken.accessToken}; Path=/; HttpOnly; Secure; SameSite=Strict; Expires=${authToken.accessTokenExpirationDate}`,
+        `refreshToken=${authToken.refreshToken}; Path=/; HttpOnly; Secure; SameSite=Strict; Expires=${authToken.refreshTokenExpirationDate}`,
+      ],
+    }
+  };
+}
+
+function validResponse(authToken) {
+  return {
+    statusCode: 204,
+    multiValueHeaders: {
+      "Set-Cookie": [
+        `accessToken=${authToken.accessToken}; Path=/; HttpOnly; Secure; SameSite=Strict; Expires=${authToken.accessTokenExpirationDate}`,
+      ],
+    }
+  };
+}
+
+export function unauthorizedError(message) {
+  return {
+    statusCode: 401,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: `Authorization failed: ${message}`,
+    }),
+  };
+}
+
 
 
 const ERRORS = {
@@ -38,13 +76,30 @@ export async function handler(event, context) {
   const userAuthorization = await getUserAuthorization(event);
   if (userAuthorization.userId == null)
     return unauthorizedError(userAuthorization.authError);
+  else if (userAuthorization.oAuthInfo) {
+    let accessTokenExpDate = new Date(Date.now() + 3600 * 1000);
+    let accessToken = generateDataAccessToken(userAuthorization.userId, accessTokenExpDate);
+    let refreshTokenExpDate = new Date(
+      userAuthorization.oAuthInfo.refreshTokenExpirationDate
+    );
+    let refreshToken = generateRefreshToken(
+      userAuthorization.userId,
+      refreshTokenExpDate
+    );
+    return validResponseWithRefresh({
+      accessToken,
+      accessTokenExpirationDate: accessTokenExpDate.toISOString(),
+      refreshToken,
+      refreshTokenExpirationDate: refreshTokenExpDate.toISOString()
+    });
+  }
   else {
-    let accessToken = generateDataAccessToken(userAuthorization.userId);
-    let accessTokenExpDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 6.5);
-    let refreshToken = (tokenResponse.refreshToken = generateRefreshToken(
-      userAuthorization.userId
-    ));
-    return validResponse(tokenResponse, accessToken, accessTokenExpDate);
+    let accessTokenExpDate = new Date(Date.now() + 3600 * 1000);
+    let accessToken = generateDataAccessToken(userAuthorization.userId, accessTokenExpDate);
+    return validResponse({
+      accessToken,
+      accessTokenExpirationDate: accessTokenExpDate.toISOString(),
+    });
   }
 }
 
@@ -78,7 +133,7 @@ async function verifyAndStoreGoogleOAuthToken(code) {
       `&client_id=${process.env.GOOGLE_CLIENT_ID}` +
       `&client_secret=${process.env.GOOGLE_CLIENT_SECRET}` +
       `&redirect_uri=/login&grant_type=authorization_code`;
-    const response = await fetch(token, {
+    const response = await fetch(url, {
       method: "POST",
     });
     const tokenResponse = await response.json();
@@ -110,7 +165,7 @@ async function verifyAndStoreGoogleOAuthToken(code) {
       }
     }
 
-    return await storeOAuthToken(accessToken);
+    return await storeOAuthToken(accessToken, refreshToken, accessTokenExpDate, refreshTokenExpDate);
 
   } catch (error) {
     console.error("INTERNAL: Error fetching Google info:", error);
@@ -120,7 +175,7 @@ async function verifyAndStoreGoogleOAuthToken(code) {
   }
 }
 
-async function storeOAuthToken(accessToken) {
+async function storeOAuthToken(accessToken, refreshToken, accessTokenExpDate, refreshTokenExpDate) {
   try {
     const response = await fetch(
       "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -153,6 +208,7 @@ async function storeOAuthToken(accessToken) {
         refreshToken: { S: refreshToken },
         accessTokenExpDate: { S: accessTokenExpDate.toISOString() },
         refreshTokenExpDate: { S: refreshTokenExpDate.toISOString() },
+        ttl: { N: `${Math.floor(refreshTokenExpDate.getTime() / 1000)}` },
       }
 
       const putItemCommand = new PutItemCommand({
@@ -170,6 +226,7 @@ async function storeOAuthToken(accessToken) {
           personInfo.email,
           personInfo.name,
           personInfo.picture,
+          refreshTokenExpDate.toISOString()
         )
       };
     };
@@ -182,13 +239,14 @@ async function storeOAuthToken(accessToken) {
 }
 
 
-function generateDataAccessToken(userId) {
+function generateDataAccessToken(userId, expDate) {
   return jwtLib.sign({ sub: userId, type: "access" }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+    expiresIn: Math.floor(expDate.getTime() / 1000),
   });
 }
 
-function generateRefreshToken(userId) {
-  // Refresh token does not expire.
-  return jwtLib.sign({ sub: userId, type: "refresh" }, process.env.JWT_SECRET);
+function generateRefreshToken(userId, expDate) {
+  return jwtLib.sign({ sub: userId, type: "refresh" }, process.env.JWT_SECRET, {
+    expiresIn: Math.floor(expDate.getTime() / 1000),
+  });
 }

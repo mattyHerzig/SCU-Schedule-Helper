@@ -9,6 +9,9 @@ export class UserFullProfile {
     this.interestedSections = {};
     this.friends = [];
     this.friendRequests = [];
+    this.majors = [];
+    this.minors = [];
+    this.emphases = [];
   }
 }
 
@@ -19,6 +22,9 @@ export class UserFriendProfile {
     this.photoUrl = "";
     this.coursesTaken = [];
     this.interestedSections = {};
+    this.majors = [];
+    this.minors = [];
+    this.emphases = [];
   }
 }
 
@@ -55,7 +61,7 @@ export class UserPreferences {
   }
 }
 
-export function validResponse (response) {
+export function validResponse(response) {
   return {
     statusCode: 200,
     headers: {
@@ -65,7 +71,7 @@ export function validResponse (response) {
   };
 };
 
-export function unauthorizedError (message) {
+export function unauthorizedError(message) {
   return {
     statusCode: 401,
     headers: {
@@ -77,7 +83,7 @@ export function unauthorizedError (message) {
   };
 };
 
-export function notFoundError (error) {
+export function notFoundError(error) {
   return {
     statusCode: 404,
     headers: {

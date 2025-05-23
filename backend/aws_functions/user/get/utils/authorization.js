@@ -16,6 +16,14 @@ export async function handleWithAuthorization(event, context, handler) {
 }
 
 function getUserAuthorization(event) {
+  const cookies = event.headers.Cookie;
+  if (cookies) {
+    const accessToken = cookies.split(";").find((cookie) => cookie.trim().startsWith("accessToken="));
+    if (accessToken) {
+      return verifyAccessToken(accessToken.split("=")[1]);
+    }
+  }
+
   if (!event || !event.headers || !event.headers.authorization)
     return { authError: ERRORS.NO_HEADER };
   const authorizationHeader = event.headers.authorization;

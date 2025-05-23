@@ -23,7 +23,13 @@ const ALL_ITEMS = new Set([
   "interestedSections",
   "friends",
   "friendRequests",
+  "academicPrograms"
 ]);
+
+const ITEMS_FOR_SCOPE = Object.freeze({
+  friend: ["info#personal", "info#coursesTaken", "info#interestedSections", "info#academicPrograms"],
+  limited: ["info#personal"],
+});
 
 const maxAttempts = 5;
 const retryMode = "standard";
@@ -147,6 +153,12 @@ async function setItemInUser(item, userProfile, scope, itemsToGet) {
           item.sections.M[section].S;
       }
       break;
+    case `info#academicPrograms`:
+      if (scope === "limited" || !itemsToGet.has("academicPrograms")) break;
+      userProfile.majors = item.majors?.SS || [];
+      userProfile.minors = item.minors?.SS || [];
+      userProfile.emphases = item.emphases?.SS || [];
+      break;
     case `info#personal`:
       if (!itemsToGet.has("personal")) break;
       userProfile.name = item.name.S;
@@ -231,11 +243,6 @@ function makeUserQuery(userId) {
     },
   });
 }
-
-const ITEMS_FOR_SCOPE = Object.freeze({
-  friend: ["info#personal", "info#coursesTaken", "info#interestedSections"],
-  limited: ["info#personal"],
-});
 
 async function batchGetProfileItems(userId, scope) {
   const keys = ITEMS_FOR_SCOPE[scope].map((item) => ({

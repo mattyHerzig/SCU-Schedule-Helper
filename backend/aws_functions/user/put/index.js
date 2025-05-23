@@ -5,6 +5,7 @@ import { updatePreferences } from "./utils/updatePreferences.js";
 import { updateFriends } from "./utils/updateFriends.js";
 import { updateFriendRequests } from "./utils/updateFriendRequests.js";
 import { handleWithAuthorization } from "./utils/authorization.js";
+import { updateAcademicPrograms } from "./utils/updateAcademicPrograms.js";
 import {
   internalServerError,
   validResponse,
@@ -51,6 +52,15 @@ async function putUser(event, context, userId) {
       profileUpdates.push(
         updateInterestedSections(userId, body.interestedSections),
       );
+    }
+
+    if (body.academicPrograms) {
+      profileUpdates.push(
+        updateAcademicPrograms(
+          userId,
+          body.academicPrograms
+        ),
+      )
     }
 
     if (body.personal) {

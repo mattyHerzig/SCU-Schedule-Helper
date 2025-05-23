@@ -445,7 +445,7 @@ async function main() {
     let response = await openai.beta.chat.completions.parse({
       messages,
       model: "o4-mini",
-      reasoning_effort: "high",
+      reasoning_effort: "medium",
       tools: TOOLS,
     });
     // Loop while assistant calls tools
