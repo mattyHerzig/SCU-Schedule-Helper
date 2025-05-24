@@ -13,11 +13,7 @@ const ddbClient = new DynamoDBClient({
 
 // Helper function to get user ID from request
 function getUserIdFromRequest(request: NextRequest): string | null {
-  // Try to get from header first (set by middleware)
-  const userId = request.headers.get("X-User-ID")
-  if (userId) return userId
 
-  // Fallback to extracting from access token
   const accessToken = request.cookies.get("accessToken")?.value
   if (!accessToken) return null
 
