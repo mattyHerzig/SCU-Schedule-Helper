@@ -1,19 +1,19 @@
 version: 1
 applications: 
-  - appRoot: frontend/academic-advisor
+  - appRoot: ./frontend/academic-advisor
     frontend:
       phases:
         preBuild:
           commands:
-            - cd frontend/academic-advisor
+            - cd ./frontend/academic-advisor
             - npm ci
         build:
           commands:
             - npm run build
       artifacts:
-        baseDirectory: frontend/academic-advisor/.next
+        baseDirectory: ./frontend/academic-advisor/.next
         files:
           - '**/*'
       cache:
         paths:
-          - frontend/academic-advisor/node_modules/**/*
+          - ./frontend/academic-advisor/node_modules/**/*
