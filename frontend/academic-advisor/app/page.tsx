@@ -11,6 +11,7 @@ import { ChatMessage } from "./components/chat-message"
 import { useAuth } from "./components/auth-provider"
 import { ProfileButton } from "./components/profile-button"
 import ProtectedPage from "./components/protected-page"
+import { set } from "zod"
 
 interface Message {
   id: string
@@ -29,6 +30,12 @@ interface StatusUpdate {
   id: string
   content: string
   timestamp: Date
+  isLast?: boolean
+}
+
+interface AssistantOutput {
+  content: string,
+  complete: boolean,
 }
 
 function ChatPage() {
@@ -36,6 +43,7 @@ function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
   const [input, setInput] = useState("")
+  const [assistantOutput, setAssistantOutput] = useState<AssistantOutput>({ content: "", complete: false })
   const [isLoading, setIsLoading] = useState(false)
   const [statusUpdates, setStatusUpdates] = useState<StatusUpdate[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -46,13 +54,42 @@ function ChatPage() {
   }, [])
 
   useEffect(() => {
-    console.log("Status updates changed:", statusUpdates)
-  }, [statusUpdates])
+    // If assistant output and status updates are ready, update the conversation
+    if (assistantOutput.complete && assistantOutput.content && statusUpdates.length > 0 && statusUpdates[statusUpdates.length - 1].isLast) {
+      const updatedMessages = currentConversation ? [...currentConversation.messages] : []
+      // Add status updates as tool messages
+      const toolMessages = statusUpdates.filter((update) => !update.isLast).map((update) => ({
+        id: update.id,
+        role: "tool",
+        content: update.content,
+      }))
+
+      updatedMessages.push(...toolMessages)
+      // Add assistant message
+      updatedMessages.push({
+        id: Date.now().toString(),
+        role: "assistant",
+        content: assistantOutput.content,
+      })
+      const updatedConversation = currentConversation
+        ? { ...currentConversation, messages: updatedMessages }
+        : {
+          id: "temp-id", // Will be replaced with the actual ID from the server
+          title: "New Conversation",
+          messages: updatedMessages,
+          createdAt: new Date(),
+        }
+      setCurrentConversation(updatedConversation)
+      setStatusUpdates([]);
+      setAssistantOutput({ content: "", complete: false })
+    }
+  }, [statusUpdates, assistantOutput])
 
   // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [currentConversation?.messages, statusUpdates])
+
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,6 +147,12 @@ function ChatPage() {
 
       // Get conversation ID from response headers
       const conversationId = response.headers.get("Conversation-Id")
+      setCurrentConversation((prev) => ({
+        ...prev!,
+        id: conversationId || prev?.id || "temp-id",
+        title: updatedMessages.length === 0 ? input.slice(0, 30) + "..." : prev?.title || "New Conversation",
+        createdAt: prev?.createdAt || new Date(),
+      }))
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
@@ -124,6 +167,7 @@ function ChatPage() {
         if (done) {
           // append current status update if it exists
           if (currentStatusUpdate.trim()) {
+            console.log("updating status updates with final status update")
             setStatusUpdates((prev) => [
               ...prev,
               {
@@ -133,7 +177,12 @@ function ChatPage() {
               },
             ])
           }
-          break
+          if (!isStatusUpdate && buffer.length > 0) {
+            // Decode any remaining buffer as assistant message
+            const chunk = decoder.decode(new Uint8Array(buffer))
+            assistantMessage += chunk
+          }
+          break;
         }
 
         for (let i = 0; i < value.length; i++) {
@@ -148,6 +197,7 @@ function ChatPage() {
                 currentStatusUpdate += chunk
               } else {
                 assistantMessage += chunk
+                console.log("Assistant message chunk:", chunk)
                 // Update real-time assistant message
                 const realtimeMessages: Message[] = [
                   ...updatedMessages,
@@ -161,19 +211,34 @@ function ChatPage() {
             // Now switch mode
             if (byte === 0xf8) {
               isStatusUpdate = false
-              if (currentStatusUpdate) {
+              if (currentStatusUpdate.trim()) {
+                const newStatusUpdate = currentStatusUpdate.toString()
+                console.log(`Updating status updates with ${newStatusUpdate}`)
+                currentStatusUpdate = ""
                 setStatusUpdates((prev) => [
                   ...prev,
                   {
                     id: Date.now().toString(),
-                    content: currentStatusUpdate,
+                    content: newStatusUpdate,
                     timestamp: new Date(),
                   },
-                ])
-                currentStatusUpdate = ""
+                ]);
               }
             } else if (byte === 0xf9) {
               isStatusUpdate = true
+              if (currentStatusUpdate.trim()) {
+                const newStatusUpdate = currentStatusUpdate.toString()
+                console.log(`Updating status updates with ${newStatusUpdate}`)
+                currentStatusUpdate = ""
+                setStatusUpdates((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now().toString(),
+                    content: newStatusUpdate,
+                    timestamp: new Date(),
+                  },
+                ]);
+              }
             }
             continue
           }
@@ -181,46 +246,19 @@ function ChatPage() {
           buffer.push(byte)
         }
       }
-
-      // Store the conversation and messages in DynamoDB
-      const conversationMessages = [...updatedMessages]
-
-      // Add tool messages (status updates) before the assistant message
-      statusUpdates.forEach((update) => {
-        conversationMessages.push({
-          id: `tool-${update.id}`,
-          role: "tool",
-          content: update.content,
-        })
+      setAssistantOutput({
+        content: assistantMessage,
+        complete: true,
       })
-
-      // Add the final assistant message
-      if (assistantMessage) {
-        conversationMessages.push({
-          id: Date.now().toString(),
-          role: "assistant",
-          content: assistantMessage,
-        })
-      }
-
-      // Create final conversation object with the ID from the server
-      const finalConversation = {
-        id: conversationId || updatedConversation.id,
-        title: updatedMessages.length === 0 ? assistantMessage.slice(0, 30) + "..." : updatedConversation.title,
-        messages: conversationMessages,
-        createdAt: updatedConversation.createdAt,
-      }
-
-      setCurrentConversation(finalConversation)
-      // reset status updates
-      setStatusUpdates([])
-      // Update conversations list
-      if (currentConversation) {
-        setConversations(conversations.map((conv) => (conv.id === currentConversation.id ? finalConversation : conv)))
-      } else {
-        setConversations([finalConversation, ...conversations])
-      }
-
+      setStatusUpdates((prev) => [
+        ...prev,
+        {
+          id: "null",
+          content: "",
+          timestamp: new Date(),
+          isLast: true, // Mark this as the last status update
+        },
+      ])
     } catch (error) {
       console.error("Error sending message:", error)
       // Add error message to conversation
@@ -375,7 +413,7 @@ function ChatPage() {
                 </div>
                 <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
                   <div className="space-y-2">
-                    {statusUpdates.map((update, index) => (
+                    {statusUpdates.filter(update => !update.isLast).map((update, index) => (
                       <div key={update.id} className="flex items-center gap-2 text-sm">
                         <div
                           className={`h-2 w-2 rounded-full ${index === statusUpdates.length - 1 ? "bg-[#802a25] animate-pulse" : "bg-gray-400"

@@ -390,6 +390,7 @@ export async function POST(request: NextRequest) {
               content: messageObj.content?.S || "",
             }
           }) || []
+        existingMessages = existingMessages.filter((msg) => msg.role !== "tool") // Filter out tool messages
       }
     }
 
