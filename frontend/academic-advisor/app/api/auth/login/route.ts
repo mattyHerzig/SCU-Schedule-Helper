@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb"
 import jwt from "jsonwebtoken"
+import { decode } from "he"
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
@@ -108,10 +109,11 @@ async function verifyAndStoreGoogleOAuthToken(code: string) {
 
     if (tokenResponse.error || response.status !== 200) {
       console.error("Error fetching tokens:", tokenResponse)
+      const decodedError = decode(tokenResponse.error_description || "unknown error")
       return {
         userId: null,
         oAuthInfo: null,
-        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${tokenResponse.error_description || "unknown error"})`,
+        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${decodedError})`,
       }
     }
 
@@ -166,10 +168,11 @@ async function storeOAuthToken(
     const personInfo = await response.json()
 
     if (personInfo.error) {
+      const decodedError = decode(personInfo.error_description || "unknown error")
       return {
         userId: null,
         oAuthInfo: null,
-        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${personInfo.error_description})`,
+        authError: `${ERRORS.GOOGLE_OAUTH_ERROR} (${decodedError})`,
       }
     } else if (personInfo.hd !== "scu.edu") {
       return {
