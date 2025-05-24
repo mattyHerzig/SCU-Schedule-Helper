@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
 import OpenAI from "openai"
-import sqlite3 from "sqlite3"
-import { Database, open } from "sqlite"
+import { Pool } from "pg"
 import jwt from "jsonwebtoken"
 import { z } from "zod"
 import { zodFunction } from "openai/helpers/zod.mjs"
@@ -15,32 +14,22 @@ const ddbClient = new DynamoDBClient({
 
 let singletonController: ReadableStreamDefaultController | null = null
 
-// Initialize SQLite database
-let sqliteDB: any = null
-
+// Initialize PostgreSQL connection pool
+let pgPool: Pool | null = null;
 
 async function initializeDatabase() {
-  if (!sqliteDB) {
+  if (!pgPool) {
     try {
-      // sqliteDB = new sqlite3.Database("./data/university_catalog.db", (err) => {
-      //   if (err) {
-      //     console.error("Error opening SQLite database:", err)
-      //     throw err
-      //   }
-      // })
-      sqliteDB = await open({
-        filename: "./data/university_catalog.db",
-        driver: sqlite3.Database,
+      pgPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
       });
-      console.log("SQLite database initialized successfully")
     } catch (error) {
-      console.error("Error initializing SQLite database:", error)
-      throw error
+      console.error("Error initializing PostgreSQL database pool:", error);
+      throw error;
     }
   }
-  return sqliteDB as Database
+  return pgPool;
 }
-
 // Department mappings
 const DEPT_MAPPINGS: Record<string, string> = {
   COEN: "CSEN",
@@ -128,23 +117,34 @@ async function getUserContext(userId: string) {
   }
 }
 
+
+
 // Function to run SQL queries
 async function runSQLQuery(args: { explanation: string; query: string }) {
   if (singletonController) {
-    singletonController.enqueue(new TextEncoder().encode("\xf9Running SQL query...\xf8"))
+    singletonController.enqueue(new TextEncoder().encode("\xf9Running SQL query...\xf8"));
   }
-  const sqlQuery = args.query
-  const explanation = args.explanation
-  console.log(`Running SQL query: ${sqlQuery}`)
-  console.log(`Explanation: ${explanation}`)
+  const sqlQuery = args.query;
+  const explanation = args.explanation;
+  console.log(`Running SQL query: ${sqlQuery}`);
+  console.log(`Explanation: ${explanation}`);
+
+  let client;
   try {
-    const db = await initializeDatabase();
-    const rows = await db.all(sqlQuery);
-    console.log(`SQL query executed: ${sqlQuery}`)
-    return rows;
+    const pool = await initializeDatabase();
+    client = await pool.connect(); // Get a client from the pool
+    const result = await client.query(sqlQuery); // Execute the raw query
+
+    console.log(`SQL query executed: ${sqlQuery}`);
+    return result.rows; // pg returns rows in result.rows
   } catch (error) {
-    console.error("SQL Error:", error)
+    console.error("SQL Error:", error);
+    // You might want to return a more specific error or re-throw
     return [];
+  } finally {
+    if (client) {
+      client.release(); // Release the client back to the pool
+    }
   }
 }
 
