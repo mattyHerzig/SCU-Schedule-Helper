@@ -5,7 +5,7 @@ import { Pool } from "pg"
 import jwt from "jsonwebtoken"
 import { z } from "zod"
 import { zodFunction } from "openai/helpers/zod.mjs"
-import { getCourseSequencesGeneral } from "@/app/utils/sequences"
+// import { getCourseSequencesGeneral } from "@/app/utils/sequences"
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
@@ -172,7 +172,8 @@ const TOOLS = [
       if (singletonController) {
         singletonController.enqueue(new TextEncoder().encode("\xf9Generating course sequences...\xf8"))
       }
-      return getCourseSequencesGeneral(args)
+      return "n/a"
+      // return getCourseSequencesGeneral(args)
     },
     description: `Purpose
         Given one or more academic programs (majors, minors, emphases) and/or an extra course‐requirement expression, produce the complete prerequisite chains for every course you might end up taking.
