@@ -103,6 +103,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
       })
       if (!response.ok) throw new Error("Failed to fetch user profile")
 
@@ -150,6 +151,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(payload),
       })
 
