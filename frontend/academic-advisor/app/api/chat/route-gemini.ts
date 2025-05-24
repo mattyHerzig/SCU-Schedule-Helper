@@ -8,7 +8,7 @@ import { AuthClient, OAuth2Client } from "google-auth-library"
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
-  region: process.env.AWS_DDB_REGION || "us-west-1",
+  region: process.env.AMZ_DDB_REGION || "us-west-1",
 })
 
 // Helper function to get user ID from request

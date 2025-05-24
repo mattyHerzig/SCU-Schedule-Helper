@@ -10,7 +10,7 @@ import { getCourseSequencesGeneral } from "@/app/utils/sequences"
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
-  region: process.env.AWS_DDB_REGION || "us-west-2",
+  region: process.env.AMZ_DDB_REGION || "us-west-1",
 })
 
 let singletonController: ReadableStreamDefaultController | null = null

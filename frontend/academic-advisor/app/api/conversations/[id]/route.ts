@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken"
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
-  region: process.env.AWS_DDB_REGION || "us-west-2",
+  region: process.env.AMZ_DDB_REGION || "us-west-1",
 })
 
 // Helper function to get user ID from request
