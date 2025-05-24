@@ -11,7 +11,6 @@ import { ChatMessage } from "./components/chat-message"
 import { useAuth } from "./components/auth-provider"
 import { ProfileButton } from "./components/profile-button"
 import ProtectedPage from "./components/protected-page"
-import { set } from "zod"
 
 interface Message {
   id: string
@@ -34,8 +33,8 @@ interface StatusUpdate {
 }
 
 interface AssistantOutput {
-  content: string,
-  complete: boolean,
+  content: string
+  complete: boolean
 }
 
 function ChatPage() {
@@ -47,6 +46,8 @@ function ChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [statusUpdates, setStatusUpdates] = useState<StatusUpdate[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showWelcome, setShowWelcome] = useState(true)
+  const [welcomeFading, setWelcomeFading] = useState(false)
 
   // Create a new conversation if none exists
   useEffect(() => {
@@ -55,32 +56,38 @@ function ChatPage() {
 
   useEffect(() => {
     // If assistant output and status updates are ready, update the conversation
-    if (assistantOutput.complete && assistantOutput.content && statusUpdates.length > 0 && statusUpdates[statusUpdates.length - 1].isLast) {
-      const updatedMessages = currentConversation ? [...currentConversation.messages] : []
+    if (
+      assistantOutput.complete &&
+      assistantOutput.content &&
+      statusUpdates.length > 0 &&
+      statusUpdates[statusUpdates.length - 1].isLast
+      && currentConversation
+    ) {
       // Add status updates as tool messages
-      const toolMessages = statusUpdates.filter((update) => !update.isLast).map((update) => ({
-        id: update.id,
-        role: "tool",
-        content: update.content,
-      }))
+      const toolMessages = statusUpdates
+        .filter((update) => !update.isLast)
+        .map((update) => ({
+          id: update.id,
+          role: "tool",
+          content: update.content,
+        })) as Message[];
 
-      updatedMessages.push(...toolMessages)
-      // Add assistant message
-      updatedMessages.push({
-        id: Date.now().toString(),
-        role: "assistant",
-        content: assistantOutput.content,
-      })
-      const updatedConversation = currentConversation
-        ? { ...currentConversation, messages: updatedMessages }
-        : {
-          id: "temp-id", // Will be replaced with the actual ID from the server
-          title: "New Conversation",
-          messages: updatedMessages,
-          createdAt: new Date(),
+      let updatedMessages = currentConversation.messages || [];
+      console.log("Current messages:", updatedMessages)
+      updatedMessages = [
+        ...updatedMessages,
+        ...toolMessages, // Add tool messages before the last assistant message
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: assistantOutput.content,
         }
+      ]
+      console.log("Updated messages:", updatedMessages)
+      const updatedConversation = { ...currentConversation, messages: updatedMessages };
+
       setCurrentConversation(updatedConversation)
-      setStatusUpdates([]);
+      setStatusUpdates([])
       setAssistantOutput({ content: "", complete: false })
     }
   }, [statusUpdates, assistantOutput])
@@ -90,10 +97,18 @@ function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" })
   }, [currentConversation?.messages, statusUpdates])
 
-
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
+
+    // Hide welcome message when first message is sent
+    if (showWelcome) {
+      setWelcomeFading(true)
+      setTimeout(() => {
+        setShowWelcome(false)
+        setWelcomeFading(false)
+      }, 300)
+    }
 
     // Add user message to conversation
     const userMessage: Message = {
@@ -117,6 +132,9 @@ function ChatPage() {
     setCurrentConversation(updatedConversation)
     if (currentConversation) {
       setConversations(conversations.map((conv) => (conv.id === currentConversation.id ? updatedConversation : conv)))
+    } else {
+      // This is a new conversation, add it to the list
+      setConversations([updatedConversation, ...conversations])
     }
 
     setInput("")
@@ -182,7 +200,7 @@ function ChatPage() {
             const chunk = decoder.decode(new Uint8Array(buffer))
             assistantMessage += chunk
           }
-          break;
+          break
         }
 
         for (let i = 0; i < value.length; i++) {
@@ -222,7 +240,7 @@ function ChatPage() {
                     content: newStatusUpdate,
                     timestamp: new Date(),
                   },
-                ]);
+                ])
               }
             } else if (byte === 0xf9) {
               isStatusUpdate = true
@@ -237,7 +255,7 @@ function ChatPage() {
                     content: newStatusUpdate,
                     timestamp: new Date(),
                   },
-                ]);
+                ])
               }
             }
             continue
@@ -295,11 +313,7 @@ function ChatPage() {
         }))
 
         setConversations(fetchedConversations)
-
-        // Set the first conversation as current if none is selected
-        if (!currentConversation) {
-          setCurrentConversation(fetchedConversations[0])
-        }
+        // Don't auto-select any conversation
       }
     } catch (error) {
       console.error("Error fetching conversations:", error)
@@ -334,15 +348,9 @@ function ChatPage() {
   }
 
   const startNewConversation = () => {
-    const newConversation = {
-      id: Date.now().toString(),
-      title: "New Conversation",
-      messages: [],
-      createdAt: new Date(),
-    }
-    setConversations([newConversation, ...conversations])
-    setCurrentConversation(newConversation)
+    setCurrentConversation(null)
     setStatusUpdates([])
+    setShowWelcome(true) // Show welcome message when starting a new conversation 
   }
 
   const selectConversation = (conversationId: string) => {
@@ -350,6 +358,7 @@ function ChatPage() {
     if (selected) {
       setCurrentConversation(selected)
       setStatusUpdates([])
+      setShowWelcome(false) // Hide welcome message when selecting a conversation
 
       // If the conversation has no messages, load them
       if (selected.messages.length === 0) {
@@ -381,54 +390,79 @@ function ChatPage() {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-4 pb-24">
-          {(() => {
-            const groupedMessages: Array<{ message: Message; toolMessages: Message[] }> = []
-            let currentToolMessages: Message[] = []
-
-            currentConversation?.messages.forEach((message) => {
-              if (message.role === "tool") {
-                currentToolMessages.push(message)
-              } else {
-                if (message.role === "assistant" && currentToolMessages.length > 0) {
-                  groupedMessages.push({ message, toolMessages: [...currentToolMessages] })
-                  currentToolMessages = []
-                } else {
-                  groupedMessages.push({ message, toolMessages: [] })
-                }
-              }
-            })
-
-            return groupedMessages.map(({ message, toolMessages }) => (
-              <ChatMessage key={message.id} message={message} toolMessages={toolMessages} />
-            ))
-          })()}
-
-          {/* Inline status updates */}
-          {statusUpdates.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-start gap-4">
-                <div className="h-8 w-8 rounded-full bg-[#802a25] flex items-center justify-center">
-                  <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
-                </div>
-                <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <div className="space-y-2">
-                    {statusUpdates.filter(update => !update.isLast).map((update, index) => (
-                      <div key={update.id} className="flex items-center gap-2 text-sm">
-                        <div
-                          className={`h-2 w-2 rounded-full ${index === statusUpdates.length - 1 ? "bg-[#802a25] animate-pulse" : "bg-gray-400"
-                            }`}
-                        />
-                        <span className="text-gray-700">{update.content}</span>
-                        <span className="text-xs text-gray-500 ml-auto">
-                          {update.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        <main className="flex-1 overflow-y-auto p-4 pb-24 relative">
+          {/* Welcome message */}
+          {showWelcome && !currentConversation && (
+            <div
+              className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
+              style={{ opacity: welcomeFading ? 0 : 1 }}
+            >
+              <div className="text-center">
+                <h2 className="text-3xl font-bold mb-4" style={{ color: "#802a25" }}>
+                  Welcome to SCU Schedule Helper
+                </h2>
+                <p className="text-lg text-gray-600 mb-2">How can I assist you with your academic planning today?</p>
+                <p className="text-sm text-gray-500">
+                  Ask me about course requirements, scheduling, or academic pathways
+                </p>
               </div>
             </div>
+          )}
+
+          {/* Chat messages - only show when a conversation is selected */}
+          {currentConversation && (
+            <>
+              {(() => {
+                const groupedMessages: Array<{ message: Message; toolMessages: Message[] }> = []
+                let currentToolMessages: Message[] = []
+
+                currentConversation?.messages.forEach((message) => {
+                  if (message.role === "tool") {
+                    currentToolMessages.push(message)
+                  } else {
+                    if (message.role === "assistant" && currentToolMessages.length > 0) {
+                      groupedMessages.push({ message, toolMessages: [...currentToolMessages] })
+                      currentToolMessages = []
+                    } else {
+                      groupedMessages.push({ message, toolMessages: [] })
+                    }
+                  }
+                })
+
+                return groupedMessages.map(({ message, toolMessages }) => (
+                  <ChatMessage key={message.id} message={message} toolMessages={toolMessages} />
+                ))
+              })()}
+
+              {/* Inline status updates */}
+              {statusUpdates.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-start gap-4">
+                    <div className="h-8 w-8 rounded-full bg-[#802a25] flex items-center justify-center">
+                      <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
+                    </div>
+                    <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div className="space-y-2">
+                        {statusUpdates
+                          .filter((update) => !update.isLast)
+                          .map((update, index) => (
+                            <div key={update.id} className="flex items-center gap-2 text-sm">
+                              <div
+                                className={`h-2 w-2 rounded-full ${index === statusUpdates.length - 1 ? "bg-[#802a25] animate-pulse" : "bg-gray-400"
+                                  }`}
+                              />
+                              <span className="text-gray-700">{update.content}</span>
+                              <span className="text-xs text-gray-500 ml-auto">
+                                {update.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           <div ref={messagesEndRef} />

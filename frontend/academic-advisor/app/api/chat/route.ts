@@ -19,6 +19,7 @@ const ddbClient = new DynamoDBClient({
 
 let singletonController: ReadableStreamDefaultController | null = null
 let singletonEncoder = new TextEncoder()
+let singletonDDBMessages: any[] = []
 
 const statusUpdateIndicator = new Uint8Array([0xf9])
 const assistantMessageIndicator = new Uint8Array([0xf8])
@@ -62,9 +63,9 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // Helper function to get user context information
-async function getUserContext(userId: string, ddbMessages: any[] = []) {
+async function getUserContext(userId: string) {
   console.log("Called getUserContext function for user:", userId)
-  ddbMessages.push({
+  singletonDDBMessages.push({
     id: uuidv4(),
     role: "tool",
     content: "Checking your information"
@@ -137,10 +138,10 @@ async function getUserContext(userId: string, ddbMessages: any[] = []) {
 
 
 // Function to run SQL queries
-async function runSQLQuery(args: { explanation: string; query: string }, ddbMessages: any[] = []) {
+async function runSQLQuery(args: { explanation: string; query: string }) {
   const { explanation, query: sqlQuery } = args;
   if (singletonController) {
-    ddbMessages.push({
+    singletonDDBMessages.push({
       id: uuidv4(),
       role: "tool",
       content: explanation,
@@ -190,8 +191,8 @@ const TOOLS = [
           "(For advanced use) Logical boolean-like expression of required courses and/or course ranges, to find sequences for. For example, if a use asks something like 'If I want to take CSCI 101 and then either CSCI 102 and CSCI 103, what order would I need to take these in?', you could use this expression : 'CS101 & (CS102 | CS103)'",
         ),
     }),
-    function: (args, ddbMessages: any[] = []) => {
-      ddbMessages.push({
+    function: (args) => {
+      singletonDDBMessages.push({
         id: uuidv4(),
         role: "tool",
         content: `Generating course sequences`,
@@ -399,10 +400,6 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         singletonController = controller
         try {
-          // Send status update
-          singletonController.enqueue(statusUpdateIndicator)
-          singletonController.enqueue(singletonEncoder.encode("Processing your request..."))
-
           // Prepare the chat history
           const messages = [
             {
@@ -416,87 +413,47 @@ export async function POST(request: NextRequest) {
             },
           ]
 
-          // Send status update
-          singletonController.enqueue(statusUpdateIndicator)
-          singletonController.enqueue(singletonEncoder.encode("Generating response..."))
-
+          let assistantMessage = ""
+          singletonDDBMessages = []
           // Start the chat completion
-          let response = await openai.beta.chat.completions.parse({
+          let response = openai.beta.chat.completions.runTools({
             messages,
             model: "o4-mini",
             reasoning_effort: "medium",
             tools: TOOLS,
-          })
+            stream: true
+          }).on("finalFunctionCall", (finalFunctionCall) => {
+            console.log("Final function call:", finalFunctionCall);
 
-          let assistantMessage = ""
-          let ddbMessages = []
-          // Add the assistant's message to the chat history
-          messages.push(response.choices[0].message)
-
-          // Process the response and handle tool calls
-          while (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls.length > 0) {
-            // Process each tool call
-            if (response.choices[0].message.content) {
-              ddbMessages.push({
-                id: uuidv4(),
-                role: "assistant",
-                content: response.choices[0].message.content,
-              })
-              assistantMessage = response.choices[0].message.content
-              singletonController.enqueue(assistantMessageIndicator)
-              singletonController.enqueue(singletonEncoder.encode(assistantMessage))
-            }
-
-            for (const toolCall of response.choices[0].message.tool_calls) {
-              const tool = TOOLS.find((t) => t.function.name === toolCall.function.name)
-
-              if (!tool) {
-                console.error(`Tool ${toolCall.function.name} not found`)
-                continue
+          }).on("content.delta", (delta) => {
+            if (delta.delta) {
+              const content = delta.delta
+              if (assistantMessage.length === 0) {
+                singletonController?.enqueue(assistantMessageIndicator)
               }
-
-              // Execute the tool
-              const result = await tool.$callback!(toolCall.function.parsed_arguments, ddbMessages);
-              console.log(`Tool ${toolCall.function.name} executed with result:`, JSON.stringify(result, null, 2))
-
-              // Add the tool response to the messages
-              messages.push({
-                role: "tool",
-                tool_call_id: toolCall.id,
-                content: JSON.stringify(result, null, 2),
-              })
+              console.log("Content delta:", content);
+              assistantMessage += content
+              singletonController?.enqueue(singletonEncoder.encode(content))
             }
-
-            // Get the next response
-            response = await openai.beta.chat.completions.parse({
-              messages,
-              model: "o4-mini",
-              reasoning_effort: "medium",
-              tools: TOOLS,
-            });
-            messages.push(response.choices[0].message);
-          }
-
-          // Get the final response content
-          if (response.choices[0].message.content) {
-            ddbMessages.push({
+          }).on("end", () => {
+            console.log("Stream ended");
+            singletonController?.close();
+            singletonDDBMessages.push({
               id: uuidv4(),
               role: "assistant",
-              content: response.choices[0].message.content,
+              content: assistantMessage
             })
-            assistantMessage = response.choices[0].message.content
-            singletonController.enqueue(assistantMessageIndicator)
-            singletonController.enqueue(singletonEncoder.encode(assistantMessage))
           }
+          );
 
-          // Store the conversation and messages in DynamoDB
+
           const userMessageItem = {
             id: { S: Date.now().toString() },
             role: { S: "user" },
             content: { S: message },
           }
 
-          const assistantMessageItems = ddbMessages.map((msg) => ({
+          const assistantMessageItems = singletonDDBMessages.map((msg) => ({
             M: {
               id: { S: msg.id },
               role: { S: msg.role },
@@ -519,7 +476,6 @@ export async function POST(request: NextRequest) {
                 },
               },
             })
-
             await ddbClient.send(updateCommand)
           } else {
             // Create a new conversation
@@ -534,7 +490,7 @@ export async function POST(request: NextRequest) {
                 ":title": { S: message.slice(0, 30) + (message.length > 30 ? "..." : "") },
                 ":createdAt": { S: new Date().toISOString() },
                 ":messages": {
-                  L: [{ M: userMessageItem }, { M: assistantMessageItem }],
+                  L: [{ M: userMessageItem }, ...assistantMessageItems],
                 },
               },
             })
@@ -542,7 +498,6 @@ export async function POST(request: NextRequest) {
             await ddbClient.send(putCommand)
           }
 
-          singletonController.close()
         } catch (error) {
           console.error("Error in chat stream:", error)
           singletonController.enqueue(statusUpdateIndicator)
