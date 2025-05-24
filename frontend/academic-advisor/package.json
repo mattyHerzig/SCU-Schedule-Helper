@@ -65,6 +65,7 @@
     "@types/he": "^1.2.3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.15.19",
+    "@types/pg": "^8.15.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8",

@@ -17,6 +17,10 @@ const ddbClient = new DynamoDBClient({
 })
 
 let singletonController: ReadableStreamDefaultController | null = null
+let singletonEncoder = new TextEncoder()
+
+const statusUpdateIndicator = new Uint8Array([0xf9])
+const assistantMessageIndicator = new Uint8Array([0xf8])
 
 // Initialize PostgreSQL connection pool
 let pgPool: Pool | null = null;
@@ -25,7 +29,8 @@ async function initializeDatabase() {
   if (!pgPool) {
     try {
       pgPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: process.env.PG_CONNECTION_STRING,
+
       });
     } catch (error) {
       console.error("Error initializing PostgreSQL database pool:", error);
@@ -56,10 +61,17 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // Helper function to get user context information
-async function getUserContext(userId: string) {
+async function getUserContext(userId: string, ddbMessages: any[] = []) {
   console.log("Called getUserContext function for user:", userId)
+  ddbMessages.push({
+    id: Date.now().toString(),
+    role: "tool",
+    content: "Checking your information"
+  });
+
   if (singletonController) {
-    singletonController.enqueue(new TextEncoder().encode("\xf9Fetching user context...\xf8"))
+    singletonController.enqueue(statusUpdateIndicator)
+    singletonController.enqueue(singletonEncoder.encode("Checking your information..."))
   }
 
   try {
@@ -68,7 +80,7 @@ async function getUserContext(userId: string) {
       TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
       Key: {
         pk: { S: `u#${userId}` },
-        sk: { S: "info#personal" },
+        sk: { S: "info#academicPrograms" },
       },
     }
 
@@ -124,12 +136,17 @@ async function getUserContext(userId: string) {
 
 
 // Function to run SQL queries
-async function runSQLQuery(args: { explanation: string; query: string }) {
+async function runSQLQuery(args: { explanation: string; query: string }, ddbMessages: any[] = []) {
+  const { explanation, query: sqlQuery } = args;
   if (singletonController) {
-    singletonController.enqueue(new TextEncoder().encode("\xf9Running SQL query...\xf8"));
+    ddbMessages.push({
+      id: Date.now().toString(),
+      role: "tool",
+      content: explanation,
+    });
+    singletonController.enqueue(statusUpdateIndicator);
+    singletonController.enqueue(singletonEncoder.encode(explanation));
   }
-  const sqlQuery = args.query;
-  const explanation = args.explanation;
   console.log(`Running SQL query: ${sqlQuery}`);
   console.log(`Explanation: ${explanation}`);
 
@@ -172,9 +189,15 @@ const TOOLS = [
           "(For advanced use) Logical boolean-like expression of required courses and/or course ranges, to find sequences for. For example, if a use asks something like 'If I want to take CSCI 101 and then either CSCI 102 and CSCI 103, what order would I need to take these in?', you could use this expression : 'CS101 & (CS102 | CS103)'",
         ),
     }),
-    function: (args) => {
+    function: (args, ddbMessages: any[] = []) => {
+      ddbMessages.push({
+        id: Date.now().toString(),
+        role: "tool",
+        content: `Generating course sequences`,
+      });
       if (singletonController) {
-        singletonController.enqueue(new TextEncoder().encode("\xf9Generating course sequences...\xf8"))
+        singletonController.enqueue(statusUpdateIndicator)
+        singletonController.enqueue(singletonEncoder.encode("Generating course sequences..."))
       }
       return "n/a"
       // return getCourseSequencesGeneral(args)
@@ -208,19 +231,19 @@ const TOOLS = [
       query: z
         .string()
         .describe(
-          `SQL query to run on the university catalog SQLite database, for example: "SELECT * FROM Courses WHERE courseCode = 'CS101'"`,
+          `SQL query to run on the university catalog PostgreSQL database, for example: "SELECT * FROM "Courses" WHERE "courseCode" = 'CS101'"`,
         ),
     }),
     function: runSQLQuery,
     description:
-      "Run a SQL query on the university catalog database. Returns the results of the query, or an error message if the query failed.",
+      "Run a PostgreSQL query on the university catalog database. Returns the results of the query, or an error message if the query failed.",
   }),
 ]
 
 // System prompt for the assistant
 const SYSTEM_PROMPT = `You are a helpful assistant that helps students at Santa Clara University navigate their course catalog. You can answer questions about courses, majors, minors, and other academic requirements. You can also help students generate long-term course plans and suggest courses they should take next.
 You are encouraged to make SQL queries to the university catalog database to get information about courses, majors, minors, and other academic requirements. You can also call functions to get user context information and suggested course ordering.
-The SQL database schema is as follows:
+The PostgreSQL database schema is as follows (note case sensitivity):
     Schools
     - name - Name of the school
     - description - Brief overview of the school
@@ -370,12 +393,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a streaming response
-    const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
+        singletonController = controller
         try {
           // Send status update
-          controller.enqueue(encoder.encode("\xf9Processing your request...\xf8"))
+          singletonController.enqueue(statusUpdateIndicator)
+          singletonController.enqueue(singletonEncoder.encode("Processing your request..."))
 
           // Prepare the chat history
           const messages = [
@@ -391,37 +415,8 @@ export async function POST(request: NextRequest) {
           ]
 
           // Send status update
-          controller.enqueue(encoder.encode("\xf9Generating response...\xf8"))
-
-          // Create a copy of the tools with actual implementations
-          const toolsWithImplementations = TOOLS.map((tool) => {
-            if (tool.function.name === "get_user_context") {
-              return {
-                ...tool,
-                function: async () => {
-                  controller.enqueue(encoder.encode("\xf9Fetching user context...\xf8"))
-                  return JSON.stringify(await getUserContext(userId))
-                },
-              }
-            } else if (tool.function.name === "get_course_sequences") {
-              return {
-                ...tool,
-                function: async (args: any) => {
-                  controller.enqueue(encoder.encode("\xf9Generating course sequences...\xf8"))
-                  return JSON.stringify(await getCourseSequencesGeneral(args))
-                },
-              }
-            } else if (tool.function.name === "run_sql_query") {
-              return {
-                ...tool,
-                function: async (args: any) => {
-                  controller.enqueue(encoder.encode(`\xf9Running SQL query: ${args.query}...\xf8`))
-                  return JSON.stringify(await runSQLQuery(args))
-                },
-              }
-            }
-            return tool
-          })
+          singletonController.enqueue(statusUpdateIndicator)
+          singletonController.enqueue(singletonEncoder.encode("Generating response..."))
 
           // Start the chat completion
           let response = await openai.beta.chat.completions.parse({
@@ -432,13 +427,24 @@ export async function POST(request: NextRequest) {
           })
 
           let assistantMessage = ""
-
+          let ddbMessages = []
           // Add the assistant's message to the chat history
           messages.push(response.choices[0].message)
 
           // Process the response and handle tool calls
           while (response.choices[0].message.tool_calls && response.choices[0].message.tool_calls.length > 0) {
             // Process each tool call
+            if (response.choices[0].message.content) {
+              ddbMessages.push({
+                id: Date.now().toString(),
+                role: "assistant",
+                content: response.choices[0].message.content,
+              })
+              assistantMessage = response.choices[0].message.content
+              singletonController.enqueue(assistantMessageIndicator)
+              singletonController.enqueue(singletonEncoder.encode(assistantMessage))
+            }
+
             for (const toolCall of response.choices[0].message.tool_calls) {
               const tool = TOOLS.find((t) => t.function.name === toolCall.function.name)
 
@@ -448,7 +454,7 @@ export async function POST(request: NextRequest) {
               }
 
               // Execute the tool
-              const result = await tool.$callback!(toolCall.function.parsed_arguments);
+              const result = await tool.$callback!(toolCall.function.parsed_arguments, ddbMessages);
               console.log(`Tool ${toolCall.function.name} executed with result:`, JSON.stringify(result, null, 2))
 
               // Add the tool response to the messages
@@ -466,15 +472,19 @@ export async function POST(request: NextRequest) {
               reasoning_effort: "medium",
               tools: TOOLS,
             });
-            if (response.choices[0].message.content) {
-              controller.enqueue(encoder.encode(assistantMessage))
-            }
             messages.push(response.choices[0].message);
           }
 
           // Get the final response content
           if (response.choices[0].message.content) {
+            ddbMessages.push({
+              id: Date.now().toString(),
+              role: "assistant",
+              content: response.choices[0].message.content,
+            })
             assistantMessage = response.choices[0].message.content
+            singletonController.enqueue(assistantMessageIndicator)
+            singletonController.enqueue(singletonEncoder.encode(assistantMessage))
           }
 
           // Store the conversation and messages in DynamoDB
@@ -484,12 +494,13 @@ export async function POST(request: NextRequest) {
             content: { S: message },
           }
 
-          const assistantMessageItem = {
-            id: { S: (Date.now() + 1).toString() },
-            role: { S: "assistant" },
-            content: { S: assistantMessage },
-          }
-
+          const assistantMessageItems = ddbMessages.map((msg) => ({
+            M: {
+              id: { S: msg.id },
+              role: { S: msg.role },
+              content: { S: msg.content },
+            }
+          }));
           // If conversation exists, update it; otherwise, create a new one
           if (conversationId) {
             const updateCommand = new UpdateItemCommand({
@@ -502,7 +513,7 @@ export async function POST(request: NextRequest) {
               ExpressionAttributeValues: {
                 ":empty_list": { L: [] },
                 ":new_messages": {
-                  L: [{ M: userMessageItem }, { M: assistantMessageItem }],
+                  L: [{ M: userMessageItem }, ...assistantMessageItems],
                 },
               },
             })
@@ -529,11 +540,12 @@ export async function POST(request: NextRequest) {
             await ddbClient.send(putCommand)
           }
 
-          controller.close()
+          singletonController.close()
         } catch (error) {
           console.error("Error in chat stream:", error)
-          controller.enqueue(encoder.encode("\xf9Error generating response. Please try again.\xf8"))
-          controller.close()
+          singletonController.enqueue(statusUpdateIndicator)
+          singletonController.enqueue(singletonEncoder.encode("Error generating response. Please try again."))
+          singletonController.close()
         }
       },
     })

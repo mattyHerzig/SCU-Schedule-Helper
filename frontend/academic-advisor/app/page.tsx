@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sidebar } from "./components/sidebar"
 import { ChatMessage } from "./components/chat-message"
-import { ProgressIndicator } from "./components/progress-indicator"
 import { useAuth } from "./components/auth-provider"
 import { ProfileButton } from "./components/profile-button"
 import ProtectedPage from "./components/protected-page"
 
 interface Message {
   id: string
-  role: "user" | "assistant"
+  role: "user" | "assistant" | "tool"
   content: string
 }
 
@@ -114,70 +113,90 @@ function ChatPage() {
       let assistantMessage = ""
       let currentStatusUpdate = ""
       let isStatusUpdate = false
+      let buffer: number[] = []
 
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-
-        // Process the chunk byte by byte to detect special markers
-        for (let i = 0; i < chunk.length; i++) {
-          const charCode = chunk.charCodeAt(i)
-
-          if (charCode === 0xf8) {
-            // Start of assistant message
-            isStatusUpdate = false
-            if (currentStatusUpdate) {
-              setStatusUpdates((prev) => [
-                ...prev,
-                {
-                  id: Date.now().toString(),
-                  content: currentStatusUpdate,
-                  timestamp: new Date(),
-                },
-              ])
-              currentStatusUpdate = ""
-            }
-            continue
-          } else if (charCode === 0xf9) {
-            // Start of status update
-            isStatusUpdate = true
-            continue
+        if (done) {
+          // append current status update if it exists
+          if (currentStatusUpdate.trim()) {
+            setStatusUpdates((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                content: currentStatusUpdate,
+                timestamp: new Date(),
+              },
+            ])
           }
-
-          if (isStatusUpdate) {
-            currentStatusUpdate += chunk[i]
-            if (i === chunk.length - 1 || chunk.charCodeAt(i + 1) === 0xf8 || chunk.charCodeAt(i + 1) === 0xf9) {
-              setStatusUpdates((prev) => [
-                ...prev,
-                {
-                  id: Date.now().toString(),
-                  content: currentStatusUpdate,
-                  timestamp: new Date(),
-                },
-              ])
-              currentStatusUpdate = ""
-            }
-          } else {
-            assistantMessage += chunk[i]
-
-            // Update the assistant message in real-time
-            const realtimeMessages: Message[] = [
-              ...updatedMessages,
-              { id: "temp-assistant", role: "assistant", content: assistantMessage },
-            ]
-
-            setCurrentConversation((prev) =>
-              prev
-                ? {
-                  ...prev,
-                  messages: realtimeMessages,
-                }
-                : prev
-            )
-          }
+          break
         }
+
+        for (let i = 0; i < value.length; i++) {
+          const byte = value[i]
+
+          if (byte === 0xf8 || byte === 0xf9) {
+            // Decode buffer up to this point before switching mode
+            if (buffer.length > 0) {
+              const chunk = decoder.decode(new Uint8Array(buffer))
+              if (isStatusUpdate) {
+                console.log("Status update chunk:", chunk)
+                currentStatusUpdate += chunk
+              } else {
+                assistantMessage += chunk
+                // Update real-time assistant message
+                const realtimeMessages: Message[] = [
+                  ...updatedMessages,
+                  { id: "temp-assistant", role: "assistant", content: assistantMessage },
+                ]
+                setCurrentConversation((prev) => (prev ? { ...prev, messages: realtimeMessages } : prev))
+              }
+              buffer = []
+            }
+
+            // Now switch mode
+            if (byte === 0xf8) {
+              isStatusUpdate = false
+              if (currentStatusUpdate) {
+                setStatusUpdates((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now().toString(),
+                    content: currentStatusUpdate,
+                    timestamp: new Date(),
+                  },
+                ])
+                currentStatusUpdate = ""
+              }
+            } else if (byte === 0xf9) {
+              isStatusUpdate = true
+            }
+            continue
+          }
+
+          buffer.push(byte)
+        }
+      }
+
+      // Store the conversation and messages in DynamoDB
+      const conversationMessages = [...updatedMessages]
+
+      // Add tool messages (status updates) before the assistant message
+      statusUpdates.forEach((update) => {
+        conversationMessages.push({
+          id: `tool-${update.id}`,
+          role: "tool",
+          content: update.content,
+        })
+      })
+
+      // Add the final assistant message
+      if (assistantMessage) {
+        conversationMessages.push({
+          id: Date.now().toString(),
+          role: "assistant",
+          content: assistantMessage,
+        })
       }
 
       // Finalize the conversation with the complete assistant message
@@ -304,7 +323,6 @@ function ChatPage() {
     }
   }
 
-
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar
@@ -328,15 +346,57 @@ function ChatPage() {
           </div>
         </div>
 
-        <main className="flex flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 pb-24">
-            {currentConversation?.messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+        <main className="flex-1 overflow-y-auto p-4 pb-24">
+          {(() => {
+            const groupedMessages: Array<{ message: Message; toolMessages: Message[] }> = []
+            let currentToolMessages: Message[] = []
 
-          <ProgressIndicator statusUpdates={statusUpdates} />
+            currentConversation?.messages.forEach((message) => {
+              if (message.role === "tool") {
+                currentToolMessages.push(message)
+              } else {
+                if (message.role === "assistant" && currentToolMessages.length > 0) {
+                  groupedMessages.push({ message, toolMessages: [...currentToolMessages] })
+                  currentToolMessages = []
+                } else {
+                  groupedMessages.push({ message, toolMessages: [] })
+                }
+              }
+            })
+
+            return groupedMessages.map(({ message, toolMessages }) => (
+              <ChatMessage key={message.id} message={message} toolMessages={toolMessages} />
+            ))
+          })()}
+
+          {/* Inline status updates */}
+          {statusUpdates.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-start gap-4">
+                <div className="h-8 w-8 rounded-full bg-[#802a25] flex items-center justify-center">
+                  <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
+                </div>
+                <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="space-y-2">
+                    {statusUpdates.map((update, index) => (
+                      <div key={update.id} className="flex items-center gap-2 text-sm">
+                        <div
+                          className={`h-2 w-2 rounded-full ${index === statusUpdates.length - 1 ? "bg-[#802a25] animate-pulse" : "bg-gray-400"
+                            }`}
+                        />
+                        <span className="text-gray-700">{update.content}</span>
+                        <span className="text-xs text-gray-500 ml-auto">
+                          {update.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </main>
 
         <div className="fixed bottom-0 left-80 right-0 bg-white border-t border-gray-200 p-4 shadow-md">

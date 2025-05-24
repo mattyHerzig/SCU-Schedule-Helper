@@ -76,7 +76,7 @@ export default function LoginPage() {
       redirect_uri: `${window.location.origin}/login`,
       response_type: "code",
       scope:
-        "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/generative-language.retriever email profile",
+        "email profile",
       prompt: "select_account",
       access_type: "offline",
       hd: "scu.edu", // Restrict to SCU domain

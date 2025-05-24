@@ -3,15 +3,6 @@ import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb"
 import jwt from "jsonwebtoken"
 import { decode } from "he"
 
-// Initialize DynamoDB client
-const ddbClient = new DynamoDBClient({
-  region: process.env.AMZ_DDB_REGION || "us-west-1",
-  credentials: {
-    accessKeyId: process.env.AMZ_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AMZ_SECRET_ACCESS_KEY || "",
-  }
-})
-
 // Error messages
 const ERRORS = {
   NO_AUTH: "No form of authorization provided",
@@ -39,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Exchange code for tokens
-    const authResult = await verifyAndStoreGoogleOAuthToken(code)
+    const authResult = await verifyGoogleOAuthToken(code)
 
     if (!authResult.userId) {
       return NextResponse.json({ message: authResult.authError }, { status: 401 })
@@ -87,8 +78,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Verify and store Google OAuth token
-async function verifyAndStoreGoogleOAuthToken(code: string) {
+// Verify Google OAuth token
+async function verifyGoogleOAuthToken(code: string) {
   try {
     // Exchange code for tokens
     const tokenUrl = new URL("https://www.googleapis.com/oauth2/v4/token")
@@ -118,18 +109,14 @@ async function verifyAndStoreGoogleOAuthToken(code: string) {
     }
 
     const accessToken = tokenResponse.access_token
-    const refreshToken = tokenResponse.refresh_token || ""
-    const accessTokenExpDate = new Date(Date.now() + tokenResponse.expires_in * 1000)
-    const refreshTokenExpDate = new Date(
-      Date.now() + (tokenResponse.refresh_token_expires_in || 7 * 24 * 60 * 60) * 1000,
-    )
+    const refreshTokenExpDate = new Date(Date.now() + (30 * 24 * 60 * 60) * 1000)
 
     // Verify scopes
     if (tokenResponse.scope) {
       const scopes = tokenResponse.scope.split(" ")
       if (
-        !scopes.includes("https://www.googleapis.com/auth/cloud-platform") ||
-        !scopes.includes("https://www.googleapis.com/auth/generative-language.retriever")
+        !scopes.includes("https://www.googleapis.com/auth/userinfo.email") ||
+        !scopes.includes("https://www.googleapis.com/auth/userinfo.profile")
       ) {
         return {
           userId: null,
@@ -139,7 +126,7 @@ async function verifyAndStoreGoogleOAuthToken(code: string) {
       }
     }
 
-    return await storeOAuthToken(accessToken, refreshToken, accessTokenExpDate, refreshTokenExpDate)
+    return await getUserInfo(accessToken, refreshTokenExpDate)
   } catch (error) {
     console.error("Error in OAuth verification:", error)
     return {
@@ -151,10 +138,8 @@ async function verifyAndStoreGoogleOAuthToken(code: string) {
 }
 
 // Store OAuth token and user info
-async function storeOAuthToken(
+async function getUserInfo(
   accessToken: string,
-  refreshToken: string,
-  accessTokenExpDate: Date,
   refreshTokenExpDate: Date,
 ) {
   try {
@@ -166,7 +151,6 @@ async function storeOAuthToken(
     })
 
     const personInfo = await response.json()
-
     if (personInfo.error) {
       const decodedError = decode(personInfo.error_description || "unknown error")
       return {
@@ -189,48 +173,15 @@ async function storeOAuthToken(
     } else {
       const userId = personInfo.email.split("@")[0]
 
-      const oauthTokensItem = {
-        pk: { S: `u#${userId}` },
-        sk: { S: "oauth#google#tokens" },
-        accessToken: { S: accessToken },
-        refreshToken: { S: refreshToken },
-        accessTokenExpDate: { S: accessTokenExpDate.toISOString() },
-        refreshTokenExpDate: { S: refreshTokenExpDate.toISOString() },
-        ttl: { N: `${Math.floor(refreshTokenExpDate.getTime() / 1000)}` },
-      }
-
-      try {
-        const putItemCommand = new PutItemCommand({
-          TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME || "scu-schedule-helper",
-          Item: oauthTokensItem,
-        })
-
-        const putItemResponse = await ddbClient.send(putItemCommand)
-
-        if (putItemResponse.$metadata.httpStatusCode !== 200) {
-          console.error("Error storing tokens in DynamoDB:", putItemResponse)
-          throw new Error(
-            `Error storing OAuth tokens in DynamoDB (received HTTP status code from DynamoDB: ${putItemResponse.$metadata.httpStatusCode}).`,
-          )
-        }
-
-        return {
-          userId,
-          oAuthInfo: {
-            email: personInfo.email,
-            name: personInfo.name,
-            photoUrl: personInfo.picture,
-            refreshTokenExpirationDate: refreshTokenExpDate.toISOString(),
-          } as OAuthInfo,
-          authError: null,
-        }
-      } catch (dbError) {
-        console.error("DynamoDB error:", dbError)
-        return {
-          userId: null,
-          oAuthInfo: null,
-          authError: `Error storing authentication data: ${dbError.message}`,
-        }
+      return {
+        userId,
+        oAuthInfo: {
+          email: personInfo.email,
+          name: personInfo.name,
+          photoUrl: personInfo.picture,
+          refreshTokenExpirationDate: refreshTokenExpDate.toISOString(),
+        } as OAuthInfo,
+        authError: null,
       }
     }
   } catch (error) {
