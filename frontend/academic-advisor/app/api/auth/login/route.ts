@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken"
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
   region: process.env.AMZ_DDB_REGION || "us-west-1",
+  credentials: {
+    accessKeyId: process.env.AMZ_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AMZ_SECRET_ACCESS_KEY || "",
+  }
 })
 
 // Error messages
