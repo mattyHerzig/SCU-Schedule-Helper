@@ -94,7 +94,7 @@ function ChatPage() {
         headers["Conversation-Id"] = currentConversation.id
       }
 
-      const response = await fetch("http://localhost:3000/api/chat", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chat`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -171,9 +171,9 @@ function ChatPage() {
             setCurrentConversation((prev) =>
               prev
                 ? {
-                    ...prev,
-                    messages: realtimeMessages,
-                  }
+                  ...prev,
+                  messages: realtimeMessages,
+                }
                 : prev
             )
           }
