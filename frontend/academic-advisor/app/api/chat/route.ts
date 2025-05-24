@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
-import OpenAI from "openai"
+import { v4 as uuidv4 } from 'uuid';
 import { Pool } from "pg"
-import jwt from "jsonwebtoken"
 import { z } from "zod"
 import { zodFunction } from "openai/helpers/zod.mjs"
+import OpenAI from "openai"
+import jwt from "jsonwebtoken"
 // import { getCourseSequencesGeneral } from "@/app/utils/sequences"
 
 // Initialize DynamoDB client
@@ -64,7 +65,7 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 async function getUserContext(userId: string, ddbMessages: any[] = []) {
   console.log("Called getUserContext function for user:", userId)
   ddbMessages.push({
-    id: Date.now().toString(),
+    id: uuidv4(),
     role: "tool",
     content: "Checking your information"
   });
@@ -140,7 +141,7 @@ async function runSQLQuery(args: { explanation: string; query: string }, ddbMess
   const { explanation, query: sqlQuery } = args;
   if (singletonController) {
     ddbMessages.push({
-      id: Date.now().toString(),
+      id: uuidv4(),
       role: "tool",
       content: explanation,
     });
@@ -191,7 +192,7 @@ const TOOLS = [
     }),
     function: (args, ddbMessages: any[] = []) => {
       ddbMessages.push({
-        id: Date.now().toString(),
+        id: uuidv4(),
         role: "tool",
         content: `Generating course sequences`,
       });
@@ -436,7 +437,7 @@ export async function POST(request: NextRequest) {
             // Process each tool call
             if (response.choices[0].message.content) {
               ddbMessages.push({
-                id: Date.now().toString(),
+                id: uuidv4(),
                 role: "assistant",
                 content: response.choices[0].message.content,
               })
@@ -478,7 +479,7 @@ export async function POST(request: NextRequest) {
           // Get the final response content
           if (response.choices[0].message.content) {
             ddbMessages.push({
-              id: Date.now().toString(),
+              id: uuidv4(),
               role: "assistant",
               content: response.choices[0].message.content,
             })

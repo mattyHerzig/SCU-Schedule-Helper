@@ -45,6 +45,10 @@ function ChatPage() {
     fetchConversations()
   }, [])
 
+  useEffect(() => {
+    console.log("Status updates changed:", statusUpdates)
+  }, [statusUpdates])
+
   // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -199,31 +203,24 @@ function ChatPage() {
         })
       }
 
-      // Finalize the conversation with the complete assistant message
-      if (assistantMessage) {
-        const finalAssistantMessage: Message = {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: assistantMessage,
-        }
-
-        // Create final conversation object with the ID from the server
-        const finalConversation = {
-          id: conversationId || updatedConversation.id,
-          title: updatedMessages.length === 0 ? assistantMessage.slice(0, 30) + "..." : updatedConversation.title,
-          messages: [...updatedMessages, finalAssistantMessage],
-          createdAt: updatedConversation.createdAt,
-        }
-
-        setCurrentConversation(finalConversation)
-
-        // Update conversations list
-        if (currentConversation) {
-          setConversations(conversations.map((conv) => (conv.id === currentConversation.id ? finalConversation : conv)))
-        } else {
-          setConversations([finalConversation, ...conversations])
-        }
+      // Create final conversation object with the ID from the server
+      const finalConversation = {
+        id: conversationId || updatedConversation.id,
+        title: updatedMessages.length === 0 ? assistantMessage.slice(0, 30) + "..." : updatedConversation.title,
+        messages: conversationMessages,
+        createdAt: updatedConversation.createdAt,
       }
+
+      setCurrentConversation(finalConversation)
+      // reset status updates
+      setStatusUpdates([])
+      // Update conversations list
+      if (currentConversation) {
+        setConversations(conversations.map((conv) => (conv.id === currentConversation.id ? finalConversation : conv)))
+      } else {
+        setConversations([finalConversation, ...conversations])
+      }
+
     } catch (error) {
       console.error("Error sending message:", error)
       // Add error message to conversation
