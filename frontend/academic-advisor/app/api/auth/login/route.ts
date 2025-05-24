@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
+      domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
       expires: accessTokenExpDate,
       path: "/",
     })
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
+        domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
         expires: refreshTokenExpDate,
         path: "/",
       })
