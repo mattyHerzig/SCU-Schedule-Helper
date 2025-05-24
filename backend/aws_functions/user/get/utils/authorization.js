@@ -16,9 +16,9 @@ export async function handleWithAuthorization(event, context, handler) {
 }
 
 function getUserAuthorization(event) {
-  const cookies = event.headers.Cookie;
+  const cookies = event.cookies;
   if (cookies) {
-    const accessToken = cookies.split(";").find((cookie) => cookie.trim().startsWith("accessToken="));
+    const accessToken = cookies.find((cookie) => cookie.trim().startsWith("accessToken="));
     if (accessToken) {
       return verifyAccessToken(accessToken.split("=")[1]);
     }

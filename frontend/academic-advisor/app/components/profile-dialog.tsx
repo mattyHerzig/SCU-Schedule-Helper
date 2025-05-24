@@ -282,8 +282,22 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     return options.courses.filter((c) => !profile.coursesTaken.includes(c))
   }
 
+  function onOpenChangeWrapper(open: boolean) {
+    if (!open) {
+      // Reset state when dialog is closed
+      setProfile(originalProfile)
+      setMajorOpen(false)
+      setMinorOpen(false)
+      setEmphasisOpen(false)
+      setSelectedMajor(null)
+      setCourseOpen(false)
+      setAlert(null)
+    }
+    onOpenChange(open)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChangeWrapper}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold" style={{ color: "#802a25" }}>
