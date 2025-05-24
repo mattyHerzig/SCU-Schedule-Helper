@@ -1,5 +1,6 @@
 version: 1
 frontend:
+  buildpath: frontend/academic-advisor
   phases:
     preBuild:
       commands:
