@@ -87,7 +87,7 @@ function ChatPage() {
 
   // Scroll to bottom of messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" })
   }, [currentConversation?.messages, statusUpdates])
 
 
