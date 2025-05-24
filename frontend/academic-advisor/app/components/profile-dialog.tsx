@@ -14,14 +14,182 @@ import { cn } from "@/lib/utils"
 const profileOptions: ProfileOptions = {
   courses: [],
   majors: [
-    "Accounting", "Accounting and Information Systems", "Anthropology", "Art History", "Bioengineering", "Biochemistry", "Biochemistry, ACS Certified", "Biology", "Chemistry", "Chemistry, ACS Certified", "Child Studies", "Civil Engineering", "Classics", "Communication", "Computer Science", "Computer Science and Engineering", "Economics", "Electrical and Computer Engineering", "Electrical Engineering", "Engineering Physics", "English", "Environmental Science", "Environmental Studies", "Ethnic Studies", "Finance", "French and Francophone Studies", "General Engineering", "Gender and Sexuality Studies", "History", "Individual Studies", "Italian Studies", "Management", "Management Information Systems", "Marketing", "Mathematics", "Mechanical Engineering", "Music", "Neuroscience", "Philosophy", "Physics", "Political Science", "Psychology", "Public Health Science", "Religious Studies", "Sociology", "Spanish Studies", "Studio Art", "Theatre Arts", "Web Design and Engineering"
+    "Accounting",
+    "Accounting and Information Systems",
+    "Anthropology",
+    "Art History",
+    "Bioengineering",
+    "Biochemistry",
+    "Biochemistry, ACS Certified",
+    "Biology",
+    "Chemistry",
+    "Chemistry, ACS Certified",
+    "Child Studies",
+    "Civil Engineering",
+    "Classics",
+    "Communication",
+    "Computer Science",
+    "Computer Science and Engineering",
+    "Economics",
+    "Electrical and Computer Engineering",
+    "Electrical Engineering",
+    "Engineering Physics",
+    "English",
+    "Environmental Science",
+    "Environmental Studies",
+    "Ethnic Studies",
+    "Finance",
+    "French and Francophone Studies",
+    "General Engineering",
+    "Gender and Sexuality Studies",
+    "History",
+    "Individual Studies",
+    "Italian Studies",
+    "Management",
+    "Management Information Systems",
+    "Marketing",
+    "Mathematics",
+    "Mechanical Engineering",
+    "Music",
+    "Neuroscience",
+    "Philosophy",
+    "Physics",
+    "Political Science",
+    "Psychology",
+    "Public Health Science",
+    "Religious Studies",
+    "Sociology",
+    "Spanish Studies",
+    "Studio Art",
+    "Theatre Arts",
+    "Web Design and Engineering",
   ],
   minors: [
-    "Aerospace Engineering", "African American Studies", "Anthropology", "Animation and Illustration", "Arabic, Islamic, and Middle Eastern Studies", "Art History", "Arts Management", "Asian American Studies", "Asian Studies", "Bioengineering", "Biology", "Biotechnology", "Business Analytics", "Catholic Studies", "Chemistry", "Classics", "Computer Science", "Computer Science and Engineering", "Construction Management", "Creative Writing", "Dance", "Digital Filmmaking", "Economics", "Electrical and Computer Engineering", "Electrical Engineering", "English", "Entrepreneurship", "Environmental Studies", "Ethnic Studies", "French and Francophone Studies", "Gender and Sexuality Studies", "General Engineering", "Gerontology", "Graphic Design", "Healthcare Innovation and Design", "History", "International Business", "International Studies", "Italian Studies", "Japanese Studies", "Journalism", "Latin American Studies", "Latina/o/x Studies", "Management Information Systems", "Marketing", "Mathematics", "Mechanical Engineering", "Medical and Health Humanities", "Music", "Musical Theatre", "Philosophy", "Physics", "Political Science", "Premodern Studies", "Professional Writing", "Public Health", "Real Estate", "Religious Studies", "Responsible Artificial Intelligence", "Retail Studies", "Sociology", "Spanish Studies", "Studio Art", "Sustainability", "Sustainable Food Systems", "Technical Innovation, Design Thinking, and the Entrepreneurial Mindset", "Theatre", "Theatre Design and Technology"
+    "Aerospace Engineering",
+    "African American Studies",
+    "Anthropology",
+    "Animation and Illustration",
+    "Arabic, Islamic, and Middle Eastern Studies",
+    "Art History",
+    "Arts Management",
+    "Asian American Studies",
+    "Asian Studies",
+    "Bioengineering",
+    "Biology",
+    "Biotechnology",
+    "Business Analytics",
+    "Catholic Studies",
+    "Chemistry",
+    "Classics",
+    "Computer Science",
+    "Computer Science and Engineering",
+    "Construction Management",
+    "Creative Writing",
+    "Dance",
+    "Digital Filmmaking",
+    "Economics",
+    "Electrical and Computer Engineering",
+    "Electrical Engineering",
+    "English",
+    "Entrepreneurship",
+    "Environmental Studies",
+    "Ethnic Studies",
+    "French and Francophone Studies",
+    "Gender and Sexuality Studies",
+    "General Engineering",
+    "Gerontology",
+    "Graphic Design",
+    "Healthcare Innovation and Design",
+    "History",
+    "International Business",
+    "International Studies",
+    "Italian Studies",
+    "Japanese Studies",
+    "Journalism",
+    "Latin American Studies",
+    "Latina/o/x Studies",
+    "Management Information Systems",
+    "Marketing",
+    "Mathematics",
+    "Mechanical Engineering",
+    "Medical and Health Humanities",
+    "Music",
+    "Musical Theatre",
+    "Philosophy",
+    "Physics",
+    "Political Science",
+    "Premodern Studies",
+    "Professional Writing",
+    "Public Health",
+    "Real Estate",
+    "Religious Studies",
+    "Responsible Artificial Intelligence",
+    "Retail Studies",
+    "Sociology",
+    "Spanish Studies",
+    "Studio Art",
+    "Sustainability",
+    "Sustainable Food Systems",
+    "Technical Innovation, Design Thinking, and the Entrepreneurial Mindset",
+    "Theatre",
+    "Theatre Design and Technology",
   ],
   emphases: [
-    "M{Anthropology}E{Applied Anthropology}", "M{Anthropology}E{Archaeology}", "M{Anthropology}E{Biological Anthropology}", "M{Art History}E{Arts Management}", "M{Studio Art}E{Graphic Design}", "M{Physics}E{Physics Track}", "M{Physics}E{Biophysics Track}", "M{Economics}E{Data Analysis for Economics}", "M{Economics}E{Data Analysis for Economics}", "M{Economics}E{Mathematical Economics}", "M{Economics}E{Mathematical Economics}", "M{Public Health Science}E{Health Science}", "M{Public Health Science}E{Health and Society}", "M{Mathematics}E{Applied Mathematics}", "M{Mathematics}E{Data Science}", "M{Mathematics}E{Financial Mathematics}", "M{Mathematics}E{Mathematical Economics}", "M{Mathematics}E{Mathematics Education}", "M{Computer Science}E{Algorithms and Complexity}", "M{Computer Science}E{Data Science}", "M{Computer Science}E{Security}", "M{Computer Science}E{Software}", "M{Computer Science}E{Individual}", "M{Classics}E{Classical Languages and Literatures}", "M{Classics}E{Classical Studies}", "M{Classics}E{Ancient Studies}", "M{Classics}E{Classical Languages and Literatures}", "M{Classics}E{Classical Studies}", "M{Classics}E{Ancient Studies}", "M{Political Science}E{Public Sector Studies}", "M{Political Science}E{International Relations}", "M{Political Science}E{Pre-Law}", "M{Bioengineering}E{Biomolecular}", "M{Bioengineering}E{Medical-Device}", "M{Bioengineering}E{Pre-Med}", "M{Economics}E{Data Analysis for Economics}", "M{Economics}E{Data Analysis for Economics}", "M{Economics}E{Mathematical Economics}", "M{Economics}E{Mathematical Economics}", "M{Marketing}E{Business and Technology Marketing}", "M{Marketing}E{Consumer and Channel Marketing}", "M{Marketing}E{Individually Designed Marketing}", "M{Theatre Arts}E{Theatre}", "M{Theatre Arts}E{Dance}", "M{Philosophy}E{Pre-Law and Justice}", "M{Philosophy}E{Ethics and Values}", "M{Philosophy}E{Science and Analysis}", "M{Philosophy}E{History of Philosophy}", "M{Communication}E{Global Media, Culture, and Technologies}", "M{Communication}E{Leadership Communication}", "M{Communication}E{Communication, Diversity, and Culture}", "M{Communication}E{Film & Culture}", "M{Communication}E{Journalism}", "M{Communication}E{Strategic Communication}"
-  ]
+    "M{Anthropology}E{Applied Anthropology}",
+    "M{Anthropology}E{Archaeology}",
+    "M{Anthropology}E{Biological Anthropology}",
+    "M{Art History}E{Arts Management}",
+    "M{Studio Art}E{Graphic Design}",
+    "M{Physics}E{Physics Track}",
+    "M{Physics}E{Biophysics Track}",
+    "M{Economics}E{Data Analysis for Economics}",
+    "M{Economics}E{Data Analysis for Economics}",
+    "M{Economics}E{Mathematical Economics}",
+    "M{Economics}E{Mathematical Economics}",
+    "M{Public Health Science}E{Health Science}",
+    "M{Public Health Science}E{Health and Society}",
+    "M{Mathematics}E{Applied Mathematics}",
+    "M{Mathematics}E{Data Science}",
+    "M{Mathematics}E{Financial Mathematics}",
+    "M{Mathematics}E{Mathematical Economics}",
+    "M{Mathematics}E{Mathematics Education}",
+    "M{Computer Science}E{Algorithms and Complexity}",
+    "M{Computer Science}E{Data Science}",
+    "M{Computer Science}E{Security}",
+    "M{Computer Science}E{Software}",
+    "M{Computer Science}E{Individual}",
+    "M{Classics}E{Classical Languages and Literatures}",
+    "M{Classics}E{Classical Studies}",
+    "M{Classics}E{Ancient Studies}",
+    "M{Classics}E{Classical Languages and Literatures}",
+    "M{Classics}E{Classical Studies}",
+    "M{Classics}E{Ancient Studies}",
+    "M{Political Science}E{Public Sector Studies}",
+    "M{Political Science}E{International Relations}",
+    "M{Political Science}E{Pre-Law}",
+    "M{Bioengineering}E{Biomolecular}",
+    "M{Bioengineering}E{Medical-Device}",
+    "M{Bioengineering}E{Pre-Med}",
+    "M{Economics}E{Data Analysis for Economics}",
+    "M{Economics}E{Data Analysis for Economics}",
+    "M{Economics}E{Mathematical Economics}",
+    "M{Economics}E{Mathematical Economics}",
+    "M{Marketing}E{Business and Technology Marketing}",
+    "M{Marketing}E{Consumer and Channel Marketing}",
+    "M{Marketing}E{Individually Designed Marketing}",
+    "M{Theatre Arts}E{Theatre}",
+    "M{Theatre Arts}E{Dance}",
+    "M{Philosophy}E{Pre-Law and Justice}",
+    "M{Philosophy}E{Ethics and Values}",
+    "M{Philosophy}E{Science and Analysis}",
+    "M{Philosophy}E{History of Philosophy}",
+    "M{Communication}E{Global Media, Culture, and Technologies}",
+    "M{Communication}E{Leadership Communication}",
+    "M{Communication}E{Communication, Diversity, and Culture}",
+    "M{Communication}E{Film & Culture}",
+    "M{Communication}E{Journalism}",
+    "M{Communication}E{Strategic Communication}",
+  ],
 }
 
 interface ProfileDialogProps {
@@ -98,13 +266,16 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const fetchUserProfile = async () => {
     setLoading(true)
     try {
-      const response = await fetch("https://api.scu-schedule-helper.me/user/me?items=academicPrograms&items=coursesTaken", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://api.scu-schedule-helper.me/user/me?items=academicPrograms&items=coursesTaken",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
         },
-        credentials: "include",
-      })
+      )
       if (!response.ok) throw new Error("Failed to fetch user profile")
 
       const data = await response.json()
@@ -228,16 +399,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   }
 
   // Add functions to handle adding and removing courses
-  const addCourse = (course: string) => {
-    if (!profile.coursesTaken.includes(course)) {
-      setProfile((prev) => ({
-        ...prev,
-        coursesTaken: [...prev.coursesTaken, course],
-      }))
-    }
-    setCourseOpen(false)
-  }
-
   const removeCourse = (course: string) => {
     setProfile((prev) => ({
       ...prev,
@@ -353,7 +514,12 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                             <CommandEmpty>No majors found.</CommandEmpty>
                             <CommandGroup>
                               {getAvailableMajors().map((major) => (
-                                <CommandItem key={major} onSelect={() => addMajor(major)}>
+                                <CommandItem
+                                  key={major}
+                                  onSelect={() => addMajor(major)}
+                                  onClick={() => addMajor(major)}
+                                  className="cursor-pointer"
+                                >
                                   {major}
                                 </CommandItem>
                               ))}
@@ -408,7 +574,12 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                                         <CommandEmpty>No emphases found.</CommandEmpty>
                                         <CommandGroup>
                                           {getEmphasisOptionsForMajor(major).map((emphasis) => (
-                                            <CommandItem key={emphasis} onSelect={() => addEmphasis(emphasis)}>
+                                            <CommandItem
+                                              key={emphasis}
+                                              onSelect={() => addEmphasis(emphasis)}
+                                              onClick={() => addEmphasis(emphasis)}
+                                              className="cursor-pointer"
+                                            >
                                               {getEmphasisDisplayName(emphasis)}
                                             </CommandItem>
                                           ))}
@@ -470,7 +641,12 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                             <CommandEmpty>No minors found.</CommandEmpty>
                             <CommandGroup>
                               {getAvailableMinors().map((minor) => (
-                                <CommandItem key={minor} onSelect={() => addMinor(minor)}>
+                                <CommandItem
+                                  key={minor}
+                                  onSelect={() => addMinor(minor)}
+                                  onClick={() => addMinor(minor)}
+                                  className="cursor-pointer"
+                                >
                                   {minor}
                                 </CommandItem>
                               ))}
@@ -509,48 +685,104 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-sm font-medium">Your Courses</h3>
-                    <Popover open={courseOpen} onOpenChange={setCourseOpen}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          Add Course
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0" align="end">
-                        <Command>
-                          <CommandInput placeholder="Search courses..." />
-                          <CommandList>
-                            <CommandEmpty>No courses found.</CommandEmpty>
-                            <CommandGroup>
-                              {getAvailableCourses().map((course) => (
-                                <CommandItem key={course} onSelect={() => addCourse(course)}>
-                                  {course}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newCourse = "P{}C{}T{}"
+                        setProfile((prev) => ({
+                          ...prev,
+                          coursesTaken: [...prev.coursesTaken, newCourse],
+                        }))
+                      }}
+                    >
+                      Add Course
+                    </Button>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="max-h-64 overflow-y-auto space-y-2">
                     {profile.coursesTaken.length === 0 ? (
                       <p className="text-sm text-gray-500 italic">No courses added yet</p>
                     ) : (
-                      profile.coursesTaken.map((course) => (
-                        <Badge key={course} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
-                          {course}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeCourse(course)}
-                            className="h-4 w-4 p-0 ml-1"
-                          >
-                            <X className="h-3 w-3" />
-                            <span className="sr-only">Remove</span>
-                          </Button>
-                        </Badge>
-                      ))
+                      profile.coursesTaken.map((course, index) => {
+                        // Parse the course string using regex
+                        const match = course.match(/P\{(.*?)\}C\{(.*?)\}T\{(.*?)\}/)
+                        const professor = match ? match[1] : ""
+                        const courseName = match ? match[2] : course
+                        const term = match ? match[3] : ""
+
+                        return (
+                          <div key={index} className="border rounded-md p-3 space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 space-y-2">
+                                <div>
+                                  <label className="text-xs text-gray-500">Course</label>
+                                  <input
+                                    type="text"
+                                    value={courseName}
+                                    onChange={(e) => {
+                                      const newCourseString = `P{${professor}}C{${e.target.value}}T{${term}}`
+                                      setProfile((prev) => ({
+                                        ...prev,
+                                        coursesTaken: prev.coursesTaken.map((c, i) =>
+                                          i === index ? newCourseString : c,
+                                        ),
+                                      }))
+                                    }}
+                                    className="w-full text-sm border rounded px-2 py-1"
+                                    placeholder="e.g., CSEN 10"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500">Professor</label>
+                                  <input
+                                    type="text"
+                                    value={professor}
+                                    onChange={(e) => {
+                                      const newCourseString = `P{${e.target.value}}C{${courseName}}T{${term}}`
+                                      setProfile((prev) => ({
+                                        ...prev,
+                                        coursesTaken: prev.coursesTaken.map((c, i) =>
+                                          i === index ? newCourseString : c,
+                                        ),
+                                      }))
+                                    }}
+                                    className="w-full text-sm border rounded px-2 py-1"
+                                    placeholder="e.g., Dr. Smith"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500">Term</label>
+                                  <input
+                                    type="text"
+                                    value={term}
+                                    onChange={(e) => {
+                                      const newCourseString = `P{${professor}}C{${courseName}}T{${e.target.value}}`
+                                      setProfile((prev) => ({
+                                        ...prev,
+                                        coursesTaken: prev.coursesTaken.map((c, i) =>
+                                          i === index ? newCourseString : c,
+                                        ),
+                                      }))
+                                    }}
+                                    className="w-full text-sm border rounded px-2 py-1"
+                                    placeholder="e.g., Fall 2023"
+                                  />
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeCourse(course)}
+                                className="h-8 w-8 p-0 ml-2"
+                              >
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remove</span>
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })
                     )}
                   </div>
                 </div>
