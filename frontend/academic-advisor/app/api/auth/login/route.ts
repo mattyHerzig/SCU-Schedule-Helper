@@ -88,7 +88,7 @@ async function verifyAndStoreGoogleOAuthToken(code: string) {
     tokenUrl.searchParams.append("code", code)
     tokenUrl.searchParams.append("client_id", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "")
     tokenUrl.searchParams.append("client_secret", process.env.GOOGLE_CLIENT_SECRET || "")
-    tokenUrl.searchParams.append("redirect_uri", "http://localhost:3000/login")
+    tokenUrl.searchParams.append("redirect_uri", process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || "")
     tokenUrl.searchParams.append("grant_type", "authorization_code")
 
     const response = await fetch(tokenUrl.toString(), {
