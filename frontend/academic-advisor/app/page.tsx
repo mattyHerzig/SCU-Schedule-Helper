@@ -116,6 +116,12 @@ function ChatPage() {
         headers["Conversation-Id"] = currentConversation.id
       }
 
+      // Check auth before sending request.
+      const authResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/check`, {
+        method: "GET",
+        credentials: "include", // Important for cookies
+      })
+
       let assistantMessage = ""
       let toolCalls: Message[] = []
       const eventSource = new SSE(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chat`, {
