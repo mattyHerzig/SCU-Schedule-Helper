@@ -1,6 +1,7 @@
 node_modules
 exclude
 dist
+data
 testing
 persistent_data
 local_data
