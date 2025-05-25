@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb"
+import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb"
 import jwt from "jsonwebtoken"
 import { decode } from "he"
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const accessTokenExpDate = new Date(Date.now() + 3600 * 1000) // 1 hour
     const accessToken = generateDataAccessToken(authResult.userId, accessTokenExpDate)
 
-    const response = NextResponse.json({ success: true, userId: authResult.userId }, { status: 200 })
+    let response: NextResponse<any> = NextResponse.json({ success: true, userId: authResult.userId }, { status: 200 })
 
     // Set access token cookie
     response.cookies.set({
@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
     if (authResult.oAuthInfo) {
       const refreshTokenExpDate = new Date(authResult.oAuthInfo.refreshTokenExpirationDate)
       const refreshToken = generateRefreshToken(authResult.userId, refreshTokenExpDate)
-
       response.cookies.set({
         name: "refreshToken",
         value: refreshToken,
@@ -69,6 +68,9 @@ export async function POST(request: NextRequest) {
         expires: refreshTokenExpDate,
         path: "/",
       })
+
+      response = await createUserAccountIfNeeded(authResult.userId, authResult.oAuthInfo, accessToken, response)
+
     }
 
     return response
@@ -126,7 +128,7 @@ async function verifyGoogleOAuthToken(code: string) {
       }
     }
 
-    return await getUserInfo(accessToken, refreshTokenExpDate)
+    return await getUserInfoAndCreateAccount(accessToken, refreshTokenExpDate)
   } catch (error) {
     console.error("Error in OAuth verification:", error)
     return {
@@ -138,7 +140,7 @@ async function verifyGoogleOAuthToken(code: string) {
 }
 
 // Store OAuth token and user info
-async function getUserInfo(
+async function getUserInfoAndCreateAccount(
   accessToken: string,
   refreshTokenExpDate: Date,
 ) {
@@ -173,6 +175,8 @@ async function getUserInfo(
     } else {
       const userId = personInfo.email.split("@")[0]
 
+      // Create account if needed.
+
       return {
         userId,
         oAuthInfo: {
@@ -192,6 +196,50 @@ async function getUserInfo(
       authError: `${ERRORS.GOOGLE_OAUTH_ERROR}, please try again.`,
     }
   }
+}
+
+async function createUserAccountIfNeeded(
+  userId: string,
+  oAuthInfo: OAuthInfo,
+  accessToken: string,
+  currentResponse: NextResponse) {
+  const ddbClient = new DynamoDBClient({ region: process.env.AWS_REGION })
+  const getCommand = new GetItemCommand({
+    TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
+    Key: {
+      pk: { S: `u#${userId}` },
+      sk: { S: `info#personal` },
+    },
+  })
+
+  const getResponse = await ddbClient.send(getCommand)
+  if (!getResponse.Item) {
+    try {
+      const createResponse = await fetch("https://api.scu-schedule-helper.me/user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            name: oAuthInfo.name,
+            photoUrl: oAuthInfo.photoUrl,
+          }),
+        });
+      if (!createResponse.ok) {
+        throw new Error(`error from create method, ${JSON.stringify(await createResponse.json())}`);
+      }
+      // Just return the current response as is.
+      return currentResponse;
+    }
+    catch (error) {
+      console.error("Error creating user account:", error)
+      // Overwrite the response to indicate failure.
+      return NextResponse.json({ message: "Failed to create user account" }, { status: 500 })
+    }
+  }
+  return currentResponse;
 }
 
 // Generate access token

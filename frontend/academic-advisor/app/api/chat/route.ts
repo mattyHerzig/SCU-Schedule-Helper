@@ -6,7 +6,7 @@ import { z } from "zod"
 import { zodFunction } from "openai/helpers/zod.mjs"
 import OpenAI from "openai"
 import jwt from "jsonwebtoken"
-// import { getCourseSequencesGeneral } from "@/app/utils/sequences"
+import { getCourseSequencesGeneral } from "@/app/utils/sequences"
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
@@ -205,10 +205,9 @@ const TOOLS = [
       });
       if (singletonController) {
         singletonController.enqueue("event: statusUpdate\n");
-        singletonController.enqueue("data: Generating course sequences...\n\n");
+        singletonController.enqueue(`data: ${args.explanation}\n\n`);
       }
-      return "n/a"
-      // return getCourseSequencesGeneral(args)
+      return getCourseSequencesGeneral(args)
     },
     description: `Purpose
         Given one or more academic programs (majors, minors, emphases) and/or an extra course‐requirement expression, produce the complete prerequisite chains for every course you might end up taking.
@@ -347,7 +346,9 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
     Although the SQL database and some of the functions provide information in a very syntactic way, you should try to respond to the user in plain english, assuming they will not understand anything that looks too syntactic. 
     You should also feel free to ask the user clarifying questions if you need more information.
     Note that most students cannot take more than 19 units per quarter, so if you are generating a schedule for them, you should try to keep the number of units per quarter under 19, unless they have explicitly said they are planning on overloading
-    We also recommend mixing in some electives or other courses that are not required for their major/minor/emphasis, as students often like to take a variety of courses and not just the ones that are required for their major/minor/emphasis, e.g. core requirements or pathways courses.`
+    Note also: lower div courses are typically 0-100 level courses, upper div courses are typically 100-200 level courses, and graduate courses are typically 200+ level courses.
+    We also recommend mixing in some electives or other courses that are not required for their major/minor/emphasis, as students often like to take a variety of courses and not just the ones that are required for their major/minor/emphasis, e.g. core requirements or pathways courses.
+    `
 
 // POST handler for chat
 export async function POST(request: NextRequest) {
