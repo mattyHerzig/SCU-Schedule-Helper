@@ -48,11 +48,6 @@ function ChatPage() {
     fetchConversations()
   }, [])
 
-  // useEffect(() => {
-  //   console.log("Conversations updated:", conversations)
-  //   console.log("Current conversation:", currentConversation)
-  // }, [conversations, currentConversation])
-
   useEffect(() => {
     // If currnet conversation changes, update conversations list
     if (currentConversation) {
@@ -278,6 +273,29 @@ function ChatPage() {
     }
   }
 
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/conversations/${conversationId}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (!response.ok) throw new Error("Failed to delete conversation")
+
+      // Remove from local state
+      setConversations(conversations.filter((conv) => conv.id !== conversationId))
+
+      // If the deleted conversation was the current one, clear it
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(null)
+        setShowWelcome(true)
+      }
+    } catch (error) {
+      console.error("Error deleting conversation:", error)
+      alert("Failed to delete conversation. Please try again.")
+    }
+  }
+
   const startNewConversation = () => {
     setCurrentConversation(null)
     setStatusUpdates([])
@@ -305,6 +323,7 @@ function ChatPage() {
         currentConversationId={currentConversation?.id}
         onSelectConversation={selectConversation}
         onNewConversation={startNewConversation}
+        onDeleteConversation={deleteConversation}
       />
 
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -326,7 +345,11 @@ function ChatPage() {
           {showWelcome && !currentConversation && (
             <div
               className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
-              style={{ opacity: welcomeFading ? 0 : 1 }}
+              style={{
+                opacity: welcomeFading ? 0 : 1,
+                transition: "opacity 300ms ease-in-out",
+                pointerEvents: welcomeFading ? "none" : "auto",
+              }}
             >
               <div className="text-center">
                 <h2 className="text-3xl font-bold mb-4" style={{ color: "#802a25" }}>

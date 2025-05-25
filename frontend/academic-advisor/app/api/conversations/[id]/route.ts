@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb"
+import { DynamoDBClient, GetItemCommand, UpdateItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb"
 import jwt from "jsonwebtoken"
 
 // Initialize DynamoDB client
@@ -26,16 +26,13 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // GET handler for fetching a specific conversation
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const userId = getUserIdFromRequest(request)
   if (!userId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
-  console.log("Fetching conversation for user:", userId)
-  console.log("Request URL:", request.nextUrl.pathname)
-  const conversationId = request.nextUrl.pathname.split("/").pop() // Extract conversation ID from URL
-  console.log("Conversation ID:", conversationId)
+  const conversationId = params.id
 
   try {
     // Get the conversation from DynamoDB
@@ -131,19 +128,16 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
+  await params.id;
   const conversationId = params.id
 
   try {
     // Delete the conversation from DynamoDB
-    const deleteCommand = new UpdateItemCommand({
+    const deleteCommand = new DeleteItemCommand({
       TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
       Key: {
         pk: { S: `u#${userId}` },
         sk: { S: `conversation#${conversationId}` },
-      },
-      UpdateExpression: "SET deleted = :deleted",
-      ExpressionAttributeValues: {
-        ":deleted": { BOOL: true },
       },
     })
 

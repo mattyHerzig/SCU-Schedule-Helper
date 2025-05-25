@@ -1,7 +1,9 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { PlusCircle, MessageSquare } from "lucide-react"
+import { PlusCircle, MessageSquare, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar as ShadcnSidebar,
@@ -25,6 +27,7 @@ interface SidebarProps {
   currentConversationId?: string
   onSelectConversation: (id: string) => void
   onNewConversation: () => void
+  onDeleteConversation: (id: string) => void
 }
 
 export function Sidebar({
@@ -32,8 +35,10 @@ export function Sidebar({
   currentConversationId,
   onSelectConversation,
   onNewConversation,
+  onDeleteConversation,
 }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -58,6 +63,21 @@ export function Sidebar({
     }
 
     return "New Conversation"
+  }
+
+  const handleDeleteConversation = async (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation() // Prevent selecting the conversation
+
+    if (!confirm("Are you sure you want to delete this conversation?")) {
+      return
+    }
+
+    setDeletingId(conversationId)
+    try {
+      onDeleteConversation(conversationId)
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -90,17 +110,31 @@ export function Sidebar({
             <SidebarMenu>
               {conversations.map((conversation) => (
                 <SidebarMenuItem key={conversation.id}>
-                  <SidebarMenuButton
-                    isActive={conversation.id === currentConversationId}
-                    onClick={() => onSelectConversation(conversation.id)}
-                    className="flex flex-col items-start"
-                  >
-                    <div className="flex items-center w-full">
-                      <MessageSquare className="h-4 w-4 mr-2 shrink-0" />
-                      <span className="truncate">{getConversationTitle(conversation)}</span>
-                    </div>
-                    <span className="text-xs text-gray-500 mt-1">{formatDate(conversation.createdAt)}</span>
-                  </SidebarMenuButton>
+                  <div className="group relative">
+                    <SidebarMenuButton
+                      isActive={conversation.id === currentConversationId}
+                      onClick={() => onSelectConversation(conversation.id)}
+                      className="flex flex-col items-start w-full pr-10"
+                    >
+                      <div className="flex items-center w-full">
+                        <MessageSquare className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">{getConversationTitle(conversation)}</span>
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1">{formatDate(conversation.createdAt)}</span>
+                    </SidebarMenuButton>
+
+                    {/* Delete button - appears on hover */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleDeleteConversation(e, conversation.id)}
+                      disabled={deletingId === conversation.id}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete conversation</span>
+                    </Button>
+                  </div>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
