@@ -34,7 +34,7 @@
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "build/types/**/*.ts"
-, "t.js", "app/utils/sequences.js"  ],
+, "t.js", "app/utils/sequences.ts"  ],
   "exclude": [
     "node_modules"
   ]

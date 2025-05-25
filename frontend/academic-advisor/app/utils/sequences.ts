@@ -1,10 +1,6 @@
-import fs from "fs";
+import catalog from '../../data/full_university_catalog_v2.json';
 
-const catalog = JSON.parse(
-  fs.readFileSync("./data/full_university_catalog_v2.json")
-);
-
-function getPrerequisiteExpression(courseCode) {
+function getPrerequisiteExpression(courseCode: string): string | null {
   //   console.log(courseCode);
   const course = catalog.courses.find((c) => c.courseCode === courseCode);
   //   console.log(course);
@@ -13,7 +9,7 @@ function getPrerequisiteExpression(courseCode) {
 // =======================================================
 // 1) Strip out @{…} blocks and numeric prefixes (4(…))
 // =======================================================
-function preprocessRequirementExpr(expr) {
+function preprocessRequirementExpr(expr: string): string {
   return (
     expr
       // drop '6@{…}' or similar
@@ -28,7 +24,13 @@ function preprocessRequirementExpr(expr) {
 // =======================================================
 // 2) Parse &, |, !, parentheses into a small AST
 // =======================================================
-function parseExpression(str) {
+type ExprAST =
+  | { type: "course"; code: string }
+  | { type: "not"; child: ExprAST }
+  | { type: "and"; children: ExprAST[] }
+  | { type: "or"; children: ExprAST[] };
+
+function parseExpression(str: string): ExprAST {
   let i = 0;
   function skipWS() {
     while (i < str.length && /\s/.test(str[i])) i++;
@@ -36,12 +38,12 @@ function parseExpression(str) {
   function peek() {
     return str[i];
   }
-  function consume(ch) {
+  function consume(ch: string) {
     if (str[i] !== ch) throw new Error(`Expected '${ch}' at ${i}`);
     i++;
   }
 
-  function parseExpr() {
+  function parseExpr(): ExprAST {
     let node = parseAnd();
     skipWS();
     while (peek() === "|") {
@@ -57,7 +59,7 @@ function parseExpression(str) {
     return node;
   }
 
-  function parseAnd() {
+  function parseAnd(): ExprAST {
     let node = parseFactor();
     skipWS();
     while (peek() === "&") {
@@ -73,7 +75,7 @@ function parseExpression(str) {
     return node;
   }
 
-  function parseFactor() {
+  function parseFactor(): ExprAST {
     skipWS();
     if (peek() === "!") {
       consume("!");
@@ -107,7 +109,7 @@ function parseExpression(str) {
 // 3) Walk the *requirement* AST, pulling out every
 //    non‐negated course code (skip ranges like RSOC100-199)
 // =======================================================
-function extractCourses(node, negated, set) {
+function extractCourses(node: ExprAST, negated: boolean, set: Set<string>): void {
   switch (node.type) {
     case "not":
       extractCourses(node.child, true, set);
@@ -133,7 +135,13 @@ function extractCourses(node, negated, set) {
 //    • {type:'and', parts: [AST,…]}
 //    • {type:'or', parts: [AST,…]}
 // =======================================================
-function buildChainAst(exprAst) {
+type ChainAST =
+  | { type: "course"; code: string }
+  | { type: "chain"; from: ChainAST; to: string }
+  | { type: "and"; parts: ChainAST[] }
+  | { type: "or"; parts: ChainAST[] };
+
+function buildChainAst(exprAst: ExprAST): ChainAST {
   switch (exprAst.type) {
     case "course": {
       const c = exprAst.code;
@@ -149,7 +157,7 @@ function buildChainAst(exprAst) {
     }
     case "or": {
       // flatten nested ORs
-      const parts = [];
+      const parts: ChainAST[] = [];
       for (const ch of exprAst.children) {
         const sub = buildChainAst(ch);
         if (sub.type === "or") parts.push(...sub.parts);
@@ -159,7 +167,7 @@ function buildChainAst(exprAst) {
     }
     case "and": {
       // flatten nested ANDs
-      const parts = [];
+      const parts: ChainAST[] = [];
       for (const ch of exprAst.children) {
         const sub = buildChainAst(ch);
         if (sub.type === "and") parts.push(...sub.parts);
@@ -178,7 +186,7 @@ function buildChainAst(exprAst) {
 //    leaf is already contained in the prereq‐side of
 //    one of the chain‐nodes in the same AND.
 // =======================================================
-function pruneChainAst(ast) {
+function pruneChainAst(ast: ChainAST): void {
   switch (ast.type) {
     case "and":
       // first recurse
@@ -187,9 +195,9 @@ function pruneChainAst(ast) {
       const leafs = ast.parts.filter((p) => p.type === "course");
       const chains = ast.parts.filter((p) => p.type === "chain");
       // build a set of codes that appear in any chain.from subtree
-      const covered = new Set();
+      const covered = new Set<string>();
       for (const c of chains) {
-        collectCodes(c.from, covered);
+        collectCodes((c as any).from, covered); // (c as any) for type narrowing
       }
       // filter out any leaf whose code ∈ covered
       ast.parts = ast.parts.filter((p) => {
@@ -199,8 +207,8 @@ function pruneChainAst(ast) {
         return true;
       });
       // drop exact‐duplicate subtrees (by stringifying)
-      const seen = new Set();
-      const uniq = [];
+      const seen = new Set<string>();
+      const uniq: ChainAST[] = [];
       for (const p of ast.parts) {
         const s = chainAstToString(p);
         if (!seen.has(s)) {
@@ -226,7 +234,7 @@ function pruneChainAst(ast) {
 }
 
 // helper: collect all course codes in an AST
-function collectCodes(ast, outSet) {
+function collectCodes(ast: any, outSet: Set<string>): void {
   switch (ast.type) {
     case "course":
       outSet.add(ast.code);
@@ -237,7 +245,7 @@ function collectCodes(ast, outSet) {
       break;
     case "and":
     case "or":
-      ast.parts.forEach((ch) => collectCodes(ch, outSet));
+      ast.parts.forEach((ch: any) => collectCodes(ch, outSet));
       break;
   }
 }
@@ -245,7 +253,7 @@ function collectCodes(ast, outSet) {
 // =======================================================
 // 6) Turn our chain‐AST back into a string
 // =======================================================
-function chainAstToString(ast) {
+function chainAstToString(ast: ChainAST): string {
   switch (ast.type) {
     case "course":
       return ast.code;
@@ -263,16 +271,16 @@ function chainAstToString(ast) {
 // =======================================================
 // 7) Main entry‐point
 // =======================================================
-function getCourseSequences(requirementExpr) {
+function getCourseSequences(requirementExpr: string): { course: string; prerequisiteExpression: string }[] {
   // strip out @{…}, dept‐counts, numeric prefixes, etc.
   const cleanedReq = preprocessRequirementExpr(requirementExpr);
   // parse the user‐supplied requirement
   const reqAst = parseExpression(cleanedReq);
   // collect all non‐negated courses
-  const courseSet = new Set();
+  const courseSet = new Set<string>();
   extractCourses(reqAst, false, courseSet);
 
-  const result = [];
+  const result: { course: string; prerequisiteExpression: string }[] = [];
   for (const course of courseSet) {
     const pre = getPrerequisiteExpression(course);
     if (!pre) continue;
@@ -296,7 +304,14 @@ function getCourseSequences(requirementExpr) {
   return result;
 }
 
-export function getCourseSequencesGeneral(options) {
+interface GetCourseSequencesGeneralOptions {
+  majors: string[];
+  minors: string[];
+  emphases: string[];
+  courseExpression?: string;
+}
+
+export function getCourseSequencesGeneral(options: GetCourseSequencesGeneralOptions): string {
   console.log(
     `Used getCourseSequencesGeneral with options: ${JSON.stringify(
       options,
@@ -305,7 +320,7 @@ export function getCourseSequencesGeneral(options) {
     )}`
   );
   let fullExpression = "";
-  let parts = [];
+  let parts: string[] = [];
   if (options.courseExpression) parts.push(options.courseExpression);
   if (options.majors.length > 0)
     parts.push(
@@ -326,7 +341,7 @@ export function getCourseSequencesGeneral(options) {
           catalog.deptsAndPrograms
             .find((d) => d.minors.find((m) => m.name === minor))
             ?.minors.find((m) => m.name === minor)?.courseRequirementsExpression
-      )
+      ).join(" & ")
     );
   if (options.emphases.length > 0)
     parts.push(
@@ -336,7 +351,7 @@ export function getCourseSequencesGeneral(options) {
             .find((d) => d.emphases.find((e) => e.name === emphasis))
             ?.emphases.find((e) => e.name === emphasis)
             ?.courseRequirementsExpression
-      )
+      ).join(" & ")
     );
   fullExpression = parts.join(" & ");
   return JSON.stringify(getCourseSequences(fullExpression), null, 2);
