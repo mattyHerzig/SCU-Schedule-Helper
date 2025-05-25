@@ -95,16 +95,15 @@ export default function LoginPage() {
   // Initial login screen
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <Card className="w-[400px] shadow-lg">
-        <CardHeader className="text-center">
+      <Card className="w-[400px] shadow-lg space-y-0" >
+        <CardHeader className="text-center pb-0">
           <CardTitle className="text-2xl font-bold" style={{ color: "#802a25" }}>
             SCU Schedule Helper
           </CardTitle>
           <CardDescription>Sign in to access your academic advising assistant</CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="mb-4 text-center">
-            <p className="text-sm text-gray-600 mb-4">Please sign in with your SCU email address (@scu.edu)</p>
+        <CardContent className="p-6 pt-0">
+          <div className="mb-4 text-center pt-1">
             {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           </div>
           <Button

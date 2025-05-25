@@ -225,6 +225,7 @@ async function createUserAccountIfNeeded(
           body: JSON.stringify({
             name: oAuthInfo.name,
             photoUrl: oAuthInfo.photoUrl,
+            subscription: "{}"
           }),
         });
       if (!createResponse.ok) {
@@ -236,7 +237,7 @@ async function createUserAccountIfNeeded(
     catch (error) {
       console.error("Error creating user account:", error)
       // Overwrite the response to indicate failure.
-      return NextResponse.json({ message: "Failed to create user account" }, { status: 500 })
+      return NextResponse.json({ message: "Failed to create your account, please try again later." }, { status: 500 })
     }
   }
   return currentResponse;
