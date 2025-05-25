@@ -203,7 +203,13 @@ async function createUserAccountIfNeeded(
   oAuthInfo: OAuthInfo,
   accessToken: string,
   currentResponse: NextResponse) {
-  const ddbClient = new DynamoDBClient({ region: process.env.AWS_REGION })
+  const ddbClient = new DynamoDBClient({
+    region: process.env.AMZ_DDB_REGION!,
+    credentials: {
+      accessKeyId: process.env.AMZ_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AMZ_SECRET_ACCESS_KEY!,
+    }
+  })
   const getCommand = new GetItemCommand({
     TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
     Key: {
