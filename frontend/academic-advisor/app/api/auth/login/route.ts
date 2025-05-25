@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error) {
     console.error("Login error:", error)
-    return NextResponse.json({ message: "An error occurred during login" }, { status: 500 })
+    return NextResponse.json({ message: "An unknown error occurred during sign in. Please try again." }, { status: 500 })
   }
 }
 
