@@ -292,14 +292,14 @@ function ChatPage() {
       }
     } catch (error) {
       console.error("Error deleting conversation:", error)
-      alert("Failed to delete conversation. Please try again.")
+      throw error // Re-throw to let the modal handle the error
     }
   }
 
   const startNewConversation = () => {
     setCurrentConversation(null)
     setStatusUpdates([])
-    setShowWelcome(true) // Show welcome message when starting a new conversation 
+    setShowWelcome(true) // Show welcome message when starting a new conversation
   }
 
   const selectConversation = (conversationId: string) => {
