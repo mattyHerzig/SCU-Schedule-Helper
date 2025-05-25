@@ -84,7 +84,6 @@ function ChatPage() {
 
     // Update UI immediately with user message
     const updatedMessages = currentConversation ? [...currentConversation.messages, userMessage] : [userMessage]
-
     const updatedConversation = currentConversation
       ? { ...currentConversation, messages: updatedMessages }
       : {
@@ -128,8 +127,7 @@ function ChatPage() {
         withCredentials: true, // Important for cookies
       });
       eventSource.addEventListener("open", (event: any) => {
-        console.log("Connection opened:", event)
-        const conversationId = event.headers["Conversation-Id"]
+        const conversationId = event.headers["conversation-id"][0]
         setCurrentConversation((prev) => ({
           ...prev!,
           id: conversationId || prev?.id || "temp-id",

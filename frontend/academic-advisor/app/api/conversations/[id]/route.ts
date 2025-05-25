@@ -128,7 +128,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
-  await params.id;
+  await params;
   const conversationId = params.id
 
   try {

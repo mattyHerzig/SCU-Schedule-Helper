@@ -18,11 +18,8 @@ const ddbClient = new DynamoDBClient({
 })
 
 let singletonController: ReadableStreamDefaultController | null = null
-let singletonEncoder = new TextEncoder()
+let singletonUserId: string | null = null
 let singletonDDBMessages: any[] = []
-
-const statusUpdateIndicator = new Uint8Array([0xf9])
-const assistantMessageIndicator = new Uint8Array([0xf8])
 
 // Initialize PostgreSQL connection pool
 let pgPool: Pool | null = null;
@@ -63,17 +60,17 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // Helper function to get user context information
-async function getUserContext(userId: string) {
-  console.log("Called getUserContext function for user:", userId)
+async function getUserContext(args: { explanation: string }) {
+  console.log("Called getUserContext function for user:", singletonUserId)
   singletonDDBMessages.push({
     id: uuidv4(),
     role: "tool",
-    content: "Checking your information"
+    content: args.explanation,
   });
 
   if (singletonController) {
     singletonController.enqueue("event: statusUpdate\n");
-    singletonController.enqueue("data: Checking your information...\n\n");
+    singletonController.enqueue(`data: ${args.explanation}\n\n`);
   }
 
   try {
@@ -81,7 +78,7 @@ async function getUserContext(userId: string) {
     const userInfoQuery = {
       TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
       Key: {
-        pk: { S: `u#${userId}` },
+        pk: { S: `u#${singletonUserId}` },
         sk: { S: "info#academicPrograms" },
       },
     }
@@ -90,7 +87,7 @@ async function getUserContext(userId: string) {
     const userCoursesTakenQuery = {
       TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
       Key: {
-        pk: { S: `u#${userId}` },
+        pk: { S: `u#${singletonUserId}` },
         sk: { S: "info#coursesTaken" },
       },
     }
@@ -163,7 +160,7 @@ async function runSQLQuery(args: { explanation: string; query: string }) {
   } catch (error) {
     console.error("SQL Error:", error);
     // You might want to return a more specific error or re-throw
-    return [];
+    return error;
   } finally {
     if (client) {
       client.release(); // Release the client back to the pool
@@ -175,13 +172,22 @@ async function runSQLQuery(args: { explanation: string; query: string }) {
 const TOOLS = [
   zodFunction({
     name: "get_user_context",
-    parameters: z.object({}),
-    function: () => getUserContext("swdean"),
+    parameters: z.object({
+      explanation: z
+        .string()
+        .describe("Short, present-tense, second-person plain english explanation of why you're using this function, e.g. 'Checking your major', to be displayed to the user."),
+    }),
+    function: getUserContext,
     description: "Get user context information, such as their major, minors, and courses taken.",
   }),
   zodFunction({
     name: "get_course_sequences",
     parameters: z.object({
+      explanation: z
+        .string()
+        .describe(
+          "Short, present-tense, second-person  explanation of why you're using this function, e.g. 'Finding course sequences for my major', to be displayed to the user.",
+        ),
       majors: z.array(z.string()).describe("List of majors to find course ordering for"),
       minors: z.array(z.string()).describe("List of minors to find course ordering for"),
       emphases: z.array(z.string()).describe("List of emphases to find course ordering for"),
@@ -195,7 +201,7 @@ const TOOLS = [
       singletonDDBMessages.push({
         id: uuidv4(),
         role: "tool",
-        content: `Generating course sequences`,
+        content: args.explanation,
       });
       if (singletonController) {
         singletonController.enqueue("event: statusUpdate\n");
@@ -228,12 +234,12 @@ const TOOLS = [
       explanation: z
         .string()
         .describe(
-          "Plain english explanation of the SQL query, that the user can understand. For example: 'Getting all the courses that are offered in the next quarter...'",
+          "Short, present-tense, second-person plain english explanation of why you're using this function, e.g. 'Getting all courses in the Computer Science department', to be displayed to the user.",
         ),
       query: z
         .string()
         .describe(
-          `SQL query to run on the university catalog PostgreSQL database, for example: "SELECT * FROM "Courses" WHERE "courseCode" = 'CS101'"`,
+          `The SQL query to run on the university catalog PostgreSQL database, for example: "SELECT * FROM courses WHERE coursecode = 'CS101'"`,
         ),
     }),
     function: runSQLQuery,
@@ -245,7 +251,7 @@ const TOOLS = [
 // System prompt for the assistant
 const SYSTEM_PROMPT = `You are a helpful assistant that helps students at Santa Clara University navigate their course catalog. You can answer questions about courses, majors, minors, and other academic requirements. You can also help students generate long-term course plans and suggest courses they should take next.
 You are encouraged to make SQL queries to the university catalog database to get information about courses, majors, minors, and other academic requirements. You can also call functions to get user context information and suggested course ordering.
-The PostgreSQL database schema is as follows (note case sensitivity):
+The PostgreSQL database schema is as follows (note: table/column names  are not case-sensitive):
     Schools
     - name - Name of the school
     - description - Brief overview of the school
@@ -345,8 +351,8 @@ The PostgreSQL database schema is as follows (note case sensitivity):
 
 // POST handler for chat
 export async function POST(request: NextRequest) {
-  const userId = getUserIdFromRequest(request)
-  if (!userId) {
+  singletonUserId = getUserIdFromRequest(request)
+  if (!singletonUserId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
@@ -375,7 +381,7 @@ export async function POST(request: NextRequest) {
       const getCommand = new GetItemCommand({
         TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
         Key: {
-          pk: { S: `u#${userId}` },
+          pk: { S: `u#${singletonUserId}` },
           sk: { S: `conversation#${conversationId}` },
         },
       })
@@ -464,7 +470,7 @@ export async function POST(request: NextRequest) {
               const updateCommand = new UpdateItemCommand({
                 TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
                 Key: {
-                  pk: { S: `u#${userId}` },
+                  pk: { S: `u#${singletonUserId}` },
                   sk: { S: `conversation#${conversationId}` },
                 },
                 UpdateExpression: "SET messages = list_append(if_not_exists(messages, :empty_list), :new_messages)",
@@ -481,7 +487,7 @@ export async function POST(request: NextRequest) {
               const putCommand = new UpdateItemCommand({
                 TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
                 Key: {
-                  pk: { S: `u#${userId}` },
+                  pk: { S: `u#${singletonUserId}` },
                   sk: { S: `conversation#${newConversationId}` },
                 },
                 UpdateExpression: "SET title = :title, createdAt = :createdAt, messages = :messages",

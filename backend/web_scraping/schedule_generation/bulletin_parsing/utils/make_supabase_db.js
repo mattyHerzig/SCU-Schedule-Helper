@@ -22,119 +22,6 @@ async function makeSupabaseDB(catalogJsonFilename) {
     fs.readFileSync(`./local_data/${catalogJsonFilename}`, 'utf-8')
   );
 
-  // --- Create Tables (via SQL in Supabase Dashboard or Migrations) ---
-  // Supabase tables are typically created using SQL in the Supabase Dashboard
-  // or through database migrations. For this example, we'll assume the tables
-  // are already created in your Supabase project with the following schemas:
-  /*
-  CREATE TABLE Schools (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    courseRequirementsExpression TEXT,
-    unitRequirements JSONB,
-    otherRequirements JSONB,
-    src TEXT
-  );
-
-  CREATE TABLE DeptsAndPrograms (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    majors TEXT, -- Storing as comma-separated string for simplicity
-    minors TEXT, -- Storing as comma-separated string for simplicity
-    emphases TEXT, -- Storing as comma-separated string for simplicity
-    school TEXT,
-    src TEXT
-  );
-
-  CREATE TABLE Majors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    deptCode TEXT,
-    requiresEmphasis BOOLEAN,
-    courseRequirementsExpression TEXT,
-    unitRequirements JSONB,
-    otherRequirements JSONB,
-    otherNotes TEXT,
-    src TEXT
-  );
-
-  CREATE TABLE Minors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    deptCode TEXT,
-    requiresEmphasis BOOLEAN,
-    courseRequirementsExpression TEXT,
-    unitRequirements JSONB,
-    otherRequirements JSONB,
-    otherNotes TEXT,
-    src TEXT
-  );
-
-  CREATE TABLE Emphases (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    appliesTo TEXT,
-    nameOfWhichItAppliesTo TEXT,
-    deptCode TEXT,
-    courseRequirementsExpression TEXT,
-    unitRequirements JSONB,
-    otherRequirements JSONB,
-    otherNotes TEXT,
-    src TEXT
-  );
-
-  CREATE TABLE SpecialPrograms (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    courseRequirementsExpression TEXT,
-    unitRequirements JSONB,
-    otherRequirements JSONB,
-    src TEXT
-  );
-
-  CREATE TABLE Courses (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    courseCode TEXT,
-    name TEXT,
-    description TEXT,
-    numUnits INTEGER,
-    prerequisiteCourses TEXT,
-    corequisiteCourses TEXT,
-    otherRequirements JSONB,
-    otherNotes TEXT,
-    offeringSchedule TEXT,
-    nextQuarterOfferings JSONB,
-    historicalBestProfessors TEXT,
-    fulfillsCoreRequirements TEXT,
-    src TEXT
-  );
-
-  CREATE TABLE CoreCurriculumRequirements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    appliesTo TEXT,
-    fulfilledBy JSONB,
-    src TEXT
-  );
-
-  CREATE TABLE CoreCurriculumPathways (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT,
-    description TEXT,
-    associatedCourses JSONB,
-    src TEXT
-  );
-  */
-  // Note: We've added an 'id UUID PRIMARY KEY DEFAULT uuid_generate_v4()' to each table
-  // as a best practice for Supabase/PostgreSQL.
-
   console.log('Inserting data into Supabase...');
 
   // Helper for inserting data and handling errors
@@ -146,19 +33,19 @@ async function makeSupabaseDB(catalogJsonFilename) {
   };
 
   for (const school of catalog.schools) {
-    await insertData('Schools', {
+    await insertData('schools', {
       name: school.name,
       description: school.description,
-      courseRequirementsExpression: school.courseRequirementsExpression,
-      unitRequirements: school.unitRequirements, // Supabase JSONB handles objects directly
-      otherRequirements: school.otherRequirements, // Supabase JSONB handles objects directly
+      courserequirementsexpression: school.courseRequirementsExpression,
+      unitrequirements: school.unitRequirements, // Supabase JSONB handles objects directly
+      otherrequirements: school.otherRequirements, // Supabase JSONB handles objects directly
       src: school.src,
     });
   }
   console.log('Schools inserted.');
 
   for (const deptOrProgram of catalog.deptsAndPrograms) {
-    await insertData('DeptsAndPrograms', {
+    await insertData('deptsandprograms', {
       name: deptOrProgram.name,
       description: deptOrProgram.description,
       majors: deptOrProgram.majors.map((major) => major.name).join(', '),
@@ -169,42 +56,42 @@ async function makeSupabaseDB(catalogJsonFilename) {
     });
 
     for (const major of deptOrProgram.majors) {
-      await insertData('Majors', {
+      await insertData('majors', {
         name: major.name,
         description: major.description,
-        deptCode: major.departmentCode,
-        requiresEmphasis: major.requiresEmphasis, // Boolean directly
-        courseRequirementsExpression: major.courseRequirementsExpression,
-        unitRequirements: major.unitRequirements,
-        otherRequirements: major.otherRequirements,
-        otherNotes: major.otherNotes.join('\n'),
+        deptcode: major.departmentCode,
+        requiresemphasis: major.requiresEmphasis, // Boolean directly
+        courserequirementsexpression: major.courseRequirementsExpression,
+        unitrequirements: major.unitRequirements,
+        otherrequirements: major.otherRequirements,
+        othernotes: major.otherNotes.join('\n'),
         src: major.src,
       });
     }
     for (const minor of deptOrProgram.minors) {
-      await insertData('Minors', {
+      await insertData('minors', {
         name: minor.name,
         description: minor.description,
-        deptCode: minor.departmentCode,
-        requiresEmphasis: minor.requiresEmphasis,
-        courseRequirementsExpression: minor.courseRequirementsExpression,
-        unitRequirements: minor.unitRequirements,
-        otherRequirements: minor.otherRequirements,
-        otherNotes: minor.otherNotes.join('\n'),
+        deptcode: minor.departmentCode,
+        requiresemphasis: minor.requiresEmphasis,
+        courserequirementsexpression: minor.courseRequirementsExpression,
+        unitrequirements: minor.unitRequirements,
+        otherrequirements: minor.otherRequirements,
+        othernotes: minor.otherNotes.join('\n'),
         src: minor.src,
       });
     }
     for (const emphasis of deptOrProgram.emphases) {
-      await insertData('Emphases', {
+      await insertData('emphases', {
         name: emphasis.name,
         description: emphasis.description,
-        appliesTo: emphasis.appliesTo,
-        nameOfWhichItAppliesTo: emphasis.nameOfWhichItAppliesTo,
-        deptCode: emphasis.departmentCode,
-        courseRequirementsExpression: emphasis.courseRequirementsExpression,
-        unitRequirements: emphasis.unitRequirements,
-        otherRequirements: emphasis.otherRequirements,
-        otherNotes: emphasis.otherNotes.join('\n'),
+        appliesto: emphasis.appliesTo,
+        nameofwhichitappliesto: emphasis.nameOfWhichItAppliesTo,
+        deptcode: emphasis.departmentCode,
+        courserequirementsexpression: emphasis.courseRequirementsExpression,
+        unitrequirements: emphasis.unitRequirements,
+        otherrequirements: emphasis.otherRequirements,
+        othernotes: emphasis.otherNotes.join('\n'),
         src: emphasis.src,
       });
     }
@@ -213,12 +100,12 @@ async function makeSupabaseDB(catalogJsonFilename) {
 
 
   for (const specialProgram of catalog.specialPrograms) {
-    await insertData('SpecialPrograms', {
+    await insertData('specialprograms', {
       name: specialProgram.name,
       description: specialProgram.description,
-      courseRequirementsExpression: specialProgram.courseRequirementsExpression,
-      unitRequirements: specialProgram.unitRequirements,
-      otherRequirements: specialProgram.otherRequirements,
+      courserequirementsexpression: specialProgram.courseRequirementsExpression,
+      unitrequirements: specialProgram.unitRequirements,
+      otherrequirements: specialProgram.otherRequirements,
       src: specialProgram.src,
     });
   }
@@ -226,26 +113,26 @@ async function makeSupabaseDB(catalogJsonFilename) {
 
   for (const course of catalog.courses) {
     let offeringSchedule = `Expected schedule: ${course.otherOfferingSchedule || course.offeringSchedule}; historically, ${getHistoricalOfferingSeasons(course.courseCode)}`;
-    const fulfillsCoreRequirements = Array.from(new Set(catalog.coreCurriculum.requirements.filter(
+    const fulfillscorerequirements = Array.from(new Set(catalog.coreCurriculum.requirements.filter(
       (req) =>
         req.fulfilledBy &&
         req.fulfilledBy.includes(course.courseCode)
     ).map((req) => `"${req.requirementName}"`)));
 
-    await insertData('Courses', {
-      courseCode: course.courseCode,
+    await insertData('courses', {
+      coursecode: course.courseCode,
       name: course.name,
       description: course.description,
-      numUnits: course.numUnits,
-      prerequisiteCourses: course.prerequisiteCourses,
-      corequisiteCourses: course.corequisiteCourses,
-      otherRequirements: course.otherRequirements,
-      otherNotes: course.otherNotes,
-      offeringSchedule: offeringSchedule,
-      nextQuarterOfferings: course.nextQuarterOfferings,
-      historicalBestProfessors: getHistoricalBestProfessors(course.courseCode),
-      fulfillsCoreRequirements: fulfillsCoreRequirements.length > 0
-        ? fulfillsCoreRequirements.join(', ')
+      numunits: course.numUnits,
+      prerequisitecourses: course.prerequisiteCourses,
+      corequisitecourses: course.corequisiteCourses,
+      otherrequirements: course.otherRequirements,
+      othernotes: course.otherNotes,
+      offeringschedule: offeringSchedule,
+      nextquarterofferings: course.nextQuarterOfferings,
+      historicalbestprofessors: getHistoricalBestProfessors(course.courseCode),
+      fulfillscorerequirements: fulfillscorerequirements.length > 0
+        ? fulfillscorerequirements.join(', ')
         : null,
       src: course.src,
     });
@@ -253,21 +140,21 @@ async function makeSupabaseDB(catalogJsonFilename) {
   console.log('Courses inserted.');
 
   for (const coreCurriculumRequirement of catalog.coreCurriculum.requirements) {
-    await insertData('CoreCurriculumRequirements', {
+    await insertData('corecurriculumrequirements', {
       name: coreCurriculumRequirement.requirementName,
       description: coreCurriculumRequirement.requirementDescription,
-      appliesTo: coreCurriculumRequirement.appliesTo,
-      fulfilledBy: coreCurriculumRequirement.fulfilledBy, // JSONB handles arrays directly
+      appliesto: coreCurriculumRequirement.appliesTo,
+      fulfilledby: coreCurriculumRequirement.fulfilledBy, // JSONB handles arrays directly
       src: coreCurriculumRequirement.src,
     });
   }
   console.log('CoreCurriculumRequirements inserted.');
 
   for (const coreCurriculumPathway of catalog.coreCurriculum.pathways) {
-    await insertData('CoreCurriculumPathways', {
+    await insertData('corecurriculumpathways', {
       name: coreCurriculumPathway.name,
       description: coreCurriculumPathway.description,
-      associatedCourses: coreCurriculumPathway.associatedCourses, // JSONB handles arrays directly
+      associatedcourses: coreCurriculumPathway.associatedCourses, // JSONB handles arrays directly
       src: coreCurriculumPathway.src,
     });
   }
