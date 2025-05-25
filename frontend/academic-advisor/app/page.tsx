@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { Send, LogOut } from "lucide-react"
+import { SSE } from "sse.js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sidebar } from "./components/sidebar"
@@ -29,12 +30,6 @@ interface StatusUpdate {
   id: string
   content: string
   timestamp: Date
-  isLast?: boolean
-}
-
-interface AssistantOutput {
-  content: string
-  complete: boolean
 }
 
 function ChatPage() {
@@ -42,7 +37,6 @@ function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
   const [input, setInput] = useState("")
-  const [assistantOutput, setAssistantOutput] = useState<AssistantOutput>({ content: "", complete: false })
   const [isLoading, setIsLoading] = useState(false)
   const [statusUpdates, setStatusUpdates] = useState<StatusUpdate[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -54,46 +48,19 @@ function ChatPage() {
     fetchConversations()
   }, [])
 
+  // useEffect(() => {
+  //   console.log("Conversations updated:", conversations)
+  //   console.log("Current conversation:", currentConversation)
+  // }, [conversations, currentConversation])
+
   useEffect(() => {
-    // If assistant output and status updates are ready, update the conversation
-    if (
-      assistantOutput.complete &&
-      assistantOutput.content &&
-      statusUpdates.length > 0 &&
-      statusUpdates[statusUpdates.length - 1].isLast
-      && currentConversation
-    ) {
-      // Add status updates as tool messages
-      const toolMessages = statusUpdates
-        .filter((update) => !update.isLast)
-        .map((update) => ({
-          id: update.id,
-          role: "tool",
-          content: update.content,
-        })) as Message[];
-
-      let updatedMessages = currentConversation.messages || [];
-      console.log("Current messages:", updatedMessages)
-      updatedMessages = [
-        ...updatedMessages,
-        ...toolMessages, // Add tool messages before the last assistant message
-        {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: assistantOutput.content,
-        }
-      ]
-      console.log("Updated messages:", updatedMessages)
-      const updatedConversation = { ...currentConversation, messages: updatedMessages };
-
-      setCurrentConversation(updatedConversation)
+    // If currnet conversation changes, update conversations list
+    if (currentConversation) {
       setConversations((prev) =>
-        prev.map((conv) => (conv.id === currentConversation!.id ? updatedConversation : conv))
+        prev.map((conv) => (conv.id === currentConversation.id ? currentConversation : conv))
       )
-      setStatusUpdates([])
-      setAssistantOutput({ content: "", complete: false })
     }
-  }, [statusUpdates, assistantOutput])
+  }, [currentConversation, conversations.length > 0])
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -155,134 +122,92 @@ function ChatPage() {
         headers["Conversation-Id"] = currentConversation.id
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chat`, {
+      let assistantMessage = ""
+      let toolCalls: Message[] = []
+      const eventSource = new SSE(`${process.env.NEXT_PUBLIC_BASE_URL}/api/chat`, {
         method: "POST",
         headers,
-        body: JSON.stringify({
+        payload: JSON.stringify({
           message: input,
         }),
-        credentials: "include", // Important for cookies
-      })
-
-      if (!response.body) throw new Error("Response body is null")
-
-      // Get conversation ID from response headers
-      const conversationId = response.headers.get("Conversation-Id")
-      setCurrentConversation((prev) => ({
-        ...prev!,
-        id: conversationId || prev?.id || "temp-id",
-        title: updatedMessages.length === 0 ? input.slice(0, 30) + "..." : prev?.title || "New Conversation",
-        createdAt: prev?.createdAt || new Date(),
-      }))
-      setConversations((prev) =>
-        prev.map((conv) => (conv.id === updatedConversation.id ? { ...conv, id: conversationId || conv.id } : conv))
-      )
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-
-      let assistantMessage = ""
-      let currentStatusUpdate = ""
-      let isStatusUpdate = false
-      let buffer: number[] = []
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) {
-          // append current status update if it exists
-          if (currentStatusUpdate.trim()) {
-            console.log("updating status updates with final status update")
-            setStatusUpdates((prev) => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                content: currentStatusUpdate,
-                timestamp: new Date(),
-              },
-            ])
-          }
-          if (!isStatusUpdate && buffer.length > 0) {
-            // Decode any remaining buffer as assistant message
-            const chunk = decoder.decode(new Uint8Array(buffer))
-            assistantMessage += chunk
-          }
-          break
-        }
-
-        for (let i = 0; i < value.length; i++) {
-          const byte = value[i]
-
-          if (byte === 0xf8 || byte === 0xf9) {
-            // Decode buffer up to this point before switching mode
-            if (buffer.length > 0) {
-              const chunk = decoder.decode(new Uint8Array(buffer))
-              if (isStatusUpdate) {
-                console.log("Status update chunk:", chunk)
-                currentStatusUpdate += chunk
-              } else {
-                assistantMessage += chunk
-                console.log("Assistant message chunk:", chunk)
-                // Update real-time assistant message
-                const realtimeMessages: Message[] = [
-                  ...updatedMessages,
-                  { id: "temp-assistant", role: "assistant", content: assistantMessage },
-                ]
-                setCurrentConversation((prev) => (prev ? { ...prev, messages: realtimeMessages } : prev))
-              }
-              buffer = []
-            }
-
-            // Now switch mode
-            if (byte === 0xf8) {
-              isStatusUpdate = false
-              if (currentStatusUpdate.trim()) {
-                const newStatusUpdate = currentStatusUpdate.toString()
-                console.log(`Updating status updates with ${newStatusUpdate}`)
-                currentStatusUpdate = ""
-                setStatusUpdates((prev) => [
-                  ...prev,
-                  {
-                    id: Date.now().toString(),
-                    content: newStatusUpdate,
-                    timestamp: new Date(),
-                  },
-                ])
-              }
-            } else if (byte === 0xf9) {
-              isStatusUpdate = true
-              if (currentStatusUpdate.trim()) {
-                const newStatusUpdate = currentStatusUpdate.toString()
-                console.log(`Updating status updates with ${newStatusUpdate}`)
-                currentStatusUpdate = ""
-                setStatusUpdates((prev) => [
-                  ...prev,
-                  {
-                    id: Date.now().toString(),
-                    content: newStatusUpdate,
-                    timestamp: new Date(),
-                  },
-                ])
-              }
-            }
-            continue
-          }
-
-          buffer.push(byte)
-        }
-      }
-      setAssistantOutput({
-        content: assistantMessage,
-        complete: true,
-      })
-      setStatusUpdates((prev) => [
-        ...prev,
-        {
-          id: "null",
-          content: "",
+        withCredentials: true, // Important for cookies
+      });
+      eventSource.addEventListener("open", (event: any) => {
+        console.log("Connection opened:", event)
+        const conversationId = event.headers["Conversation-Id"]
+        setCurrentConversation((prev) => ({
+          ...prev!,
+          id: conversationId || prev?.id || "temp-id",
+          title: updatedMessages.length === 0 ? input.slice(0, 30) + "..." : prev?.title || "New Conversation",
+          createdAt: prev?.createdAt || new Date(),
+        }))
+      });
+      eventSource.addEventListener("statusUpdate", (event: any) => {
+        console.log("Status update received:", event.data)
+        const statusUpdate: StatusUpdate = {
+          id: Date.now().toString(),
+          content: event.data,
           timestamp: new Date(),
-          isLast: true, // Mark this as the last status update
-        },
-      ])
+        }
+        toolCalls.push({
+          id: statusUpdate.id,
+          role: "tool",
+          content: statusUpdate.content,
+        })
+        setStatusUpdates((prev) => [...prev, statusUpdate])
+      });
+      eventSource.addEventListener("assistantMessageStart", (event: any) => {
+        console.log("Assistant message start received:", event.data)
+        // Append tool calls to the conversation, and reset them.
+        setStatusUpdates([])
+      });
+      eventSource.addEventListener("assistantMessageDelta", (event: any) => {
+        console.log("Assistant message delta received:", event.data)
+        const delta = JSON.parse(event.data)
+        if (delta) {
+          // Update the assistant message in real-time
+          assistantMessage += delta
+          const realtimeMessages: Message[] = [
+            ...updatedMessages,
+            ...toolCalls,
+            { id: "temp-assistant", role: "assistant", content: assistantMessage },
+          ]
+          setCurrentConversation((prev) => (prev ? { ...prev, messages: realtimeMessages } : prev))
+        }
+      });
+      eventSource.addEventListener("readystatechange", (event: any) => {
+        console.log("Ready state change:", event.data)
+        if (event.readyState === 2) {
+          console.log("Event stream closed")
+        }
+      });
+      eventSource.addEventListener("assistantMessageEnd", (event: any) => {
+        console.log("Assistant message end received:", event.data)
+        // Finalize the assistant message
+        const finalMessage: Message = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: assistantMessage,
+        }
+        // Update the conversation with the final assistant message
+        setCurrentConversation((prev) => ({
+          ...prev!,
+          messages: [...updatedMessages, ...toolCalls, finalMessage],
+        }))
+        eventSource.close() // Close the event source when done
+      });
+      eventSource.addEventListener("error", (error: any) => {
+        console.error("EventSource error:", error)
+        // Handle error appropriately
+        setIsLoading(false)
+        assistantMessage = "Sorry, there was an error processing your request. Please try again."
+      });
+      eventSource.addEventListener("abort", (event: any) => {
+        console.log("EventSource aborted:", event)
+        // Handle abort appropriately
+      });
+      eventSource.stream()
+
     } catch (error) {
       console.error("Error sending message:", error)
       // Add error message to conversation
@@ -450,7 +375,6 @@ function ChatPage() {
                     <div className="flex-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
                       <div className="space-y-2">
                         {statusUpdates
-                          .filter((update) => !update.isLast)
                           .map((update, index) => (
                             <div key={update.id} className="flex items-center gap-2 text-sm">
                               <div

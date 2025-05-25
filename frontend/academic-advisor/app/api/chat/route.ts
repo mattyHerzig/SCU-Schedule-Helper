@@ -72,8 +72,8 @@ async function getUserContext(userId: string) {
   });
 
   if (singletonController) {
-    singletonController.enqueue(statusUpdateIndicator)
-    singletonController.enqueue(singletonEncoder.encode("Checking your information..."))
+    singletonController.enqueue("event: statusUpdate\n");
+    singletonController.enqueue("data: Checking your information...\n\n");
   }
 
   try {
@@ -146,8 +146,8 @@ async function runSQLQuery(args: { explanation: string; query: string }) {
       role: "tool",
       content: explanation,
     });
-    singletonController.enqueue(statusUpdateIndicator);
-    singletonController.enqueue(singletonEncoder.encode(explanation));
+    singletonController.enqueue("event: statusUpdate\n");
+    singletonController.enqueue(`data: ${explanation}\n\n`);
   }
   console.log(`Running SQL query: ${sqlQuery}`);
   console.log(`Explanation: ${explanation}`);
@@ -198,8 +198,8 @@ const TOOLS = [
         content: `Generating course sequences`,
       });
       if (singletonController) {
-        singletonController.enqueue(statusUpdateIndicator)
-        singletonController.enqueue(singletonEncoder.encode("Generating course sequences..."))
+        singletonController.enqueue("event: statusUpdate\n");
+        singletonController.enqueue("data: Generating course sequences...\n\n");
       }
       return "n/a"
       // return getCourseSequencesGeneral(args)
@@ -306,7 +306,7 @@ The PostgreSQL database schema is as follows (note case sensitivity):
     - src - Source of the data
 
     Courses
-    - courseCode - Unique code identifying the course
+    - courseCode - Unique code identifying the course (e.g. "CSCI101" -- will always be four letters followed by 1-3 digits, NO SPACE IN BETWEEN)
     - name - Course name
     - description - Overview of course content
     - numUnits - Number of units the course is worth
@@ -416,7 +416,7 @@ export async function POST(request: NextRequest) {
           let assistantMessage = ""
           singletonDDBMessages = []
           // Start the chat completion
-          let response = openai.beta.chat.completions.runTools({
+          openai.beta.chat.completions.runTools({
             messages,
             model: "o4-mini",
             reasoning_effort: "medium",
@@ -424,84 +424,85 @@ export async function POST(request: NextRequest) {
             stream: true
           }).on("finalFunctionCall", (finalFunctionCall) => {
             console.log("Final function call:", finalFunctionCall);
-
           }).on("content.delta", (delta) => {
             if (delta.delta) {
               const content = delta.delta
               if (assistantMessage.length === 0) {
-                singletonController?.enqueue(assistantMessageIndicator)
+                singletonController?.enqueue("event: assistantMessageStart\n");
+                singletonController?.enqueue("data: Assistant message started\n\n");
               }
-              console.log("Content delta:", content);
               assistantMessage += content
-              singletonController?.enqueue(singletonEncoder.encode(content))
+              singletonController?.enqueue("event: assistantMessageDelta\n");
+              singletonController?.enqueue(`data: ${JSON.stringify(content)}\n\n`);
             }
-          }).on("end", () => {
+          }).on("end", async () => {
             console.log("Stream ended");
+            singletonController?.enqueue("event: assistantMessageEnd\n");
+            singletonController?.enqueue("data: Assistant message ended\n\n");
             singletonController?.close();
             singletonDDBMessages.push({
               id: uuidv4(),
               role: "assistant",
               content: assistantMessage
             })
+            const userMessageItem = {
+              id: { S: Date.now().toString() },
+              role: { S: "user" },
+              content: { S: message },
+            }
+
+            const assistantMessageItems = singletonDDBMessages.map((msg) => ({
+              M: {
+                id: { S: msg.id },
+                role: { S: msg.role },
+                content: { S: msg.content },
+              }
+            }));
+
+            // If conversation exists, update it; otherwise, create a new one
+            if (conversationId) {
+              const updateCommand = new UpdateItemCommand({
+                TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
+                Key: {
+                  pk: { S: `u#${userId}` },
+                  sk: { S: `conversation#${conversationId}` },
+                },
+                UpdateExpression: "SET messages = list_append(if_not_exists(messages, :empty_list), :new_messages)",
+                ExpressionAttributeValues: {
+                  ":empty_list": { L: [] },
+                  ":new_messages": {
+                    L: [{ M: userMessageItem }, ...assistantMessageItems],
+                  },
+                },
+              })
+              await ddbClient.send(updateCommand)
+            } else {
+              // Create a new conversation
+              const putCommand = new UpdateItemCommand({
+                TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
+                Key: {
+                  pk: { S: `u#${userId}` },
+                  sk: { S: `conversation#${newConversationId}` },
+                },
+                UpdateExpression: "SET title = :title, createdAt = :createdAt, messages = :messages",
+                ExpressionAttributeValues: {
+                  ":title": { S: message.slice(0, 30) + (message.length > 30 ? "..." : "") },
+                  ":createdAt": { S: new Date().toISOString() },
+                  ":messages": {
+                    L: [{ M: userMessageItem }, ...assistantMessageItems],
+                  },
+                },
+              })
+              await ddbClient.send(putCommand)
+            }
           }
           );
-
-
-          const userMessageItem = {
-            id: { S: Date.now().toString() },
-            role: { S: "user" },
-            content: { S: message },
-          }
-
-          const assistantMessageItems = singletonDDBMessages.map((msg) => ({
-            M: {
-              id: { S: msg.id },
-              role: { S: msg.role },
-              content: { S: msg.content },
-            }
-          }));
-          // If conversation exists, update it; otherwise, create a new one
-          if (conversationId) {
-            const updateCommand = new UpdateItemCommand({
-              TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
-              Key: {
-                pk: { S: `u#${userId}` },
-                sk: { S: `conversation#${conversationId}` },
-              },
-              UpdateExpression: "SET messages = list_append(if_not_exists(messages, :empty_list), :new_messages)",
-              ExpressionAttributeValues: {
-                ":empty_list": { L: [] },
-                ":new_messages": {
-                  L: [{ M: userMessageItem }, ...assistantMessageItems],
-                },
-              },
-            })
-            await ddbClient.send(updateCommand)
-          } else {
-            // Create a new conversation
-            const putCommand = new UpdateItemCommand({
-              TableName: process.env.SCU_SCHEDULE_HELPER_TABLE_NAME,
-              Key: {
-                pk: { S: `u#${userId}` },
-                sk: { S: `conversation#${newConversationId}` },
-              },
-              UpdateExpression: "SET title = :title, createdAt = :createdAt, messages = :messages",
-              ExpressionAttributeValues: {
-                ":title": { S: message.slice(0, 30) + (message.length > 30 ? "..." : "") },
-                ":createdAt": { S: new Date().toISOString() },
-                ":messages": {
-                  L: [{ M: userMessageItem }, ...assistantMessageItems],
-                },
-              },
-            })
-
-            await ddbClient.send(putCommand)
-          }
-
         } catch (error) {
           console.error("Error in chat stream:", error)
-          singletonController.enqueue(statusUpdateIndicator)
-          singletonController.enqueue(singletonEncoder.encode("Error generating response. Please try again."))
+          if (singletonController) {
+            singletonController.enqueue("event: error\n");
+            singletonController.enqueue("data: Error generating response. Please try again.\n\n");
+          }
           singletonController.close()
         }
       },
@@ -510,7 +511,7 @@ export async function POST(request: NextRequest) {
     // Return the streaming response with the conversation ID
     return new NextResponse(stream, {
       headers: {
-        "Content-Type": "text/plain",
+        "Content-Type": "text/event-stream",
         "Conversation-Id": newConversationId,
       },
     })
