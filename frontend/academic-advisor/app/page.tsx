@@ -87,6 +87,9 @@ function ChatPage() {
       const updatedConversation = { ...currentConversation, messages: updatedMessages };
 
       setCurrentConversation(updatedConversation)
+      setConversations((prev) =>
+        prev.map((conv) => (conv.id === currentConversation!.id ? updatedConversation : conv))
+      )
       setStatusUpdates([])
       setAssistantOutput({ content: "", complete: false })
     }
@@ -171,6 +174,9 @@ function ChatPage() {
         title: updatedMessages.length === 0 ? input.slice(0, 30) + "..." : prev?.title || "New Conversation",
         createdAt: prev?.createdAt || new Date(),
       }))
+      setConversations((prev) =>
+        prev.map((conv) => (conv.id === updatedConversation.id ? { ...conv, id: conversationId || conv.id } : conv))
+      )
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
