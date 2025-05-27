@@ -28,7 +28,7 @@ export async function handleWithAuthAndCors(event, context, handler) {
       "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : "",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers":
-        event.headers["access-control-request-headers"] || "authorization,content-type",
+        event.headers["access-control-request-headers"] || "authorization,content-type,if-modified-since",
       "Access-Control-Allow-Credentials": "true",
     },
   }

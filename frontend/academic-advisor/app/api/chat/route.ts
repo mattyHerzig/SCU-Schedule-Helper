@@ -29,7 +29,6 @@ async function initializeDatabase() {
     try {
       pgPool = new Pool({
         connectionString: process.env.PG_CONNECTION_STRING,
-
       });
     } catch (error) {
       console.error("Error initializing PostgreSQL database pool:", error);
@@ -154,8 +153,7 @@ async function runSQLQuery(args: { explanation: string; query: string }) {
     const pool = await initializeDatabase();
     client = await pool.connect(); // Get a client from the pool
     const result = await client.query(sqlQuery); // Execute the raw query
-
-    console.log(`SQL query executed: ${sqlQuery}`);
+    console.log(`SQL query executed: ${sqlQuery}, returning ${result.rowCount} rows`);
     return result.rows; // pg returns rows in result.rows
   } catch (error) {
     console.error("SQL Error:", error);

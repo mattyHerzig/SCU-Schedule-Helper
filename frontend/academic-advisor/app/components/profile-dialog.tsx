@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 const profileOptions: ProfileOptions = {
-  courses: [],
   majors: [
     "Accounting",
     "Accounting and Information Systems",
@@ -210,7 +209,6 @@ interface ProfileOptions {
   majors: string[]
   minors: string[]
   emphases: string[]
-  courses: string[]
 }
 
 // Update the UpdatePayload interface to include courses
@@ -436,11 +434,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   // Get available minors that aren't already selected
   const getAvailableMinors = () => {
     return options.minors.filter((m) => !profile.minors.includes(m))
-  }
-
-  // Add function to get available courses
-  const getAvailableCourses = () => {
-    return options.courses.filter((c) => !profile.coursesTaken.includes(c))
   }
 
   function onOpenChangeWrapper(open: boolean) {
