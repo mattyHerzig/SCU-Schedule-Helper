@@ -36,9 +36,10 @@ async function makeSupabaseDB(catalogJsonFilename) {
     await insertData('schools', {
       name: school.name,
       description: school.description,
-      courserequirementsexpression: school.courseRequirementsExpression,
+      courserequirementsexpression: treeNodeToString(school.courseRequirements.tree),
       unitrequirements: school.unitRequirements, // Supabase JSONB handles objects directly
-      otherrequirements: school.otherRequirements, // Supabase JSONB handles objects directly
+      otherrequirements: school.courseRequirements.thingsNotEncoded.join('\n'),
+      othernotes: school.otherNotes.join('\n'),
       src: school.src,
     });
   }
@@ -61,9 +62,9 @@ async function makeSupabaseDB(catalogJsonFilename) {
         description: major.description,
         deptcode: major.departmentCode,
         requiresemphasis: major.requiresEmphasis, // Boolean directly
-        courserequirementsexpression: major.courseRequirementsExpression,
+        courserequirementsexpression: treeNodeToString(major.courseRequirements),
+        otherrequirements: major.courseRequirements.thingsNotEncoded.join('\n'),
         unitrequirements: major.unitRequirements,
-        otherrequirements: major.otherRequirements,
         othernotes: major.otherNotes.join('\n'),
         src: major.src,
       });
@@ -74,9 +75,9 @@ async function makeSupabaseDB(catalogJsonFilename) {
         description: minor.description,
         deptcode: minor.departmentCode,
         requiresemphasis: minor.requiresEmphasis,
-        courserequirementsexpression: minor.courseRequirementsExpression,
+        courserequirementsexpression: treeNodeToString(minor.courseRequirements),
+        otherrequirements: minor.courseRequirements.thingsNotEncoded.join('\n'),
         unitrequirements: minor.unitRequirements,
-        otherrequirements: minor.otherRequirements,
         othernotes: minor.otherNotes.join('\n'),
         src: minor.src,
       });
@@ -88,9 +89,9 @@ async function makeSupabaseDB(catalogJsonFilename) {
         appliesto: emphasis.appliesTo,
         nameofwhichitappliesto: emphasis.nameOfWhichItAppliesTo,
         deptcode: emphasis.departmentCode,
-        courserequirementsexpression: emphasis.courseRequirementsExpression,
+        courserequirementsexpression: treeNodeToString(emphasis.courseRequirements),
+        otherrequirements: emphasis.courseRequirements.thingsNotEncoded.join('\n'),
         unitrequirements: emphasis.unitRequirements,
-        otherrequirements: emphasis.otherRequirements,
         othernotes: emphasis.otherNotes.join('\n'),
         src: emphasis.src,
       });
@@ -103,9 +104,10 @@ async function makeSupabaseDB(catalogJsonFilename) {
     await insertData('specialprograms', {
       name: specialProgram.name,
       description: specialProgram.description,
-      courserequirementsexpression: specialProgram.courseRequirementsExpression,
+      courserequirementsexpression: treeNodeToString(specialProgram.courseRequirements),
+      otherrequirements: specialProgram.courseRequirements.thingsNotEncoded.join('\n'),
       unitrequirements: specialProgram.unitRequirements,
-      otherrequirements: specialProgram.otherRequirements,
+      othernotes: specialProgram.otherNotes,
       src: specialProgram.src,
     });
   }
@@ -246,6 +248,33 @@ function termWithinDays(term, days) {
   const daysSinceTerm =
     (currentQuarterDate - dateOfTerm) / msPerDay;
   return daysSinceTerm <= days;
+}
+
+
+function treeNodeToString(node) {
+  switch (node.type) {
+    case "courseCode":
+      return node.courseCode;
+
+    case "courseCodeRange":
+      const min = node.minimumRequired ?? 1;
+      const exclusions = node.doNotCount.length > 0
+        ? ` excluding [${node.doNotCount.join(", ")}]`
+        : "";
+      return `${node.courseCodeRange} (min ${min}${exclusions})`;
+
+    case "and":
+      return `(${node.children.map(treeNodeToString).join(" AND ")})`;
+
+    case "or":
+      const branches = node.children.map(treeNodeToString).join(" OR ");
+      const branchReq = node.minBranchesMatched ?? 1;
+      const courseReq = node.minTotalCoursesMatched ?? 0;
+      return `(${branches}) [minBranchesMatched: ${branchReq}, minTotalCoursesMatched: ${courseReq}]`;
+
+    default:
+      return "[Unknown Node]";
+  }
 }
 
 makeSupabaseDB('full_university_catalog_v2.json');

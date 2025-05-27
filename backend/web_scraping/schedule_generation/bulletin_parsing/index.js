@@ -168,7 +168,7 @@ async function main() {
   }
   await Promise.all([
     getAndProcessBulletinText(mode),
-    getAndProcessCoreCurriculumText(mode),
+    // getAndProcessCoreCurriculumText(mode),
   ]);
 
   if (mode === "batch") {
@@ -225,9 +225,9 @@ async function getAndProcessBulletinText(mode) {
     }
   }
   // Overrides for testing.
-  // schoolOverviewPages = [];
+  // schoolOverviewPages = ["https://www.scu.edu/bulletin/undergraduate/chapter-5-school-of-engineering/undergraduate-degrees.html#54b1f7d6146d"];
   // departmentOverviewPages = [
-  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/psychology.html#cbd09cb3c353",
+  //   "https://www.scu.edu/bulletin/undergraduate/chapter-3-college-of-arts-and-sciences/music.html#98b1758c5b3d"
   // ];
   // specialProgramPages = [];
 
@@ -343,26 +343,26 @@ async function processPage(link, pageType, mode) {
     )
   );
   // const coursestxt = fs.createWriteStream("./local_data/courses.txt");
-  if (pageType !== PageTypes.CORE_CURRICULUM && pageType !== PageTypes.PATHWAY)
-    requests.push(
-      courses.map((courseSection, i) => {
-        const courseSectionText = courseSection.replace(/\n+/g, "\n");
-        // coursestxt.write(courseSectionText + "\n\n\n--------------------\n\n\n");
-        const batchRequestId =
-          (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
-        return extractDataFromPage(
-          batchRequestId,
-          link,
-          courseSectionText,
-          EXTRACT_COURSES_PROMPT,
-          zodResponseFormat(CourseCatalog, "Course_Catalog"),
-          useSpecialModelForCourses
-            ? courseBatchRequestFileStream
-            : mainBatchRequestsFileStream,
-          useSpecialModelForCourses || DEFAULT_MODEL,
-        );
-      })
-    );
+  // if (pageType !== PageTypes.CORE_CURRICULUM && pageType !== PageTypes.PATHWAY)
+  //   requests.push(
+  //     courses.map((courseSection, i) => {
+  //       const courseSectionText = courseSection.replace(/\n+/g, "\n");
+  //       // coursestxt.write(courseSectionText + "\n\n\n--------------------\n\n\n");
+  //       const batchRequestId =
+  //         (mode === "batch" && `COURSE_INFO_${i}_AT_${link}`) || null;
+  //       return extractDataFromPage(
+  //         batchRequestId,
+  //         link,
+  //         courseSectionText,
+  //         EXTRACT_COURSES_PROMPT,
+  //         zodResponseFormat(CourseCatalog, "Course_Catalog"),
+  //         useSpecialModelForCourses
+  //           ? courseBatchRequestFileStream
+  //           : mainBatchRequestsFileStream,
+  //         useSpecialModelForCourses || DEFAULT_MODEL,
+  //       );
+  //     })
+  //   );
   await Promise.all(requests);
 }
 

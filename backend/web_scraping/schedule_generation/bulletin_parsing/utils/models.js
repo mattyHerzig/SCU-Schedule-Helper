@@ -72,6 +72,157 @@ If the course requires concurrent enrollment in a lab, the course code for the l
 `
 );
 
+export const CourseCodeSimple = z.string().describe(
+  `A course code containing the 4-letter department code and a course number, with no space in-between and no leading zeroes for the course number, like CSCI163 or MATH14. 
+  Note that a department code must always be a four-letter, all-caps string, such as CSCI, MATH, or RSOC.
+  Also note that the course number may contain some letters, such as CSCI183A or MATH14GR. These should be included, if present (do not insert them otherwise).`
+);
+
+export const CourseCodeRange = z.string().describe(
+  `A course code range, which is a range of course codes that can be represented with two course codes separated by a dash. For example, ANTH100-199. The lower and upper bounds on a range are always inclusive, so ANTH100-199 represents all upper division courses. If a requirement said something like “One course from CSCI 183, 180, 168, or any other additional 4-5 unit upper-division CSCI course below 190” this could be represented as (CSCI183 | CSCI180 | CSCI168 | CSCI100-189).`
+)
+
+export const TreeNode = z.lazy(() => z.union([OrNode, AndNode, CourseCodeNode, CourseCodeRangeNode]).describe("A node in the course requirements tree, which can be an OR node, AND node, course code node, course code range node, or empty node. Note that the branches of the tree are considered exclusive, meaning that courses used to fulfill one part of the tree cannot be used to fulfill another part of the tree. For example, if a course is used to fulfill a branch within an OR node, it cannot be used to fulfill another branch within the same OR node, or any other part of the tree."));
+
+export const OrNode = z.object({
+  type: z.literal("or"),
+  children: z.array(TreeNode).describe(
+    "An array of course requirements tree nodes that are combined with an OR operator. This means that at least one of the children must be satisfied to fulfill the requirement."),
+  minBranchesMatched: z.number().describe(
+    "The minimum number of branches that must be matched in this OR node to fulfill the requirement. If not specified, default should be 1."
+  ),
+  minTotalCoursesMatched: z.number().describe(
+    "The minimum total number of courses that must be matched in this OR node to fulfill the requirement. If not specified, default should be 0."
+  ),
+});
+
+export const AndNode = z.object({
+  type: z.literal("and"),
+  children: z.array(TreeNode).describe(
+    "An array of course requirements tree nodes that are combined with an AND operator. This means that all of the children must be satisfied to fulfill the requirement.")
+});
+
+export const CourseCodeNode = z.object({
+  type: z.literal("courseCode"),
+  courseCode: CourseCodeSimple
+}).describe("A course code node, which represents a single course that must be taken to fulfill the requirement. This is a leaf node in the course requirements tree.");
+
+export const CourseCodeRangeNode = z.object({
+  type: z.literal("courseCodeRange"),
+  courseCodeRange: CourseCodeRange,
+  doNotCount: z.array(CourseCodeSimple).describe("An optional array of course codes that should not count towards fulfilling this requirement. This is useful for excluding certain courses from the range, such as when a course is not considered part of the requirement even though it falls within the range. Can be empty if no courses should be excluded."),
+  minimumRequired: z.number().describe("The minimum number of courses that must be taken from the range to fulfill the requirement. If not specified, default should be 1."),
+}).describe("A course code range node, which represents a range of course codes that must be taken to fulfill the requirement. This is a leaf node in the course requirements tree.");
+
+export const EmptyNode = z.object({
+  type: z.literal("empty"),
+}).describe("An empty node, which represents a node that does not contain any course requirements. Use this when requirements cannot be encoded into a tree.");
+
+export const CourseRequirementsTree = z.object({
+  tree: z.union([OrNode, AndNode, CourseCodeNode, CourseCodeRangeNode, EmptyNode]).describe(`A node representing the root of the course requirements tree, which can be an OR node, AND node, course code node, or course code range node.
+    <ExampleInput>
+    In addition to fulfilling undergraduate Core Curriculum requirements for the bachelor of science degree, students majoring in psychology must complete the following departmental requirements:
+
+    PSYC 1, 2, 51, 52, and 53
+    MATH 8
+    MATH 6, 11, or 35
+    One biological psychology course from PSYC 165, 166, 167, 169
+    One developmental psychology course from PSYC 172, 184, 185, 196
+    One applied psychology course from PSYC 115, 117, 134, 140, 157
+    One advanced topics course from PSYC 111, 116, 118, 132, 133, 141, 151, 154, 168, 175, 178, 199A
+    Three additional approved upper-division psychology courses (Advanced Topics courses may NOT be used)
+    </ExampleInput>
+    <ExampleOutput>
+    {
+      "tree": {
+        "type": "and",
+        "children": [
+          {"type": "courseCode", "courseCode": "PSYC1"},
+          {"type": "courseCode", "courseCode": "PSYC2"},
+          {"type": "courseCode", "courseCode": "PSYC51"},
+          {"type": "courseCode", "courseCode": "PSYC52"},
+          {"type": "courseCode", "courseCode": "PSYC53"}
+          {"type": "courseCode", "courseCode": "MATH8"},
+          {
+            "type": "or",
+            "children": [
+              {"type": "courseCode", "courseCode": "MATH6"},
+              {"type": "courseCode", "courseCode": "MATH11"},
+              {"type": "courseCode", "courseCode": "MATH35"}
+            ]
+          },
+          {
+            "type": "or",
+            "children": [
+              {"type": "courseCode", "courseCode": "PSYC165"},
+              {"type": "courseCode", "courseCode": "PSYC166"},
+              {"type": "courseCode", "courseCode": "PSYC167"},
+              {"type": "courseCode", "courseCode": "PSYC169"}
+            ]
+          },
+          {
+            "type": "or",
+            "children": [
+              {"type": "courseCode", "courseCode": "PSYC172"},
+              {"type": "courseCode", "courseCode": "PSYC184"},
+              {"type": "courseCode", "courseCode": "PSYC185"},
+              {"type": "courseCode", "courseCode": "PSYC196"}
+            ]
+          },
+          {
+            "type": "or",
+            "children": [
+              {"type": "courseCode", "courseCode": "PSYC115"},
+              {"type": "courseCode", "courseCode": "PSYC117"},
+              {"type": "courseCode", "courseCode": "PSYC134"},
+              {"type": "courseCode", "courseCode": "PSYC140"},
+              {"type": "courseCode", "courseCode": "PSYC157"}
+            ]
+          },
+          {
+            "type": "or",
+            "children": [
+              {"type": "courseCode", "courseCode": "PSYC111"},
+              {"type": "courseCode", "courseCode": "PSYC116"},
+              {"type": "courseCode", "courseCode": "PSYC118"},
+              {"type": "courseCode", "courseCode": "PSYC132"},
+              {"type": "courseCode", "courseCode": "PSYC133"},
+              {"type": "courseCode", "courseCode": "PSYC141"},
+              {"type": "courseCode", "courseCode": "PSYC151"},
+              {"type": "courseCode", "courseCode": "PSYC154"},
+              {"type": "courseCode", "courseCode": "PSYC168"},
+              {"type": "courseCode", "courseCode": "PSYC175"},
+              {"type": "courseCode", "courseCode": "PSYC178"},
+              {"type": "courseCode", "courseCode": "PSYC199A"}
+            ]
+          },
+          {
+            "type": "courseCodeRange",
+            "courseCodeRange": "PSYC100-199",
+            "doNotCount": [
+              "PSYC111",
+              "PSYC116",
+              "PSYC118",
+              "PSYC132",
+              "PSYC133",
+              "PSYC141",
+              "PSYC151",
+              "PSYC154",
+              "PSYC168",
+              "PSYC175",
+              "PSYC178",
+              "PSYC199A"
+            ],
+            "minimumRequired": 3
+          }
+        ],
+      }
+    </ExampleOutput>
+    `),
+  thingsNotEncoded: z.array(z.string()).describe("An array of things (e.g. requirements or other clarifications) related to the course requirements tree that could not be encoded in the tree format, such as natural language requirements that cannot be represented as a boolean expression. Please include some info about what the thing is, by formatting it like <label>: <description>. For example, 'Note: Substitutions are allowed for <some course requirement>.' or 'Requirement: Students must get their thesis approved for <course code>.'"),
+})
+
+
 export const OtherCourseRequirements = z.array(
   z
     .object({
@@ -382,9 +533,10 @@ export const Emphasis = z.object({
   departmentCode: z
     .string()
     .describe("The four-letter department code for the emphasis, like CSCI"),
-  courseRequirementsExpression: z.string().describe(COURSE_REQS_BASIC_DESC),
+  courseRequirements: CourseRequirementsTree.describe(
+    "Course requirements for the emphasis, represented as a tree, along with any requirements that cannot be represented in the tree format.",
+  ),
   unitRequirements: UnitRequirements,
-  otherRequirements: z.array(OtherRequirement),
   otherNotes: OtherNotes,
 });
 
@@ -403,13 +555,10 @@ export const Minor = z.object({
     .describe(
       "Whether the minor requires an emphasis. If true, the student must take an emphasis as part of the minor. If false, an emphasis is optional, or there are no emphases available for the minor."
     ),
-  courseRequirementsExpression: z.string().describe(
-    COURSE_REQS_BASIC_DESC +
-    `
-    ALSO, because this is for a minor, this expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.`
+  courseRequirements: CourseRequirementsTree.describe(
+    "Course requirements for the minor, represented as a tree, along with any requirements that cannot be represented in the tree format. This expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.",
   ),
   unitRequirements: UnitRequirements,
-  otherRequirements: z.array(OtherRequirement),
   otherNotes: OtherNotes,
 });
 
@@ -489,9 +638,10 @@ WGST -> Women's and Gender Studies
     .describe(
       "Whether the major requires an emphasis. If true, the student must take an emphasis as part of the major. If false, an emphasis is optional, or there are no emphases available for the major."
     ),
-  courseRequirementsExpression: MajorMinorCourseRequirements(true),
+  courseRequirements: CourseRequirementsTree.describe(
+    "Course requirements for the major, represented as a tree, along with any requirements that cannot be represented in the tree format. This expression should NOT contain any emphasis requirements. Those should be in the emphasis object, if any.",
+  ),
   unitRequirements: UnitRequirements,
-  otherRequirements: z.array(OtherRequirement),
   otherNotes: OtherNotes,
 });
 
@@ -581,9 +731,9 @@ export const SchoolInfo = z.object({
   description: z
     .string()
     .describe("A summary.description of the school or college."),
-  courseRequirementsExpression: CourseRequirements,
+  courseRequirements: CourseRequirementsTree.describe("Any specific course requirements for the school or college, represented as a tree, along with any course-related requirements that cannot be represented in the tree format."),
   unitRequirements: UnitRequirements,
-  otherRequirements: z.array(OtherRequirement),
+  otherNotes: OtherNotes.describe("Any other notes regarding the school or college, such as general requirements for all programs in the school or college."),
 });
 
 export const SpecialProgramInfo = z.object({
@@ -591,9 +741,9 @@ export const SpecialProgramInfo = z.object({
   description: z
     .string()
     .describe("A summary/description of the special program."),
-  courseRequirementsExpression: CourseRequirements,
+  courseRequirements: CourseRequirementsTree.describe("Any specific course requirements for the special program, represented as a tree, along with any course-related requirements that cannot be represented in the tree format."),
   unitRequirements: UnitRequirements,
-  otherRequirements: z.array(OtherRequirement),
+  otherNotes: OtherNotes.describe("Any other notes regarding the program."),
 });
 
 export const CourseCatalog = z.object({

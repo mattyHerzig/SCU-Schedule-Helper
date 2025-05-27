@@ -27,16 +27,22 @@ export function checkPlanMeetsRequirements(args: {
                 errors.push(`Major "${major}" not found in catalog.`);
                 continue;
             }
-            if (!hasUserFulfilledCourseRequirements(
+            const result = hasUserFulfilledCourseRequirements(
                 userCoursesTaken,
-                majorData.courseRequirementsExpression
-            )) {
+                majorData.courseRequirements.tree as TreeNode
+            );
+            if (!result.fulfilled) {
                 notSatisfiedRequirements.push({
                     type: 'major',
                     name: major,
-                    requirements: majorData.courseRequirementsExpression,
+                    doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
+            notCheckedRequirements.push({
+                type: 'major',
+                name: major,
+                requirements: majorData.courseRequirements.thingsNotEncoded.join("\n"),
+            });
         }
         for (const minor of minors) {
             const minorData = catalog.deptsAndPrograms.find((m) => m.minors?.some((min) => min.name === minor))?.minors?.find((min) => min.name === minor);
@@ -44,16 +50,22 @@ export function checkPlanMeetsRequirements(args: {
                 errors.push(`Minor "${minor}" not found in catalog.`);
                 continue;
             }
-            if (!hasUserFulfilledCourseRequirements(
+            const result = hasUserFulfilledCourseRequirements(
                 userCoursesTaken,
-                minorData.courseRequirementsExpression
-            )) {
+                minorData.courseRequirements.tree as TreeNode
+            );
+            if (!result.fulfilled) {
                 notSatisfiedRequirements.push({
                     type: 'minor',
                     name: minor,
-                    requirements: minorData.courseRequirementsExpression,
+                    doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
+            notCheckedRequirements.push({
+                type: 'minor',
+                name: minor,
+                requirements: minorData.courseRequirements.thingsNotEncoded.join("\n"),
+            });
         }
         for (const emphasis of emphases) {
             const [, majorName, emphasisName] = emphasis.match(/M{(.*)}E{(.*)}/) || [];
@@ -66,16 +78,22 @@ export function checkPlanMeetsRequirements(args: {
                 errors.push(`Emphasis "${emphasis}" not found in catalog.`);
                 continue;
             }
-            if (!hasUserFulfilledCourseRequirements(
+            const result = hasUserFulfilledCourseRequirements(
                 userCoursesTaken,
-                emphasisData.courseRequirementsExpression
-            )) {
+                emphasisData.courseRequirements.tree as TreeNode
+            );
+            if (!result.fulfilled) {
                 notSatisfiedRequirements.push({
                     type: 'emphasis',
                     name: emphasis,
-                    requirements: emphasisData.courseRequirementsExpression,
+                    doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
+            notCheckedRequirements.push({
+                type: 'emphasis',
+                name: emphasis,
+                requirements: emphasisData.courseRequirements.thingsNotEncoded.join("\n"),
+            });
         }
         if (checkGenEdRequirements) {
             const genEds = catalog.coreCurriculum.requirements;
@@ -89,15 +107,23 @@ export function checkPlanMeetsRequirements(args: {
                     });
                     continue;
                 }
-                const requirementExpression = genEd.fulfilledBy.join(" | ");
-                if (!hasUserFulfilledCourseRequirements(
+                const requirementTree: OrNode = {
+                    type: 'or',
+                    children: genEd.fulfilledBy.map((req) => {
+                        return { type: 'courseCode', courseCode: req };
+                    }),
+                }
+                const result = hasUserFulfilledCourseRequirements(
                     userCoursesTaken,
-                    requirementExpression,
-                )) {
+                    requirementTree
+                );
+                if (!result.fulfilled) {
                     notSatisfiedRequirements.push({
                         type: 'genEd',
                         name: genEd.requirementName,
-                        requirements: requirementExpression,
+                        doesNotSatisfy: result.partsNotFulfilled || "Unknown",
+                        description: genEd.requirementDescription,
+                        appliesTo: genEd.appliesTo,
                     });
                 }
             }
@@ -116,17 +142,23 @@ export function checkPlanMeetsRequirements(args: {
                 });
                 continue;
             }
-            const requirementsExpression = pathwayData.associatedCourses.join(" | ");
-            if (!hasUserFulfilledCourseRequirements(
+            const requirementsExpression: OrNode = {
+                type: 'or',
+                children: pathwayData.associatedCourses.map((course) => {
+                    return { type: 'courseCode', courseCode: course };
+                }),
+                minTotalCoursesMatched: 4
+            };
+
+            const result = hasUserFulfilledCourseRequirements(
                 userCoursesTaken,
-                requirementsExpression,
-                { auto: false, lower: 4, upper: 4 },
-                { min_unique_depts: null, max_courses_from_one_dept: null }
-            )) {
+                requirementsExpression
+            );
+            if (!result.fulfilled) {
                 notSatisfiedRequirements.push({
                     type: 'pathway',
                     name: pathway,
-                    requirements: requirementsExpression,
+                    doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
         }
@@ -148,386 +180,218 @@ export function checkPlanMeetsRequirements(args: {
 
     return {
         errors,
-        doesNotSatisfy: notSatisfiedRequirements,
+        notSatisfiedRequirements,
         notChecked: notCheckedRequirements,
     };
 }
 
+
+type TreeNode =
+    | OrNode
+    | AndNode
+    | CourseCodeNode
+    | CourseCodeRangeNode
+    | EmptyNode;
+
+type OrNode = {
+    type: "or";
+    children: TreeNode[];
+    minBranchesMatched?: number;
+    minTotalCoursesMatched?: number;
+};
+
+type AndNode = {
+    type: "and";
+    children: TreeNode[];
+};
+
+type CourseCodeNode = {
+    type: "courseCode";
+    courseCode: string;
+};
+
+type CourseCodeRangeNode = {
+    type: "courseCodeRange";
+    courseCodeRange: string;
+    doNotCount: string[];
+    minimumRequired?: number;
+};
+
+type EmptyNode = {
+    type: "empty";
+};
+
+type Result = {
+    fulfilled: boolean;
+    partsNotFulfilled?: string;
+    coursesUsed: Set<string>;
+};
+
+function parseCourseCode(courseCode: string) {
+    const match = courseCode.match(/^([A-Z]{4})(\d+)([A-Z]*)$/);
+    if (!match) throw new Error(`Invalid course code: ${courseCode}`);
+    const [, dept, num, suffix] = match;
+    return { dept, num: parseInt(num), suffix };
+}
+
+function courseInRange(course: string, range: string): boolean {
+    const [start, end] = range.split("-");
+    const c = parseCourseCode(course);
+    const s = parseCourseCode(start);
+    const e = parseCourseCode(end);
+    return (
+        c.dept === s.dept &&
+        c.dept === e.dept &&
+        c.num >= s.num &&
+        c.num <= e.num
+    );
+}
+
 function hasUserFulfilledCourseRequirements(
     userCoursesTaken: Set<string>,
-    courseRequirementsExpression: string,
-    bounds: { auto: boolean; lower: number | null; upper: number | null } = {
-        auto: true,
-        lower: null,
-        upper: null,
-    },
-    deptParams: { min_unique_depts: number | null; max_courses_from_one_dept: number | null } = {
-        min_unique_depts: null,
-        max_courses_from_one_dept: null,
-    }
-): { fulfilled: boolean; coursesFulfilled: Set<string> } {
-    console.log("Checking course requirements expression:", courseRequirementsExpression);
-    let lowerBound: number | null = null;
-    let upperBound: number | null = null;
-    let departmentDiversityParams: { min_unique_depts: number | null; max_courses_from_one_dept: number | null; end?: number } = {
-        min_unique_depts: null,
-        max_courses_from_one_dept: null,
-    };
-    let coursesFulfilled: Set<string> = new Set();
-    let coursesExcluded: Set<string> = new Set();
-    let overallExpression: boolean = true;
-    let operator: string | null = null;
-    let reachedFirstOperator: boolean = false;
-    for (let i = 0; i < courseRequirementsExpression.length; i++) {
-        if (courseRequirementsExpression[i] === " ") {
-            continue;
-        }
-        let curChar = courseRequirementsExpression[i];
-        let token = "";
+    courseRequirementsTree: TreeNode
+): { fulfilled: boolean; partsNotFulfilled?: string } {
+    function helper(node: TreeNode): Result {
+        switch (node.type) {
+            case "empty": {
+                return {
+                    fulfilled: true,
+                    coursesUsed: new Set(),
+                };
+            }
+            case "courseCode": {
+                if (userCoursesTaken.has(node.courseCode)) {
+                    return {
+                        fulfilled: true,
+                        coursesUsed: new Set([node.courseCode]),
+                    };
+                } else {
+                    return {
+                        fulfilled: false,
+                        partsNotFulfilled: treeNodeToString(node),
+                        coursesUsed: new Set(),
+                    };
 
-        while (isDigit(curChar) || curChar === "-" || curChar === "@") {
-            if (curChar === "@") {
-                departmentDiversityParams = parseDepartmentDiversityParams(
-                    courseRequirementsExpression,
-                    i
-                );
-                i = departmentDiversityParams.end ?? i; // fallback to current i if end is undefined
-            } else {
-                token += curChar;
-            }
-            i++;
-            curChar = courseRequirementsExpression[i];
-        }
-
-        if (token) {
-            if (token.includes("-")) {
-                const [lower, upper] = token.split("-");
-                lowerBound = parseInt(lower);
-                upperBound = parseInt(upper);
-            } else {
-                lowerBound = parseInt(token);
-                upperBound = Infinity;
-            }
-            if (isNaN(lowerBound) || (isNaN(upperBound) && upperBound !== Infinity)) {
-                console.log(token);
-                console.log(lowerBound);
-                throw new Error(
-                    `Expression "${courseRequirementsExpression}" has invalid (NaN) bounds`
-                );
-            }
-            i--;
-            continue;
-        }
-
-        if (
-            ((lowerBound !== null && lowerBound !== undefined) ||
-                (upperBound !== null && upperBound !== undefined) ||
-                departmentDiversityParams.min_unique_depts ||
-                departmentDiversityParams.max_courses_from_one_dept) &&
-            courseRequirementsExpression[i] !== "("
-        ) {
-            throw new Error(
-                `Expression "${courseRequirementsExpression}" has invalid subexpression (does not start with '(')`
-            );
-        }
-
-        if (courseRequirementsExpression[i] === "(") {
-            const endBracket = findEndBracket(courseRequirementsExpression, i);
-            if (endBracket === -1) {
-                throw new Error(
-                    `Expression "${courseRequirementsExpression}" has unbalanced parentheses`
-                );
-            }
-            if (operator === "!") {
-                const coursesToExclude = parseExclusionExpression(
-                    courseRequirementsExpression.substring(i + 1, endBracket)
-                );
-                coursesExcluded = new Set([...coursesExcluded, ...coursesToExclude]);
-                i = endBracket;
-                operator = null;
-                continue;
-            }
-            const subexpression = hasUserFulfilledCourseRequirements(
-                userCoursesTaken,
-                courseRequirementsExpression.substring(i + 1, endBracket),
-                { auto: !(lowerBound ?? null), lower: lowerBound ?? null, upper: upperBound ?? null }
-            );
-            coursesFulfilled = new Set([
-                ...coursesFulfilled,
-                ...subexpression.coursesFulfilled,
-            ]);
-            if (operator === "&") {
-                overallExpression = overallExpression && subexpression.fulfilled;
-            } else if (operator === "|") {
-                overallExpression = overallExpression || subexpression.fulfilled;
-            } else {
-                if (reachedFirstOperator) {
-                    throw new Error(
-                        `Expression "${courseRequirementsExpression}" is missing an operator`
-                    );
                 }
-                overallExpression = subexpression.fulfilled;
             }
-            i = endBracket;
-            lowerBound = null;
-            upperBound = null;
-            departmentDiversityParams = {
-                min_unique_depts: null,
-                max_courses_from_one_dept: null,
-            };
-            operator = null;
-            continue;
-        }
 
-        while (
-            i < courseRequirementsExpression.length &&
-            courseRequirementsExpression[i].match(/[0-9A-Z-]/)
-        ) {
-            token += courseRequirementsExpression[i];
-            i++;
-        }
-        if (
-            i < courseRequirementsExpression.length &&
-            !courseRequirementsExpression[i].match(/[&|!\s]/)
-        ) {
-            throw new Error(
-                `Expression "${courseRequirementsExpression}" contains an invalid character or operator at position ${i}`
-            );
-        }
+            case "courseCodeRange": {
+                const minRequired = node.minimumRequired ?? 1;
+                const matched = [...userCoursesTaken].filter(
+                    (c) =>
+                        courseInRange(c, node.courseCodeRange) &&
+                        !node.doNotCount.includes(c)
+                );
+                const used = matched.slice(0, minRequired);
+                if (used.length >= minRequired) {
+                    return {
+                        fulfilled: true,
+                        coursesUsed: new Set(used),
+                    };
+                } else {
+                    return {
+                        fulfilled: false,
+                        partsNotFulfilled: treeNodeToString(node),
+                        coursesUsed: new Set(used),
+                    };
 
-        if (token.includes("-")) {
-            const fulfilled = coursesTakenFromRange(userCoursesTaken, token);
-            coursesFulfilled = new Set([...coursesFulfilled, ...fulfilled]);
-            if (operator === "&") {
-                overallExpression = overallExpression && fulfilled.length > 0;
-            } else if (operator === "|") {
-                overallExpression = overallExpression || fulfilled.length > 0;
-            } else {
-                overallExpression = fulfilled.length > 0;
-            }
-            operator = null;
-            i--;
-            continue;
-        } else if (token) {
-            const fulfilled = hasUserTakenCourse(userCoursesTaken, token);
-            if (fulfilled) {
-                coursesFulfilled.add(token);
-            }
-            if (operator === "&") {
-                overallExpression = overallExpression && fulfilled;
-            } else if (operator === "|") {
-                overallExpression = overallExpression || fulfilled;
-            } else if (operator === "!") {
-                const coursesToExclude = parseExclusionExpression(token);
-                coursesExcluded = new Set([...coursesExcluded, ...coursesToExclude]);
-            } else {
-                if (reachedFirstOperator) {
-                    throw new Error(
-                        `Expression "${courseRequirementsExpression}" is missing an operator`
-                    );
                 }
-                overallExpression = fulfilled;
             }
-            operator = null;
-            i--;
-            continue;
-        }
 
-        if (
-            ((courseRequirementsExpression[i] === "&" ||
-                courseRequirementsExpression[i] === "|") &&
-                !operator) ||
-            (courseRequirementsExpression[i] === "!" && operator !== "!")
-        ) {
-            reachedFirstOperator = true;
-            operator = courseRequirementsExpression[i];
-        } else {
-            throw new Error(
-                `Expression "${courseRequirementsExpression}" has operator after an operator, or has an invalid character`
-            );
+            case "and": {
+                const allUsed = new Set<string>();
+                for (const child of node.children) {
+                    const result = helper(child);
+                    if (!result.fulfilled) {
+                        return {
+                            fulfilled: false,
+                            partsNotFulfilled: treeNodeToString(child),
+                            coursesUsed: new Set(),
+                        };
+                    }
+                    result.coursesUsed.forEach((c) => allUsed.add(c));
+                }
+                return {
+                    fulfilled: true,
+                    coursesUsed: allUsed,
+                };
+            }
+
+            case "or": {
+                const minBranchesMatched = node.minBranchesMatched ?? 1;
+                const minTotalCoursesMatched = node.minTotalCoursesMatched ?? 0;
+
+                let branchesMatched = 0;
+                let totalCoursesMatched = 0;
+                const usedCourses = new Set<string>();
+                const failedCauses: string[] = [];
+
+                for (const child of node.children) {
+                    const result = helper(child);
+                    if (result.fulfilled) {
+                        branchesMatched += 1;
+                        result.coursesUsed.forEach((c) => usedCourses.add(c));
+                        totalCoursesMatched += result.coursesUsed.size;
+                    } else {
+                        failedCauses.push(result.partsNotFulfilled || "unknown");
+                    }
+                }
+
+                if (
+                    branchesMatched >= minBranchesMatched &&
+                    totalCoursesMatched >= minTotalCoursesMatched
+                ) {
+                    return {
+                        fulfilled: true,
+                        coursesUsed: usedCourses,
+                    };
+                } else {
+                    return {
+                        fulfilled: false,
+                        partsNotFulfilled: treeNodeToString(node),
+                        coursesUsed: usedCourses,
+                    };
+                }
+            }
+
+            default:
+                return {
+                    fulfilled: false,
+                    partsNotFulfilled: "Unknown node type",
+                    coursesUsed: new Set(),
+                };
         }
     }
 
-    filterExcludedCourses(coursesFulfilled, coursesExcluded);
-
-    filterCoursesFromSameDepartment(
-        coursesFulfilled,
-        deptParams.max_courses_from_one_dept
-    );
-
-    if (upperBound !== null && upperBound !== undefined && upperBound !== Infinity) {
-        while (coursesFulfilled.size > upperBound) {
-            const nextVal = coursesFulfilled.values().next().value;
-            if (typeof nextVal === 'string') {
-                coursesFulfilled.delete(nextVal);
-            } else {
-                break;
-            }
-        }
-    }
-
+    const result = helper(courseRequirementsTree);
     return {
-        fulfilled:
-            (bounds.auto
-                ? overallExpression
-                : coursesFulfilled.size >= (bounds.lower ?? 0)) &&
-            meetsDepartmentDiversity(coursesFulfilled, deptParams.min_unique_depts),
-        coursesFulfilled,
+        fulfilled: result.fulfilled,
+        partsNotFulfilled: result.fulfilled ? undefined : result.partsNotFulfilled,
     };
 }
 
-function isDigit(char: string): boolean {
-    return char >= "0" && char <= "9";
-}
+function treeNodeToString(node: TreeNode): string {
+    switch (node.type) {
+        case "courseCode":
+            return node.courseCode;
 
-function meetsDepartmentDiversity(coursesFulfilled: Set<string>, minUniqueDepts: number | null): boolean {
-    if (!minUniqueDepts) {
-        return true;
-    }
-    const departments = new Set<string>();
-    for (const course of coursesFulfilled) {
-        departments.add(course.substring(0, 4));
-    }
-    return departments.size >= minUniqueDepts;
-}
+        case "courseCodeRange":
+            const min = node.minimumRequired ?? 1;
+            const exclusions = node.doNotCount.length > 0
+                ? ` excluding [${node.doNotCount.join(", ")}]`
+                : "";
+            return `${node.courseCodeRange} (min ${min}${exclusions})`;
 
-function parseExclusionExpression(expression: string): Set<string> {
-    let excludedCourses: Set<string> = new Set();
-    const courseStrings = expression.split("|");
-    for (const courseString of courseStrings) {
-        const course = courseString.trim();
-        if (
-            !course.match(/^[A-Z]{4}[0-9]{1,3}[A-Z]{0,2}$/) &&
-            !course.match(/^[A-Z]{4}[0-9]{1,3}-[0-9]{1,3}$/)
-        ) {
-            throw new Error(`Invalid course code or range "${course}"`);
-        }
-        if (course.match(/^[A-Z]{4}[0-9]{1,3}[A-Z]{0,2}$/)) {
-            excludedCourses.add(course);
-        } else {
-            const [, department, start, end] = course.match(
-                /^([A-Z]{4})([0-9]{1,3})-([0-9]{1,3})$/
-            ) as any;
-            for (let i = parseInt(start); i <= parseInt(end); i++) {
-                excludedCourses.add(department + i);
-            }
-        }
-    }
-    return excludedCourses;
-}
+        case "and":
+            return `(${node.children.map(treeNodeToString).join(" AND ")})`;
 
-function filterExcludedCourses(coursesFulfilled: Set<string>, coursesExcluded: Set<string>): void {
-    for (const course of coursesExcluded) {
-        coursesFulfilled.delete(course);
-    }
-}
+        case "or":
+            const branches = node.children.map(treeNodeToString).join(" OR ");
+            const branchReq = node.minBranchesMatched ?? 1;
+            const courseReq = node.minTotalCoursesMatched ?? 0;
+            return `(${branches}) [minBranchesMatched: ${branchReq}, minTotalCoursesMatched: ${courseReq}]`;
 
-function filterCoursesFromSameDepartment(coursesFulfilled: Set<string>, maxCourses: number | null): void {
-    if (!maxCourses) {
-        return;
+        default:
+            return "[Unknown Node]";
     }
-    const departmentCounts: { [department: string]: number } = {};
-    for (const course of coursesFulfilled) {
-        const department = course.substring(0, 4);
-        departmentCounts[department] = departmentCounts[department] + 1 || 1;
-    }
-    for (const course of coursesFulfilled) {
-        const department = course.substring(0, 4);
-        if (
-            departmentCounts[department] > maxCourses
-        ) {
-            coursesFulfilled.delete(course);
-            departmentCounts[department]--;
-        }
-    }
-}
-
-function parseDepartmentDiversityParams(expression: string, start: number): { min_unique_depts: number | null; max_courses_from_one_dept: number | null; end: number } {
-    while (
-        start < expression.length &&
-        expression[start] !== "{" &&
-        (expression[start] === " " || expression[start] === "@")
-    ) {
-        start++;
-    }
-    if (expression[start] !== "{") {
-        throw new Error(
-            `Expression "${expression}" has invalid department diversity parameters`
-        );
-    }
-    let end = start;
-    while (end < expression.length && expression[end] !== "}") {
-        end++;
-    }
-    if (expression[end] !== "}") {
-        throw new Error(
-            `Expression "${expression}" has invalid department diversity parameters`
-        );
-    }
-    const { min_unique_depts, max_courses_from_one_dept } = JSON.parse(
-        surroundPropertiesWithQuotes(expression.substring(start, end + 1))
-    );
-    return { min_unique_depts, max_courses_from_one_dept, end };
-}
-
-function surroundPropertiesWithQuotes(expression: string): string {
-    return expression.replace(/([a-zA-Z0-9_]+):/g, '"$1":');
-}
-
-function findEndBracket(expression: string, start: number): number {
-    let numUnclosed = 0;
-    for (let i = start; i < expression.length; i++) {
-        if (expression[i] === "(") {
-            numUnclosed++;
-        } else if (expression[i] === ")") {
-            numUnclosed--;
-        }
-        if (numUnclosed === 0) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-function hasUserTakenCourse(userCoursesTaken: Set<string>, courseCode: string): boolean {
-    if (!courseCode.match(/^[A-Z]{4}[0-9]{1,3}[A-Z]{0,2}$/)) {
-        throw new Error(`Invalid course code "${courseCode}"`);
-    }
-    return userCoursesTaken.has(courseCode);
-}
-
-function coursesTakenFromRange(userCoursesTaken: Set<string>, courseCodeRange: string): string[] {
-    if (!courseCodeRange.match(/^[A-Z]{4}[0-9]{1,3}[A-Z]{0,2}-[0-9]{1,3}[A-Z]{0,2}$/)) {
-        throw new Error(`Invalid course code range "${courseCodeRange}"`);
-    }
-    let [, department, start, end] = courseCodeRange.match(
-        /^([A-Z]{4})([0-9]{1,3}[A-Z]{0,2})-([0-9]{1,3}[A-Z]{0,2})$/
-    ) as any;
-    if (start[0] === "0" || end[0] === "0") {
-        throw new Error(
-            `Invalid course code range "${courseCodeRange}", course number cannot start with 0`
-        );
-    }
-    const startNum = parseInt(start.replace(/[A-Z]/g, ""));
-    const startLetter = start.replace(/[0-9]/g, "");
-    const endNum = parseInt(end.replace(/[A-Z]/g, ""));
-    const endLetter = end.replace(/[0-9]/g, "");
-    if (startLetter !== endLetter) {
-        throw new Error(
-            `Invalid course code range "${courseCodeRange}", start and end letters must match`
-        );
-    }
-    if (startNum > endNum) {
-        throw new Error(
-            `Invalid course code range "${courseCodeRange}", start number cannot be greater than end number`
-        );
-    }
-    const coursesTaken: string[] = [];
-    for (let i = startNum; i <= endNum; i++) {
-        const courseCode = department + i + startLetter;
-        if (userCoursesTaken.has(courseCode)) {
-            coursesTaken.push(courseCode);
-        }
-    }
-    return coursesTaken;
 }

@@ -8,7 +8,6 @@ import OpenAI from "openai"
 import jwt from "jsonwebtoken"
 import { getCourseSequencesGeneral } from "@/app/utils/sequences"
 import { checkPlanMeetsRequirements } from "@/app/utils/grad-validation";
-import { test } from "@/app/utils/test";
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
@@ -375,6 +374,7 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
     - courseRequirementsExpression - Logical expression of required courses
     - unitRequirements - Number of required units
     - otherRequirements - Any additional academic requirements
+    - otherNotes - Miscellaneous notes about the school
     - src - Source of the data
 
     DeptsAndPrograms
@@ -426,6 +426,7 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
     - courseRequirementsExpression - Logical expression of required courses
     - unitRequirements - Number of required units
     - otherRequirements - Any additional academic requirements
+    - otherNotes - Miscellaneous notes about the school
     - src - Source of the data
 
     Courses
@@ -489,7 +490,6 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
     - Students often enjoy taking a mix of required and interest-based courses.`;
 
 export async function POST(request: NextRequest) {
-  await test();
   singletonUserId = getUserIdFromRequest(request)
   if (!singletonUserId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })

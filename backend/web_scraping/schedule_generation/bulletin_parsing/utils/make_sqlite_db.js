@@ -12,7 +12,7 @@ async function makeSQLiteDB(catalogJsonFilename) {
   );
   const db = new sqlite.DatabaseSync("./local_data/university_catalog.db");
   db.exec(
-    "CREATE TABLE IF NOT EXISTS Schools (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, src TEXT);"
+    "CREATE TABLE IF NOT EXISTS Schools (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT, src TEXT);"
   );
   db.exec(
     "CREATE TABLE IF NOT EXISTS DeptsAndPrograms (name TEXT, description TEXT, majors TEXT, minors TEXT, emphases TEXT, school TEXT, src TEXT);"
@@ -27,7 +27,7 @@ async function makeSQLiteDB(catalogJsonFilename) {
     "CREATE TABLE IF NOT EXISTS Emphases (name TEXT, description TEXT, appliesTo TEXT, nameOfWhichItAppliesTo TEXT, deptCode TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT, src TEXT);"
   );
   db.exec(
-    "CREATE TABLE IF NOT EXISTS SpecialPrograms (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, src TEXT);"
+    "CREATE TABLE IF NOT EXISTS SpecialPrograms (name TEXT, description TEXT, courseRequirementsExpression TEXT, unitRequirements TEXT, otherRequirements TEXT, otherNotes TEXT, src TEXT);"
   );
   db.exec(
     "CREATE TABLE IF NOT EXISTS Courses (courseCode TEXT, name TEXT, description TEXT, numUnits INTEGER, prerequisiteCourses TEXT, corequisiteCourses TEXT, otherRequirements TEXT, otherNotes TEXT, offeringSchedule TEXT, nextQuarterOfferings TEXT, historicalBestProfessors TEXT, fulfillsCoreRequirements TEXT, src TEXT);"

@@ -140,4 +140,4 @@ function toTitleCase(str) {
     .join(" ");
 };
 
-mergeBatchResults(["departments_batch.jsonl"]);
+mergeBatchResults(["departments.jsonl"]);
