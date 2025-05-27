@@ -4,7 +4,7 @@ import {
   BatchWriteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
 import {
   internalServerError,
@@ -24,7 +24,7 @@ const lambdaClient = new LambdaClient({
 const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(event, context, deleteUser);
+  return await handleWithAuthAndCors(event, context, deleteUser);
 }
 
 async function deleteUser(event, context, userId) {

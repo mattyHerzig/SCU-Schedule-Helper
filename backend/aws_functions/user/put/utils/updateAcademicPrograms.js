@@ -2,21 +2,23 @@ import { dynamoClient, tableName } from "../index.js";
 import { getSetItems } from "./getSetOrMapItems.js";
 import {
     PutItemCommand,
+    UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
 
 export async function updateAcademicPrograms(
     userId,
     academicPrograms,
 ) {
+    console.log(JSON.stringify(academicPrograms, null, 2));
     const { majors, minors, emphases } = academicPrograms;
     const updates = [];
     if (majors) {
         updates.push(updateMajors(userId, majors));
     }
-    if (minors && Array.isArray(minors)) {
+    if (minors) {
         updates.push(updateMinors(userId, minors));
     }
-    if (emphases && Array.isArray(emphases)) {
+    if (emphases) {
         updates.push(updateEmphases(userId, emphases));
     }
     await Promise.all(updates);
@@ -44,14 +46,17 @@ async function updateMajors(userId, majors) {
         { SS: Array.from(currentSet) } :
         { NULL: true };
 
-    const command = new PutItemCommand({
+    const command = new UpdateItemCommand({
         TableName: tableName,
-        Item: {
+        Key: {
             pk: { S: `u#${userId}` },
             sk: { S: `info#academicPrograms` },
-            majors: updateObject,
         },
-    });
+        UpdateExpression: "SET majors = :majors",
+        ExpressionAttributeValues: {
+            ":majors": updateObject,
+        },
+    })
 
     try {
         await dynamoClient.send(command);
@@ -87,12 +92,15 @@ async function updateMinors(userId, minors) {
         { SS: Array.from(currentSet) } :
         { NULL: true };
 
-    const command = new PutItemCommand({
+    const command = new UpdateItemCommand({
         TableName: tableName,
-        Item: {
+        Key: {
             pk: { S: `u#${userId}` },
             sk: { S: `info#academicPrograms` },
-            minors: updateObject,
+        },
+        UpdateExpression: "SET minors = :minors",
+        ExpressionAttributeValues: {
+            ":minors": updateObject,
         },
     });
 
@@ -140,17 +148,31 @@ async function updateEmphases(userId, emphases) {
         { SS: Array.from(currentSet) } :
         { NULL: true };
         
-    const command = new PutItemCommand({
+    const command = new UpdateItemCommand({
         TableName: tableName,
-        Item: {
+        Key: {
             pk: { S: `u#${userId}` },
             sk: { S: `info#academicPrograms` },
-            emphases: updateObject,
+        },
+        UpdateExpression: "SET emphases = :emphases",
+        ExpressionAttributeValues: {
+            ":emphases": updateObject,
         },
     });
 
     try {
-        await dynamoClient.send(command);
+        console.log(JSON.stringify(command, null, 2));
+        const response = await dynamoClient.send(command);
+        console.log(JSON.stringify(response, null, 2));
+        
+        if (response.$metadata.httpStatusCode !== 200) {
+            console.error(
+                `Error updating emphases for user ${userId}: HTTP status code ${response.$metadata.httpStatusCode}`,
+            );
+            throw new Error(`Error updating emphases for user ${userId}`, {
+                cause: 500,
+            });
+        }
     } catch (error) {
         console.error(
             `Error updating emphases for user ${userId}: ${error.message}`,

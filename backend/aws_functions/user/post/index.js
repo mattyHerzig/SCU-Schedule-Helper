@@ -11,7 +11,7 @@ import {
   CreatedUserResponse,
   badRequestResponse,
 } from "./model.js";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 
 const DEFAULT_PHOTO_URL =
   "https://scu-schedule-helper.s3.us-west-1.amazonaws.com/default-avatar.jpg";
@@ -30,7 +30,7 @@ const s3Client = new S3Client({ region: s3Region });
 const lambdaClient = new LambdaClient({ region: lambdaRegion });
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(event, context, handlePostUserRequest);
+  return await handleWithAuthAndCors(event, context, handlePostUserRequest);
 }
 
 async function handlePostUserRequest(event, context, userId) {

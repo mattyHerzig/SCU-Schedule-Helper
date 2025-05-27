@@ -14,7 +14,7 @@ import {
   UserLimitedProfile,
   FriendRequestProfile,
 } from "./model.js";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 
 const ALL_ITEMS = new Set([
   "personal",
@@ -42,7 +42,7 @@ const dynamoDBClient = new DynamoDBClient({
 });
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(event, context, handleGetUserRequest);
+  return await handleWithAuthAndCors(event, context, handleGetUserRequest);
 }
 
 async function handleGetUserRequest(event, context, userId) {

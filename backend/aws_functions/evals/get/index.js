@@ -1,6 +1,6 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getDataExpirationDate } from "./utils/dates.js";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 import {
   internalServerError,
   notModifiedResponse,
@@ -12,7 +12,7 @@ const s3 = new S3Client({
 });
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(event, context, handleGetEvalsRequest);
+  return await handleWithAuthAndCors(event, context, handleGetEvalsRequest);
 }
 
 async function handleGetEvalsRequest(event, context, userId) {

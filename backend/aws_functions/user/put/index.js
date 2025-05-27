@@ -4,7 +4,7 @@ import { updateInterestedSections } from "./utils/updateInterestedSections.js";
 import { updatePreferences } from "./utils/updatePreferences.js";
 import { updateFriends } from "./utils/updateFriends.js";
 import { updateFriendRequests } from "./utils/updateFriendRequests.js";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 import { updateAcademicPrograms } from "./utils/updateAcademicPrograms.js";
 import {
   internalServerError,
@@ -36,7 +36,7 @@ export const s3Client = new S3Client({
 export const tableName = process.env.SCU_SCHEDULE_HELPER_DDB_TABLE_NAME;
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(event, context, putUser);
+  return await handleWithAuthAndCors(event, context, putUser);
 }
 
 async function putUser(event, context, userId) {
@@ -54,6 +54,7 @@ async function putUser(event, context, userId) {
       );
     }
 
+    console.log(JSON.stringify(body, null, 2));
     if (body.academicPrograms) {
       profileUpdates.push(
         updateAcademicPrograms(

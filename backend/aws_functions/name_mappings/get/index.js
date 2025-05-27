@@ -1,5 +1,5 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 
 import { getDataExpirationDate } from "./utils/dates.js";
 import {
@@ -13,7 +13,7 @@ const s3 = new S3Client({
 });
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(
+  return await handleWithAuthAndCors(
     event,
     context,
     handleGetNameMappingsRequest

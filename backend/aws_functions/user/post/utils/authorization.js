@@ -8,11 +8,31 @@ const ERRORS = {
   BAD_ACCESS_TOKEN: "could not verify access token",
 };
 
-export async function handleWithAuthorization(event, context, handler) {
+export async function handleWithAuthAndCors(event, context, handler) {
   const userAuthorization = getUserAuthorization(event);
   if (!userAuthorization.userId)
     return unauthorizedError(userAuthorization.authError);
-  return await handler(event, context, userAuthorization.userId);
+  const response = await handler(event, context, userAuthorization.userId);
+  console.log(JSON.stringify(event, null, 2));
+  const origin = event.headers.origin || "";
+  const allowed = [
+    "chrome-extension://feinilelhamnodbmhjhacnajbbhapdhj",
+    "https://chat-dev.scu-schedule-helper.me",
+    "https://chat.scu-schedule-helper.me",
+    "https://www.scu-schedule-helper.me",
+    "https://scu-schedule-helper.me"
+  ];
+  return {
+    ...response,
+    headers: {
+      ...response.headers,
+      "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : "",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers":
+        event.headers["access-control-request-headers"] || "authorization,content-type",
+      "Access-Control-Allow-Credentials": "true",
+    },
+  }
 }
 
 function getUserAuthorization(event) {

@@ -19,6 +19,10 @@ const ERRORS = {
 };
 
 export async function handler(event, context) {
+  return await corsHandler(event, context, getAuthToken);
+}
+
+async function getAuthToken(event, context) {
   const userAuthorization = await getUserAuthorization(event);
   if (userAuthorization.userId == null)
     return unauthorizedError(userAuthorization.authError);
@@ -36,6 +40,29 @@ export async function handler(event, context) {
       tokenResponse.oAuthInfo = userAuthorization.oAuthInfo;
     }
     return validResponse(tokenResponse);
+  }
+}
+
+async function corsHandler(event, context, handler) {
+  const response = await handler(event, context);
+  const origin = event.headers.origin || "";
+  const allowed = [
+    "chrome-extension://feinilelhamnodbmhjhacnajbbhapdhj",
+    "https://chat-dev.scu-schedule-helper.me",
+    "https://chat.scu-schedule-helper.me",
+    "https://www.scu-schedule-helper.me",
+    "https://scu-schedule-helper.me"
+  ];
+  return {
+    ...response,
+    headers: {
+      ...response.headers,
+      "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : "",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers":
+        event.headers["access-control-request-headers"] || "authorization,content-type",
+      "Access-Control-Allow-Credentials": "true",
+    },
   }
 }
 

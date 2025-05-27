@@ -1,5 +1,5 @@
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
-import { handleWithAuthorization } from "./utils/authorization.js";
+import { handleWithAuthAndCors } from "./utils/authorization.js";
 import {
   badRequestError,
   internalServerError,
@@ -7,7 +7,7 @@ import {
 } from "./model.js";
 
 export async function handler(event, context) {
-  return await handleWithAuthorization(
+  return await handleWithAuthAndCors(
     event,
     context,
     handleGetUserByNameRequest,
