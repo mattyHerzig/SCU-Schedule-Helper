@@ -248,58 +248,58 @@ const TOOLS = [
           ]
          `,
   }),
-  // zodFunction({
-  //   name: "satisfies_graduation_requirements",
-  //   parameters: z.object({
-  //     majors: z
-  //       .array(z.string())
-  //       .describe("List of majors to check graduation requirements for"),
-  //     minors: z
-  //       .array(z.string())
-  //       .describe("List of minors to check graduation requirements for"),
-  //     emphases: z
-  //       .array(z.string())
-  //       .describe("List of emphases to check graduation requirements for"),
-  //     pathways: z
-  //       .array(z.string())
-  //       .describe(
-  //         "List of pathways to check graduation requirements for (this is technically part of general education requirements, but we keep it separate since it is a little bit different)"
-  //       ),
-  //     courseList: z
-  //       .array(z.string())
-  //       .describe(
-  //         "List of course codes that the user will take/ has already taken."
-  //       ),
-  //     includeAlreadyTaken: z
-  //       .boolean()
-  //       .describe(
-  //         "Whether to include courses that the user has already taken in the graduation requirements check. (Functionally, this just means that courseList = Union(courseList, coursesAlreadyTaken)). Should be true in most cases, unless, for example, the user has asked for a course plan for a friend, and they want to see what courses their friend should take."
-  //       ),
-  //     checkGenEdRequirements: z
-  //       .boolean()
-  //       .describe(
-  //         "Whether to check general education requirements. If true, will check if the course list satisfies all the general education requirements/core requirements."
-  //       ),
-  //   }),
-  //   function: checkIfSatisfiesGraduationRequirements,
-  //   description: `Check if the given course list satisfies the graduation requirements for the given majors, minors, and emphases. Returns a list of any requirements that were not satisfied, and any errors that occured.
-  //     For example:
-  //     {
-  //       notSatisfiedRequirements: [
-  //         {
-  //           type: "major",
-  //           name: "Computer Science",
-  //           doesNotSatisfy: ["CSCI60 | CSCI62"]
-  //         }
-  //         {
-  //           type: "general_education",
-  //           name: "Critical Thinking and Writing 1",
-  //           doesNotSatisfy: ["ENGL1A"]
-  //         }
-  //       ],
-  //       errors: []
-  //     }`,
-  // }),
+  zodFunction({
+    name: "satisfies_graduation_requirements",
+    parameters: z.object({
+      majors: z
+        .array(z.string())
+        .describe("List of majors to check graduation requirements for"),
+      minors: z
+        .array(z.string())
+        .describe("List of minors to check graduation requirements for"),
+      emphases: z
+        .array(z.string())
+        .describe("List of emphases to check graduation requirements for"),
+      pathways: z
+        .array(z.string())
+        .describe(
+          "List of pathways to check graduation requirements for (this is technically part of general education requirements, but we keep it separate since it is a little bit different)"
+        ),
+      courseList: z
+        .array(z.string())
+        .describe(
+          "List of course codes that the user will take/ has already taken."
+        ),
+      includeAlreadyTaken: z
+        .boolean()
+        .describe(
+          "Whether to include courses that the user has already taken in the graduation requirements check. (Functionally, this just means that courseList = Union(courseList, coursesAlreadyTaken)). Should be true in most cases, unless, for example, the user has asked for a course plan for a friend, and they want to see what courses their friend should take."
+        ),
+      checkGenEdRequirements: z
+        .boolean()
+        .describe(
+          "Whether to check general education requirements. If true, will check if the course list satisfies all the general education requirements/core requirements."
+        ),
+    }),
+    function: checkIfSatisfiesGraduationRequirements,
+    description: `Check if the given course list satisfies the graduation requirements for the given majors, minors, and emphases. Returns a list of any requirements that were not satisfied, and any errors that occured.
+      For example:
+      {
+        notSatisfiedRequirements: [
+          {
+            type: "major",
+            name: "Computer Science",
+            doesNotSatisfy: ["CSCI60 | CSCI62"]
+          }
+          {
+            type: "general_education",
+            name: "Critical Thinking and Writing 1",
+            doesNotSatisfy: ["ENGL1A"]
+          }
+        ],
+        errors: []
+      }`,
+  }),
   zodFunction({
     name: "run_sql_query",
     parameters: z.object({

@@ -7,6 +7,8 @@ import { zodFunction } from "openai/helpers/zod.mjs"
 import OpenAI from "openai"
 import jwt from "jsonwebtoken"
 import { getCourseSequencesGeneral } from "@/app/utils/sequences"
+import { checkPlanMeetsRequirements } from "@/app/utils/grad-validation";
+import { test } from "@/app/utils/test";
 
 // Initialize DynamoDB client
 const ddbClient = new DynamoDBClient({
@@ -59,7 +61,7 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // Helper function to get user context information
-async function getUserContext(args: { explanation: string }) {
+async function getUserContextTool(args: { explanation: string }) {
   console.log("Called getUserContext function for user:", singletonUserId)
   singletonDDBMessages.push({
     id: uuidv4(),
@@ -72,6 +74,10 @@ async function getUserContext(args: { explanation: string }) {
     singletonController.enqueue(`data: ${args.explanation}\n\n`);
   }
 
+  return await getUserContext()
+}
+
+async function getUserContext() {
   try {
     // Get user personal info
     const userInfoQuery = {
@@ -131,7 +137,67 @@ async function getUserContext(args: { explanation: string }) {
   }
 }
 
+async function getCourseSequencesTool(args: {
+  explanation: string;
+  majors: string[];
+  minors: string[];
+  emphases: string[];
+  courseExpression?: string;
+}) {
+  singletonDDBMessages.push({
+    id: uuidv4(),
+    role: "tool",
+    content: args.explanation,
+  });
+  if (singletonController) {
+    singletonController.enqueue("event: statusUpdate\n");
+    singletonController.enqueue(`data: ${args.explanation}\n\n`);
+  }
+  return getCourseSequencesGeneral(args)
+}
 
+async function checkMeetsRequirements(args: {
+  explanation: string;
+  majors: string[];
+  minors: string[];
+  emphases: string[];
+  checkGenEdRequirements: boolean;
+  pathways: string[];
+  plannedCourseList: string[];
+  includeUserCoursesAlreadyTaken: boolean;
+}) {
+  singletonDDBMessages.push({
+    id: uuidv4(),
+    role: "tool",
+    content: args.explanation,
+  });
+  singletonController?.enqueue("event: statusUpdate\n");
+  singletonController?.enqueue(`data: ${args.explanation}\n\n`);
+  const userCoursesTaken = new Set(args.plannedCourseList);
+  if (args.includeUserCoursesAlreadyTaken) {
+    try {
+      const userContext = await getUserContext();
+      userContext.userCoursesTaken.forEach((course) => {
+        userCoursesTaken.add(course);
+      });
+    } catch (error) {
+      console.error("Error fetching user context:", error);
+      return {
+        notSatisfiedRequirements: [],
+        errors: ["Failed to fetch user context, no requirements checked."],
+      };
+    }
+  }
+
+  return checkPlanMeetsRequirements({
+    majors: args.majors,
+    minors: args.minors,
+    emphases: args.emphases,
+    checkGenEdRequirements: args.checkGenEdRequirements,
+    pathways: args.pathways,
+    userCoursesTaken: userCoursesTaken,
+  })
+}
 
 // Function to run SQL queries
 async function runSQLQuery(args: { explanation: string; query: string }) {
@@ -145,8 +211,6 @@ async function runSQLQuery(args: { explanation: string; query: string }) {
     singletonController.enqueue("event: statusUpdate\n");
     singletonController.enqueue(`data: ${explanation}\n\n`);
   }
-  console.log(`Running SQL query: ${sqlQuery}`);
-  console.log(`Explanation: ${explanation}`);
 
   let client;
   try {
@@ -154,6 +218,7 @@ async function runSQLQuery(args: { explanation: string; query: string }) {
     client = await pool.connect(); // Get a client from the pool
     const result = await client.query(sqlQuery); // Execute the raw query
     console.log(`SQL query executed: ${sqlQuery}, returning ${result.rowCount} rows`);
+    console.log(`Explanation: ${explanation}`);
     return result.rows; // pg returns rows in result.rows
   } catch (error) {
     console.error("SQL Error:", error);
@@ -175,7 +240,7 @@ const TOOLS = [
         .string()
         .describe("Short, present-tense, second-person plain english explanation of why you're using this function, e.g. 'Checking your major', to be displayed to the user."),
     }),
-    function: getUserContext,
+    function: getUserContextTool,
     description: "Get user context information, such as their major, minors, and courses taken.",
   }),
   zodFunction({
@@ -188,42 +253,98 @@ const TOOLS = [
         ),
       majors: z.array(z.string()).describe("List of majors to find course ordering for"),
       minors: z.array(z.string()).describe("List of minors to find course ordering for"),
-      emphases: z.array(z.string()).describe("List of emphases to find course ordering for"),
+      emphases: z.array(z.string()).describe("List of emphases to find course ordering for, in the format 'M{Major Name}E{Emphasis Name}'"),
       courseExpression: z
         .string()
         .describe(
           "(For advanced use) Logical boolean-like expression of required courses and/or course ranges, to find sequences for. For example, if a use asks something like 'If I want to take CSCI 101 and then either CSCI 102 and CSCI 103, what order would I need to take these in?', you could use this expression : 'CS101 & (CS102 | CS103)'",
         ),
     }),
-    function: (args) => {
-      singletonDDBMessages.push({
-        id: uuidv4(),
-        role: "tool",
-        content: args.explanation,
-      });
-      if (singletonController) {
-        singletonController.enqueue("event: statusUpdate\n");
-        singletonController.enqueue(`data: ${args.explanation}\n\n`);
-      }
-      return getCourseSequencesGeneral(args)
-    },
-    description: `Purpose
-        Given one or more academic programs (majors, minors, emphases) and/or an extra course‐requirement expression, produce the complete prerequisite chains for every course you might end up taking.
-        For each program in majors/minors/emphases, we look up its course requirements expression.  We then AND‑together all of those expressions plus the optional courseExpression into one combined requirement tree.
+    function: getCourseSequencesTool,
+    description: `Purpose: Generate Complete Prerequisite Chains
 
-        Next, we parse that combined tree and pull out every course code (ignoring negations like !RSOC111 and any course ranges like RSOC100-199).
-        For each course found, we get its prerequisites from the database, and recursively expand each of those prereq formulas into a single "chain expression" showing every possible path you might take to get into the course. – Use & to require courses together. – Use | to show alternatives. – Use X -> Y to indicate "you must complete X before Y."
-        Output
-        An array of objects, one per course in the combined requirement tree, each of the form:
+1. Input:
+- One or more academic programs (majors, minors, emphases)
+- Optionally, an extra course-requirement expression
+
+2. What It Does:
+- Combines all course requirement expressions from the input programs and the optional expression into one unified requirement tree.
+- Extracts all individual course codes from this tree (ignores negated courses like !RSOC111 and ranges like RSOC100-199).
+- For each course, retrieves its prerequisites and recursively expands them into full prerequisite chains.
+
+3. Requirement Chain Expression Format:
+- '&' means all listed courses are required together.
+- '|' means any one of the listed courses can be taken.
+- 'X -> Y' means you must complete X before Y.
+
+4. Output:
+- A list of objects, each showing a course and its full chain of prerequisites:
+  {
+    course: "<COURSE_CODE>",
+    prerequisiteExpression: "<FULL_CHAIN_EXPRESSION>"
+  }
+- Courses with no prerequisites, course ranges, or negated courses are not included.
+
+5. Why It’s Useful:
+- Provides a complete, long-range view of all possible prerequisite paths for planning purposes—much more comprehensive than a one-step lookup.
+`,
+  }),
+  zodFunction({
+    name: "check_plan_meets_requirements",
+    parameters: z.object({
+      explanation: z
+        .string()
+        .describe(
+          "Short, present-tense, second-person plain english explanation of why you're using this function, e.g. 'Checking if the course plan meets graduation requirements', to be displayed to the user.",
+        ),
+      majors: z
+        .array(z.string())
+        .describe("List of majors to check requirements for, can be empty"),
+      minors: z
+        .array(z.string())
+        .describe("List of minors to check requirements for, can be empty"),
+      emphases: z
+        .array(z.string())
+        .describe("List of emphases to check requirements for, can be empty. Must be in the format 'M{Major Name}E{Emphasis Name}'"),
+      checkGenEdRequirements: z
+        .boolean()
+        .describe(
+          "Whether to check general education requirements. If true, will check if the course list satisfies all the general education requirements/core requirements."
+        ),
+      pathways: z
+        .array(z.string())
+        .describe(
+          "List of pathways to check requirements for. Can be empty"
+        ),
+      plannedCourseList: z
+        .array(z.string())
+        .describe(
+          "List of course codes that the user will take/has already taken, can be empty"
+        ),
+      includeUserCoursesAlreadyTaken: z
+        .boolean()
+        .describe(
+          "Whether to include courses that the user has already taken in the requirements check. Should be true in most cases, unless, for example, the user has asked for a course plan for a friend, and they want to see what courses their friend should take."
+        ),
+    }),
+    function: checkMeetsRequirements,
+    description: `Check if the given course list plan and/or user courses already taken satisfy the graduation requirements for the given majors, minors, emphases, pathways, and potentially gen ed requirements. Returns a list of any requirements that were not satisfied, and any errors that occured.
+        For example:
         {
-          course: "<COURSE_CODE>",
-          prerequisiteExpression: "<FULL_CHAIN_EXPRESSION>"
-        }
-
-        Note that courses that have no prerequisites are not included in the output (likewise for course ranges and courses that are negated in the course requirements expression/tree).
-
-        Why it's useful
-        Unlike a one‐level database lookup, this gives you the entire, recursive sequence of courses (and alternatives) needed to satisfy every prerequisite in a long‑range plan.`,
+          notSatisfiedRequirements: [
+            {
+              type: "major",
+              name: "Computer Science",
+              doesNotSatisfy: ["CSCI60 | CSCI62"]
+            }
+            {
+              type: "general_education",
+              name: "Critical Thinking and Writing 1",
+              doesNotSatisfy: ["ENGL1A"]
+            }
+          ],
+          errors: []
+        }`,
   }),
   zodFunction({
     name: "run_sql_query",
@@ -236,16 +357,15 @@ const TOOLS = [
       query: z
         .string()
         .describe(
-          `The SQL query to run on the university catalog PostgreSQL database, for example: "SELECT * FROM courses WHERE coursecode = 'CS101'"`,
+          `The SQL query to run on the database, for example: "SELECT * FROM courses WHERE coursecode = 'CS101'"`,
         ),
     }),
     function: runSQLQuery,
     description:
-      "Run a PostgreSQL query on the university catalog database. Returns the results of the query, or an error message if the query failed.",
+      "Run a PostgreSQL query on the university catalog database (read only). Returns the results of the query, or an error message if the query failed.",
   }),
 ]
 
-// System prompt for the assistant
 const SYSTEM_PROMPT = `You are a helpful assistant that helps students at Santa Clara University navigate their course catalog. You can answer questions about courses, majors, minors, and other academic requirements. You can also help students generate long-term course plans and suggest courses they should take next.
 You are encouraged to make SQL queries to the university catalog database to get information about courses, majors, minors, and other academic requirements. You can also call functions to get user context information and suggested course ordering.
 The PostgreSQL database schema is as follows (note: table/column names  are not case-sensitive):
@@ -337,19 +457,39 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
     - src - Source of the data
 
     Note that the requirements for the pathways in general are in the CoreCurriculumRequirements table, but the specific courses that can be taken to fulfill the pathway are in the CoreCurriculumPathways table.
+    Every student must have a pathway.
 
-    Note that you are encouraged to use lots of SQL queries, and don't be afraid to list lots of rows if you can't seem to find what you're looking for.
-    Also, we recommend using Select * because there's a lot of information in the database that you might not be aware of, and it can help you find what you're looking for.
-    We recommend using the get_course_sequences function to help plan courses / schedules for the user (especially if there are courses involving recursive prerequisites), and the get_user_context function to get general information on the user--this is almost always helpful just in general to answer most queries).
-    Although the SQL database and some of the functions provide information in a very syntactic way, you should try to respond to the user in plain english, assuming they will not understand anything that looks too syntactic. 
-    You should also feel free to ask the user clarifying questions if you need more information.
-    Note that most students cannot take more than 19 units per quarter, so if you are generating a schedule for them, you should try to keep the number of units per quarter under 19, unless they have explicitly said they are planning on overloading
-    Note also: lower div courses are typically 0-100 level courses, upper div courses are typically 100-200 level courses, and graduate courses are typically 200+ level courses.
-    We also recommend mixing in some electives or other courses that are not required for their major/minor/emphasis, as students often like to take a variety of courses and not just the ones that are required for their major/minor/emphasis, e.g. core requirements or pathways courses.
-    `
+    A few other tips:
+    1. Use SQL Queries Generously
+    - Use lots of SQL queries to explore the data and answer user questions.  
+    - Don’t be afraid to list many rows if you’re unsure what to look for.  
+    - Don't be afraid to use SELECT * to access all available columns—you might discover useful information you didn’t expect.
 
-// POST handler for chat
+    2. Use Helper Functions for Context and Planning
+    - Use get_user_context to retrieve general information about the user—this is helpful for most queries.  
+    - Use get_course_sequences to help plan course schedules, especially for courses with recursive prerequisites, or for building long-term plans.
+
+    3. Communicate Clearly with the User
+    - Respond in plain English, not in syntactic or overly technical terms.  
+    - Do not expose any database internals or SQL details to the user.
+    - Ask clarifying questions if user input is incomplete or unclear.
+
+    4. Follow Course Load Guidelines
+    - Most students should not take more than 19 units per quarter.  
+    - Only exceed this if the student has explicitly said they are planning to overload.
+    - The absolute max is generally 25 units, but this is very rare and should only be done with caution.
+
+    5. Understand Course Levels
+    - Lower-division courses are typically numbered 0–99.  
+    - Upper-division courses are typically numbered 100–199.  
+    - Graduate-level courses are typically numbered 200 and above.
+
+    6. Encourage a Balanced Course Schedule
+    - Recommend including electives or other non-major courses (e.g., core or pathway requirements).  
+    - Students often enjoy taking a mix of required and interest-based courses.`;
+
 export async function POST(request: NextRequest) {
+  await test();
   singletonUserId = getUserIdFromRequest(request)
   if (!singletonUserId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
@@ -366,7 +506,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Message is required" }, { status: 400 })
     }
 
-    // Initialize OpenAI client
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })

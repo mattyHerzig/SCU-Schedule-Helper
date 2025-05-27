@@ -343,16 +343,19 @@ export function getCourseSequencesGeneral(options: GetCourseSequencesGeneralOpti
             ?.minors.find((m) => m.name === minor)?.courseRequirementsExpression
       ).join(" & ")
     );
-  if (options.emphases.length > 0)
+  if (options.emphases.length > 0) {
     parts.push(
       options.emphases.map(
-        (emphasis) =>
+        (emphasis) => {
+          const [, majorName, emphasisName] = emphasis.match(/M{(.*)}E{(.*)}/) || [];
           catalog.deptsAndPrograms
-            .find((d) => d.emphases.find((e) => e.name === emphasis))
-            ?.emphases.find((e) => e.name === emphasis)
+            .find((d) => d.emphases.find((e) => e.name === emphasisName && e.nameOfWhichItAppliesTo === majorName))
+            ?.emphases.find((e) => e.name === emphasisName && e.nameOfWhichItAppliesTo === majorName)
             ?.courseRequirementsExpression
+        }
       ).join(" & ")
     );
+  }
   fullExpression = parts.join(" & ");
   return JSON.stringify(getCourseSequences(fullExpression), null, 2);
 }
