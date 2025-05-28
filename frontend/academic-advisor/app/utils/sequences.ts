@@ -311,6 +311,61 @@ interface GetCourseSequencesGeneralOptions {
   courseExpression?: string;
 }
 
+type TreeNode =
+  | OrNode
+  | AndNode
+  | CourseCodeNode
+  | CourseCodeRangeNode
+  | EmptyNode;
+
+type OrNode = {
+  type: "or";
+  children: TreeNode[];
+  minBranchesMatched?: number;
+  minTotalCoursesMatched?: number;
+};
+
+type AndNode = {
+  type: "and";
+  children: TreeNode[];
+};
+
+type CourseCodeNode = {
+  type: "courseCode";
+  courseCode: string;
+};
+
+type CourseCodeRangeNode = {
+  type: "courseCodeRange";
+  courseCodeRange: string;
+  doNotCount: string[];
+  minimumRequired?: number;
+};
+
+type EmptyNode = {
+  type: "empty";
+};
+
+function treeNodeToString(node: TreeNode): string {
+  if (!node || !node.type) return "";
+  switch (node.type) {
+    case "courseCode":
+      return node.courseCode;
+
+    case "courseCodeRange":
+      return node.courseCodeRange;
+
+    case "and":
+      return `(${node.children.map(treeNodeToString).join(" & ")})`;
+
+    case "or":
+      const branches = node.children.map(treeNodeToString).join(" | ");
+      return `(${branches})`;
+    default:
+      return "";
+  }
+}
+
 export function getCourseSequencesGeneral(options: GetCourseSequencesGeneralOptions): string {
   console.log(
     `Used getCourseSequencesGeneral with options: ${JSON.stringify(
@@ -327,33 +382,33 @@ export function getCourseSequencesGeneral(options: GetCourseSequencesGeneralOpti
       options.majors
         .map(
           (major) =>
-            catalog.deptsAndPrograms
+            treeNodeToString(catalog.deptsAndPrograms
               .find((d) => d.majors.find((m) => m.name === major))
               ?.majors.find((m) => m.name === major)
-              ?.courseRequirementsExpression
-        )
+              ?.courseRequirements.tree as TreeNode)
+        ).filter(str => str !== "")
         .join(" & ")
     );
   if (options.minors.length > 0)
     parts.push(
       options.minors.map(
         (minor) =>
-          catalog.deptsAndPrograms
+          treeNodeToString(catalog.deptsAndPrograms
             .find((d) => d.minors.find((m) => m.name === minor))
-            ?.minors.find((m) => m.name === minor)?.courseRequirementsExpression
-      ).join(" & ")
+            ?.minors.find((m) => m.name === minor)?.courseRequirements.tree as TreeNode)
+      ).filter(str => str !== "").join(" & ")
     );
   if (options.emphases.length > 0) {
     parts.push(
       options.emphases.map(
         (emphasis) => {
           const [, majorName, emphasisName] = emphasis.match(/M{(.*)}E{(.*)}/) || [];
-          catalog.deptsAndPrograms
+          return treeNodeToString(catalog.deptsAndPrograms
             .find((d) => d.emphases.find((e) => e.name === emphasisName && e.nameOfWhichItAppliesTo === majorName))
             ?.emphases.find((e) => e.name === emphasisName && e.nameOfWhichItAppliesTo === majorName)
-            ?.courseRequirementsExpression
+            ?.courseRequirements.tree as TreeNode);
         }
-      ).join(" & ")
+      ).filter(str => str !== "").join(" & ")
     );
   }
   fullExpression = parts.join(" & ");

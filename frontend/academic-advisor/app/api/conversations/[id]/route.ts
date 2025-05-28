@@ -26,14 +26,13 @@ function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // GET handler for fetching a specific conversation
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: {params : Promise<{id : string}>}) {
   const userId = getUserIdFromRequest(request)
   if (!userId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
-  const conversationId = params.id
-
+  const conversationId = (await params).id
   try {
     // Get the conversation from DynamoDB
     const getCommand = new GetItemCommand({
@@ -74,13 +73,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT handler for updating a conversation
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: {params : Promise<{id : string}>}) {
   const userId = getUserIdFromRequest(request)
   if (!userId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
-  const conversationId = params.id
+  const conversationId = (await params).id
 
   try {
     const body = await request.json()
@@ -122,14 +121,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE handler for deleting a conversation
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: {params : Promise<{id : string}>}) {
   const userId = getUserIdFromRequest(request)
   if (!userId) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
-  await params;
-  const conversationId = params.id
+  const conversationId = (await params).id
 
   try {
     // Delete the conversation from DynamoDB

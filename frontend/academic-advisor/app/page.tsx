@@ -45,11 +45,10 @@ function ChatPage() {
 
   // Create a new conversation if none exists
   useEffect(() => {
-    fetchConversations()
+    fetchConversations();
   }, [])
 
   useEffect(() => {
-    // If currnet conversation changes, update conversations list
     if (currentConversation) {
       setConversations((prev) =>
         prev.map((conv) => (conv.id === currentConversation.id ? currentConversation : conv))
@@ -87,7 +86,7 @@ function ChatPage() {
     const updatedConversation = currentConversation
       ? { ...currentConversation, messages: updatedMessages }
       : {
-        id: "temp-id", // Will be replaced with the actual ID from the server
+        id: `temp-id-${Date.now().toString()}`, // Will be replaced with the actual ID from the server
         title: "New Conversation",
         messages: updatedMessages,
         createdAt: new Date(),
@@ -112,12 +111,12 @@ function ChatPage() {
       }
 
       // Add conversation ID if we have one
-      if (currentConversation?.id && currentConversation.id !== "temp-id") {
+      if (currentConversation?.id && !currentConversation.id.includes("temp-id")) {
         headers["Conversation-Id"] = currentConversation.id
       }
 
       // Check auth before sending request.
-      const authResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/check`, {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/check`, {
         method: "GET",
         credentials: "include", // Important for cookies
       })
@@ -133,13 +132,18 @@ function ChatPage() {
         withCredentials: true, // Important for cookies
       });
       eventSource.addEventListener("open", (event: any) => {
-        const conversationId = event.headers["conversation-id"][0]
+        const conversationId = event.headers["conversation-id"][0] || `temp-id-${Date.now()}`
+        console.log("Connection opened, conversation ID:", conversationId)
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id.includes("temp-id") ? { ...conv, id: conversationId } : conv
+          ));
         setCurrentConversation((prev) => ({
           ...prev!,
-          id: conversationId || prev?.id || "temp-id",
+          id: conversationId,
           title: updatedMessages.length === 0 ? input.slice(0, 30) + "..." : prev?.title || "New Conversation",
           createdAt: prev?.createdAt || new Date(),
-        }))
+        }));
       });
       eventSource.addEventListener("statusUpdate", (event: any) => {
         console.log("Status update received:", event.data)

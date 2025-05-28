@@ -3407,12 +3407,35 @@
                   "courseCode": "CSEN20L"
                 },
                 {
-                  "type": "courseCode",
-                  "courseCode": "ECEN21"
-                },
-                {
-                  "type": "courseCode",
-                  "courseCode": "ECEN21L"
+                  "type": "or",
+                  "children": [
+                    {
+                      "type": "and",
+                      "children": [
+                        {
+                          "type": "courseCode",
+                          "courseCode": "ELEN21"
+                        },
+                        {
+                          "type": "courseCode",
+                          "courseCode": "ELEN21L"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "and",
+                      "children": [
+                        {
+                          "type": "courseCode",
+                          "courseCode": "CSEN21"
+                        },
+                        {
+                          "type": "courseCode",
+                          "courseCode": "CSEN21L"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "type": "courseCode",
@@ -73811,39 +73834,45 @@
     "requirements": [
       {
         "requirementName": "Critical Thinking and Writing 1",
-        "requirementDescription": "Two-course themed sequence. First course goals: Critical Thinking, Complexity, Communication; Meta-Goals: Information Literacy and Intentional Learning; focuses on reading and analyzing texts, composing rhetorically effective nonfiction, engaging multiple perspectives, and using writing as discovery.",
+        "requirementDescription": "Goals: Critical Thinking, Complexity, Communication; Meta-Goals: Information Literacy and Intentional Learning; Learning Objectives: 1. Read and analyze texts for audience, speaker/writer, purpose, message, and context; 2. Compose rhetorically effective nonfiction texts for different audiences in different modes of presentation; 3. Compose texts that resist overly simplistic binary thinking by engaging various perspectives; 4. Use writing processes as tools for learning and discovery.",
         "appliesTo": "All",
         "fulfilledBy": [
-          "N/A"
-        ],
-        "src": "https://www.scu.edu/provost/core/foundations/"
+          "ENGL1A",
+          "ENGL1H",
+          "THTR1A"
+        ]
       },
       {
         "requirementName": "Critical Thinking and Writing 2",
-        "requirementDescription": "Second course goals: Critical Thinking, Complexity, Communication; Meta-Goals: Information Literacy and Intentional Learning; focuses on locating and selecting information from multiple credible perspectives, ethical use of sources, integrating sources effectively, and using writing and information literacy as tools for learning.",
+        "requirementDescription": "Goals: Critical Thinking, Complexity, Communication; Meta-Goals: Information Literacy and Intentional Learning; Learning Objectives: 1. Locate and select information that genuinely considers multiple, credible perspectives; 2. Demonstrate an engaged, ethical approach to the use of sources, including accurate citation; 3. Compose texts that effectively integrate sources for a clear purpose, audience, and occasion in different modes of presentation; 4. Use writing and information literacy as tools for learning and discovery.",
         "appliesTo": "All",
         "fulfilledBy": [
-          "N/A"
-        ],
-        "src": "https://www.scu.edu/provost/core/foundations/"
+          "ENGL2A",
+          "ENGL2H",
+          "THTR2A"
+        ]
       },
       {
-        "requirementName": "Cultures and Ideas 1",
-        "requirementDescription": "Two-course themed sequence. First course goals: Global Cultures, Arts & Humanities, Critical Thinking, Perspective; focuses on identifying and analyzing significant cultural elements and contexts using disciplinary methods, and examining shared and diverse human experiences.",
+        "requirementName": "Cultures and Ideas 1 (C&I 1)",
+        "requirementDescription": "Goals: Global Cultures, Arts & Humanities, Critical Thinking, Perspective; Learning Objectives: 1. Identify significant elements of the cultures examined; 2. Recognize the complexity of the cultures examined; 3. Analyze and/or interpret significant objects, texts, ideas, issues and/or events in their historical contexts using at least one disciplinary method; 4. Examine and analyze both shared and diverse human experiences across cultures and historical periods to comprehend the relevance of the past to the cultural present.",
         "appliesTo": "All",
         "fulfilledBy": [
-          "N/A"
-        ],
-        "src": "https://www.scu.edu/provost/core/foundations/"
+          "ENGR11A",
+          "FREN11A",
+          "ITAL11A",
+          "THTR11A"
+        ]
       },
       {
-        "requirementName": "Cultures and Ideas 2",
-        "requirementDescription": "Second course goals: Global Cultures, Arts & Humanities, Critical Thinking, Perspective; focuses on making connections between cultures and materials from C&I 1, understanding complexity, evaluating cultural interpretation effects, and analyzing human experiences relevant to students’ world views.",
+        "requirementName": "Cultures and Ideas 2 (C&I 2)",
+        "requirementDescription": "Goals: Global Cultures, Arts & Humanities, Critical Thinking, Perspective; Learning Objectives: 1. Make connections between the cultures and objects, texts, ideas, issues, and/or events examined in C&I 1 and 2; 2. Demonstrate understanding of the complexity and/or larger contexts of the cultures examined; 3. Question and/or evaluate the effects cultural understanding has on interpretation of the objects, texts, ideas, and/or events; 4. Examine and analyze both shared and diverse human experiences across cultures and historical periods, demonstrating awareness of relevance to students’ own worldview, cultural assumptions, and values.",
         "appliesTo": "All",
         "fulfilledBy": [
-          "N/A"
-        ],
-        "src": "https://www.scu.edu/provost/core/foundations/"
+          "ENGR12A",
+          "FREN12A",
+          "ITAL12A",
+          "THTR12A"
+        ]
       },
       {
         "requirementName": "Mathematics (Arts & Sciences except Life Sciences)",
@@ -73906,7 +73935,7 @@
         "src": "https://www.scu.edu/provost/core/foundations/"
       },
       {
-        "requirementName": "Religion, Theology, & Culture 1",
+        "requirementName": "Religion, Theology, & Culture 1 (RTC 1)",
         "requirementDescription": "Foundations requirement introducing central religious ideas and practices from distinct cultures; goals: Global Cultures, Critical Thinking, Complexity, Religious Reflection; students choose one course from approved offerings.",
         "appliesTo": "All",
         "fulfilledBy": [
@@ -74223,9 +74252,7 @@
         "requirementName": "Second Language (Engineering)",
         "requirementDescription": "Foundations Second Language requirement for B.S. Engineering students: fulfilled by two years of high school study in a second language.",
         "appliesTo": "School of Engineering",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/foundations/"
       },
       {
@@ -74376,99 +74403,77 @@
         "requirementName": "Pathway course requirement for entering students in College of Arts and Sciences and Leavey School of Business",
         "requirementDescription": "All majors in the College of Arts & Sciences and Leavey School of Business who enter as first-year students (and transfer students with less than 44 units of transfer credit) must complete four Pathway courses (at least 16 units). If a Pathway includes courses worth less than four units, more than four courses will be necessary.",
         "appliesTo": "College of Arts and Sciences; Leavey School of Business",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Pathway course requirement for School of Engineering majors",
         "requirementDescription": "All engineering majors must complete three Pathway courses (at least 12 units). If a Pathway includes courses worth less than four units, more than three courses will be necessary.",
         "appliesTo": "School of Engineering",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Pathway course requirement for transfer students with 44 or more units",
         "requirementDescription": "Transfer students who matriculate with 44 or more units of transfer credit must complete three Pathway courses (at least 12 units). If a Pathway includes courses worth less than four units, more than three courses will be necessary.",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Completion at SCU",
         "requirementDescription": "All courses counted toward the Pathway must be completed at Santa Clara University.",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Subject distribution limit",
         "requirementDescription": "No more than the equivalent of two 4- or 5-unit courses may be in the same subject (e.g., ANTH, BIOL, ENGL, TESP). The remaining courses and units to complete the Pathway must be from a different subject (or subjects).",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Interdisciplinary exemption",
         "requirementDescription": "Courses in ENVS, ETHN, CHST, PHSC, and WGST are exempt from the two-course-per-subject rule because they are inherently interdisciplinary.",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Sequence course limit",
         "requirementDescription": "A Pathway may contain no more than two courses in either the Cultures & Ideas sequence (C&I 1, 2, 3) or the Religion, Theology, & Culture sequence (RTC 1, 2, 3).",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Foundations course limit",
         "requirementDescription": "Only one course in a Pathway may be a Foundations course. (C&I 1 and 2 are Foundations courses; C&I 3 is not. RTC 1 is a Foundations course; RTC 2 and 3 are not.)",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "One Pathway per student",
         "requirementDescription": "Students may complete only one Pathway, even if some courses would apply to multiple Pathways.",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Study abroad course limit",
         "requirementDescription": "Students may apply no more than one study abroad course toward their Pathway.",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
         "requirementName": "Approval requirement",
         "requirementDescription": "Any course a student wants to include within a Pathway must have been approved for that Pathway. A list of approved courses is available on the Core website.",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/pathways/guidelines-and-timeline/"
       },
       {
@@ -74718,9 +74723,7 @@
         "requirementName": "Pathways",
         "requirementDescription": "Pathways Integrations requirement (courses and details not provided on this page).",
         "appliesTo": "All",
-        "fulfilledBy": [
-          "N/A"
-        ],
+        "fulfilledBy": [],
         "src": "https://www.scu.edu/provost/core/integrations/"
       },
       {
@@ -74961,7 +74964,6 @@
           "HIST188S",
           "INTL139BF",
           "ITAL187",
-          "ITALI187",
           "PHIL44",
           "PHIL45",
           "PHIL185A",
@@ -75087,7 +75089,6 @@
           "HIST188S",
           "INTL139BF",
           "ITAL187",
-          "ITALI187",
           "PHIL44",
           "PHIL45",
           "PHIL185A",
@@ -75604,6 +75605,7 @@
           "CHEM1",
           "CHEM5",
           "CHEM11",
+          "CHEM11T",
           "CHEM19",
           "ENVS5",
           "ENVS20",
@@ -75624,7 +75626,7 @@
         "src": "https://www.scu.edu/provost/core/explorations/"
       },
       {
-        "requirementName": "Religion, Theology & Culture 2",
+        "requirementName": "Religion, Theology & Culture 2 (RTC 2)",
         "requirementDescription": "Analyze diverse religious phenomena; integrate disciplinary approaches; express beliefs via critical inquiry.",
         "appliesTo": "All",
         "fulfilledBy": [
@@ -75733,7 +75735,7 @@
         "src": "https://www.scu.edu/provost/core/explorations/"
       },
       {
-        "requirementName": "Religion, Theology & Culture 3",
+        "requirementName": "Religion, Theology & Culture 3 (RTC 3)",
         "requirementDescription": "Identify diverse religious perspectives; evaluate ethical implications of enduring issues; apply insights to societal issues.",
         "appliesTo": "All",
         "fulfilledBy": [

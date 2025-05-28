@@ -102,9 +102,9 @@ async function getUserContext() {
     ])
 
     // Extract majors, emphases, and minors from user info
-    const userMajors = userInfoResponse.Item?.majors?.SS || []
-    const userEmphases = userInfoResponse.Item?.emphases?.SS || []
-    const userMinors = userInfoResponse.Item?.minors?.SS || []
+    const majors = userInfoResponse.Item?.majors?.SS || []
+    const minors = userInfoResponse.Item?.minors?.SS || []
+    const emphases = userInfoResponse.Item?.emphases?.SS || []
 
     // Extract courses taken
     const coursesTaken = userCoursesTakenResponse.Item?.courses?.SS || []
@@ -120,18 +120,18 @@ async function getUserContext() {
     })
 
     return {
-      userMajors,
-      userEmphases,
-      userMinors,
-      userCoursesTaken: mappedCoursesTaken,
+      majors,
+      emphases,
+      minors,
+      coursesTaken: mappedCoursesTaken,
     }
   } catch (error) {
     console.error("Error fetching user context:", error)
     return {
-      userMajors: [],
-      userEmphases: [],
-      userMinors: [],
-      userCoursesTaken: [],
+      majors: [],
+      minors: [],
+      emphases: [],
+      coursesTaken: [],
     }
   }
 }
@@ -173,29 +173,32 @@ async function checkMeetsRequirements(args: {
   singletonController?.enqueue("event: statusUpdate\n");
   singletonController?.enqueue(`data: ${args.explanation}\n\n`);
   const userCoursesTaken = new Set(args.plannedCourseList);
-  if (args.includeUserCoursesAlreadyTaken) {
-    try {
-      const userContext = await getUserContext();
-      userContext.userCoursesTaken.forEach((course) => {
+  try {
+    const userContext = await getUserContext();
+    if (args.includeUserCoursesAlreadyTaken) {
+      userContext.coursesTaken.forEach((course) => {
         userCoursesTaken.add(course);
       });
-    } catch (error) {
-      console.error("Error fetching user context:", error);
-      return {
-        notSatisfiedRequirements: [],
-        errors: ["Failed to fetch user context, no requirements checked."],
-      };
     }
+
+    return checkPlanMeetsRequirements({
+      majors: args.majors,
+      minors: args.minors,
+      emphases: args.emphases,
+      checkGenEdRequirements: args.checkGenEdRequirements,
+      pathways: args.pathways,
+      userCoursesTaken: userCoursesTaken,
+      userInfo: userContext,
+    })
+
+  } catch (error) {
+    console.error("Error fetching user context:", error);
+    return {
+      notSatisfiedRequirements: [],
+      errors: ["Failed to fetch user context, no requirements checked."],
+    };
   }
 
-  return checkPlanMeetsRequirements({
-    majors: args.majors,
-    minors: args.minors,
-    emphases: args.emphases,
-    checkGenEdRequirements: args.checkGenEdRequirements,
-    pathways: args.pathways,
-    userCoursesTaken: userCoursesTaken,
-  })
 }
 
 // Function to run SQL queries
@@ -318,7 +321,7 @@ const TOOLS = [
       plannedCourseList: z
         .array(z.string())
         .describe(
-          "List of course codes that the user will take/has already taken, can be empty"
+          "List of course codes that the user will take, can be empty"
         ),
       includeUserCoursesAlreadyTaken: z
         .boolean()
@@ -327,8 +330,9 @@ const TOOLS = [
         ),
     }),
     function: checkMeetsRequirements,
-    description: `Check if the given course list plan and/or user courses already taken satisfy the graduation requirements for the given majors, minors, emphases, pathways, and potentially gen ed requirements. Returns a list of any requirements that were not satisfied, and any errors that occured.
-        For example:
+    description: `Check if the given course list plan and/or user courses already taken satisfy the graduation requirements for the given majors, minors, emphases, pathways, and potentially gen ed requirements. Returns a list of any requirements that were not satisfied, requirements that were not checked (because they are natural language requirements), and any errors that occured.
+    Be CAREFUL when using this function, as it may check requirements that are not relevant to the user. Be sure to double check any requirements (e.g. their descriptions, who it applies to) that are listed as not satisified, as they may not apply to the user.
+        Here's some example output:
         {
           notSatisfiedRequirements: [
             {
@@ -340,6 +344,13 @@ const TOOLS = [
               type: "general_education",
               name: "Critical Thinking and Writing 1",
               doesNotSatisfy: ["ENGL1A"]
+            }
+          ],
+          notCheckedRequirements: [
+            {
+              type: "minor",
+              name: "Mathematics",
+              requirement: "This minor requires a minimum GPA of 2.0 in all courses taken for the minor."
             }
           ],
           errors: []
@@ -465,10 +476,12 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
     - Use lots of SQL queries to explore the data and answer user questions.  
     - Don’t be afraid to list many rows if you’re unsure what to look for.  
     - Don't be afraid to use SELECT * to access all available columns—you might discover useful information you didn’t expect.
+    - Use the src field in the tables so that you can cite your sources to the user
 
     2. Use Helper Functions for Context and Planning
     - Use get_user_context to retrieve general information about the user—this is helpful for most queries.  
     - Use get_course_sequences to help plan course schedules, especially for courses with recursive prerequisites, or for building long-term plans.
+    - Use check_plan_meets_requirements to validate if a course plan meets graduation requirements, including majors, minors, emphases, and general education requirements. But be CAREFUL when using this function, as it may check requirements that are not relevant to the user. Be sure to double check any requirements (e.g. their descriptions, who it applies to) that are listed as not satisified, as they may not apply to the user.
 
     3. Communicate Clearly with the User
     - Respond in plain English, not in syntactic or overly technical terms.  
@@ -487,7 +500,12 @@ The PostgreSQL database schema is as follows (note: table/column names  are not 
 
     6. Encourage a Balanced Course Schedule
     - Recommend including electives or other non-major courses (e.g., core or pathway requirements).  
-    - Students often enjoy taking a mix of required and interest-based courses.`;
+    - Students often enjoy taking a mix of required and interest-based courses.
+    
+    7. Never guess, and always check your work
+    - This is the most important thing--if you don't 100% know the answer to a question, or if you don't have enough information to answer it, do NOT try to guess.
+    - Instead, use a SQL query, ask the user for more information, or just say that you don't currently know the answer.
+    - This especially applies for course codes and course names: if you have a course code but not the name, or vice versa, do NOT try to guess the other one. Instead, use a SQL query to get the information you need.`;
 
 export async function POST(request: NextRequest) {
   singletonUserId = getUserIdFromRequest(request)

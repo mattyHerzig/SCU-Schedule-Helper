@@ -7,6 +7,11 @@ export function checkPlanMeetsRequirements(args: {
     checkGenEdRequirements: boolean;
     pathways: string[];
     userCoursesTaken: Set<string>;
+    userInfo: {
+        majors: string[];
+        minors: string[];
+        emphases: string[];
+    }
 }) {
     const {
         majors,
@@ -17,7 +22,9 @@ export function checkPlanMeetsRequirements(args: {
         userCoursesTaken,
     } = args;
 
+    const userSchools = getUserSchools(args.userInfo);
     const errors = [];
+    const satisfiedRequirements = [];
     const notSatisfiedRequirements = [];
     const notCheckedRequirements = [];
     try {
@@ -38,11 +45,20 @@ export function checkPlanMeetsRequirements(args: {
                     doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
-            notCheckedRequirements.push({
-                type: 'major',
-                name: major,
-                requirements: majorData.courseRequirements.thingsNotEncoded.join("\n"),
-            });
+            else {
+                satisfiedRequirements.push({
+                    type: 'major',
+                    name: major,
+                    requirements: treeNodeToString(majorData.courseRequirements.tree as TreeNode),
+                    coursesUsed: Array.from(result.coursesUsed),
+                });
+            }
+            if (majorData.courseRequirements.thingsNotEncoded.length > 0)
+                notCheckedRequirements.push({
+                    type: 'major',
+                    name: major,
+                    requirements: majorData.courseRequirements.thingsNotEncoded.join("\n"),
+                });
         }
         for (const minor of minors) {
             const minorData = catalog.deptsAndPrograms.find((m) => m.minors?.some((min) => min.name === minor))?.minors?.find((min) => min.name === minor);
@@ -61,11 +77,20 @@ export function checkPlanMeetsRequirements(args: {
                     doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
-            notCheckedRequirements.push({
-                type: 'minor',
-                name: minor,
-                requirements: minorData.courseRequirements.thingsNotEncoded.join("\n"),
-            });
+            else {
+                satisfiedRequirements.push({
+                    type: 'minor',
+                    name: minor,
+                    requirements: treeNodeToString(minorData.courseRequirements.tree as TreeNode),
+                    coursesUsed: Array.from(result.coursesUsed),
+                });
+            }
+            if (minorData.courseRequirements.thingsNotEncoded.length > 0)
+                notCheckedRequirements.push({
+                    type: 'minor',
+                    name: minor,
+                    requirements: minorData.courseRequirements.thingsNotEncoded.join("\n"),
+                });
         }
         for (const emphasis of emphases) {
             const [, majorName, emphasisName] = emphasis.match(/M{(.*)}E{(.*)}/) || [];
@@ -89,15 +114,36 @@ export function checkPlanMeetsRequirements(args: {
                     doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
-            notCheckedRequirements.push({
-                type: 'emphasis',
-                name: emphasis,
-                requirements: emphasisData.courseRequirements.thingsNotEncoded.join("\n"),
-            });
+            else {
+                satisfiedRequirements.push({
+                    type: 'emphasis',
+                    name: emphasis,
+                    requirements: treeNodeToString(emphasisData.courseRequirements.tree as TreeNode),
+                    coursesUsed: Array.from(result.coursesUsed),
+                });
+            }
+            if (emphasisData.courseRequirements.thingsNotEncoded.length > 0)
+                notCheckedRequirements.push({
+                    type: 'emphasis',
+                    name: emphasis,
+                    requirements: emphasisData.courseRequirements.thingsNotEncoded.join("\n"),
+                });
         }
         if (checkGenEdRequirements) {
             const genEds = catalog.coreCurriculum.requirements;
             for (const genEd of genEds) {
+                let applicable = false;
+                for (const school of userSchools) {
+                    if (genEd.appliesTo && (genEd.appliesTo.toLowerCase().includes(school.toLowerCase())
+                        || genEd.appliesTo.toLowerCase().trim() === "all")) {
+                        applicable = true;
+                        break;
+                    }
+                }
+                if (!applicable) {
+                    continue;
+                }
+                console.log(`Checking Gen Ed: ${genEd.requirementName}`);
                 if (!genEd.fulfilledBy || genEd.fulfilledBy.length === 0) {
                     notCheckedRequirements.push({
                         type: 'genEd',
@@ -124,6 +170,17 @@ export function checkPlanMeetsRequirements(args: {
                         doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                         description: genEd.requirementDescription,
                         appliesTo: genEd.appliesTo,
+                    });
+                }
+                else {
+                    console.log(`Gen Ed "${genEd.requirementName}" fulfilled by courses: ${Array.from(result.coursesUsed).join(", ")}`);
+                    satisfiedRequirements.push({
+                        type: 'genEd',
+                        name: genEd.requirementName,
+                        description: genEd.requirementDescription,
+                        appliesTo: genEd.appliesTo,
+                        requirements: treeNodeToString(requirementTree),
+                        coursesUsed: Array.from(result.coursesUsed),
                     });
                 }
             }
@@ -161,6 +218,15 @@ export function checkPlanMeetsRequirements(args: {
                     doesNotSatisfy: result.partsNotFulfilled || "Unknown",
                 });
             }
+            else {
+                satisfiedRequirements.push({
+                    type: 'pathway',
+                    name: pathway,
+                    description: pathwayData.description,
+                    requirements: treeNodeToString(requirementsExpression),
+                    coursesUsed: Array.from(result.coursesUsed),
+                });
+            }
         }
     } catch (error) {
         if (error instanceof Error) errors.push(`Error processing requirements: ${error.message}`);
@@ -180,8 +246,10 @@ export function checkPlanMeetsRequirements(args: {
 
     return {
         errors,
+        satisfiedRequirements,
         notSatisfiedRequirements,
         notChecked: notCheckedRequirements,
+        note: "PLEASE make sure to check the SQL database to verify this data is correct. This is a best effort check and may not be 100% accurate.",
     };
 }
 
@@ -227,6 +295,34 @@ type Result = {
     coursesUsed: Set<string>;
 };
 
+function getUserSchools(userInfo: {
+    majors: string[];
+    minors: string[];
+    emphases: string[];
+}): string[] {
+    const schools = new Set<string>();
+    userInfo.majors.forEach((major) => {
+        const majorData = catalog.deptsAndPrograms.find((m) => m.majors?.some((maj) => maj.name === major));
+        if (majorData) {
+            schools.add(majorData.school);
+        }
+    });
+    userInfo.minors.forEach((minor) => {
+        const minorData = catalog.deptsAndPrograms.find((m) => m.minors?.some((min) => min.name === minor));
+        if (minorData) {
+            schools.add(minorData.school);
+        }
+    });
+    userInfo.emphases.forEach((emphasis) => {
+        const [, majorName, emphasisName] = emphasis.match(/M{(.*)}E{(.*)}/) || [];
+        const emphasisData = catalog.deptsAndPrograms.find((m) => m.emphases?.some((emp) => emp.name === emphasisName && emp.nameOfWhichItAppliesTo === majorName));
+        if (emphasisData) {
+            schools.add(emphasisData.school);
+        }
+    });
+    return Array.from(schools);
+}
+
 function parseCourseCode(courseCode: string) {
     const match = courseCode.match(/^([A-Z]{4})(\d+)([A-Z]*)$/);
     if (!match) throw new Error(`Invalid course code: ${courseCode}`);
@@ -238,10 +334,9 @@ function courseInRange(course: string, range: string): boolean {
     const [start, end] = range.split("-");
     const c = parseCourseCode(course);
     const s = parseCourseCode(start);
-    const e = parseCourseCode(end);
+    const e = { num: parseInt(end) };
     return (
         c.dept === s.dept &&
-        c.dept === e.dept &&
         c.num >= s.num &&
         c.num <= e.num
     );
@@ -250,7 +345,7 @@ function courseInRange(course: string, range: string): boolean {
 function hasUserFulfilledCourseRequirements(
     userCoursesTaken: Set<string>,
     courseRequirementsTree: TreeNode
-): { fulfilled: boolean; partsNotFulfilled?: string } {
+): { fulfilled: boolean; partsNotFulfilled?: string, coursesUsed: Set<string> } {
     function helper(node: TreeNode): Result {
         switch (node.type) {
             case "empty": {
@@ -260,7 +355,10 @@ function hasUserFulfilledCourseRequirements(
                 };
             }
             case "courseCode": {
-                if (userCoursesTaken.has(node.courseCode)) {
+                const { dept, num, suffix } = parseCourseCode(node.courseCode);
+                const transferCredit = suffix === "" ? `${dept}${num}T` : node.courseCode;
+                const honorsCourse = suffix === "" ? `${dept}${num}H` : node.courseCode;
+                if (userCoursesTaken.has(node.courseCode) || userCoursesTaken.has(honorsCourse) || userCoursesTaken.has(transferCredit)) {
                     return {
                         fulfilled: true,
                         coursesUsed: new Set([node.courseCode]),
@@ -300,16 +398,24 @@ function hasUserFulfilledCourseRequirements(
 
             case "and": {
                 const allUsed = new Set<string>();
+                const partsNotFulfilled: AndNode = {
+                    type: "and",
+                    children: [],
+                }
                 for (const child of node.children) {
                     const result = helper(child);
                     if (!result.fulfilled) {
-                        return {
-                            fulfilled: false,
-                            partsNotFulfilled: treeNodeToString(child),
-                            coursesUsed: new Set(),
-                        };
+                        partsNotFulfilled.children.push(child);
+                        continue;
                     }
                     result.coursesUsed.forEach((c) => allUsed.add(c));
+                }
+                if (partsNotFulfilled.children.length > 0) {
+                    return {
+                        fulfilled: false,
+                        partsNotFulfilled: treeNodeToString(partsNotFulfilled),
+                        coursesUsed: allUsed,
+                    };
                 }
                 return {
                     fulfilled: true,
@@ -367,6 +473,7 @@ function hasUserFulfilledCourseRequirements(
     return {
         fulfilled: result.fulfilled,
         partsNotFulfilled: result.fulfilled ? undefined : result.partsNotFulfilled,
+        coursesUsed: result.coursesUsed,
     };
 }
 
