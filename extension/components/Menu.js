@@ -12,12 +12,12 @@ import {
   Tune,
   PersonAdd,
   Close,
-  Campaign,
   CalendarMonth,
   ExpandMore,
   ExpandLess,
   Settings,
 } from "@mui/icons-material";
+import AnnouncementBar from "./AnnouncementBar";
 
 export const supportEmail = "swdean@scu.edu";
 
@@ -99,19 +99,19 @@ export default function Menu({ navigateToPage, openLandingPage }) {
     <Button
       key={item.id}
       sx={{
-        padding: "6px 10px",
+        padding: "4px 8px",
         position: "relative",
         color: "black",
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "flex-start",
-        gap: 1,
+        gap: 0.5,
         borderRadius: "4px",
         backgroundColor: activeMenu === item.id ? "#f8f4f3" : "white",
         border: "1px solid #e0e0e0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        minHeight: "32px",
+        minHeight: "28px",
         width: "auto",
         minWidth: "fit-content",
         "&:hover": {
@@ -150,7 +150,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
           {React.cloneElement(item.icon, {
             className: "menu-icon",
             sx: {
-              fontSize: 20,
+              fontSize: 18,
               color: activeMenu === item.id ? "#703331" : "#d1d1d1",
               transition: "color 0.3s",
               flexShrink: 0,
@@ -161,7 +161,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
         React.cloneElement(item.icon, {
           className: "menu-icon",
           sx: {
-            fontSize: 20,
+            fontSize: 18,
             color: activeMenu === item.id ? "#703331" : "#d1d1d1",
             transition: "color 0.3s",
             flexShrink: 0,
@@ -173,8 +173,10 @@ export default function Menu({ navigateToPage, openLandingPage }) {
         sx={{
           color: activeMenu === item.id ? "#703331" : "black",
           fontWeight: activeMenu === item.id ? "bold" : "normal",
-          fontSize: "0.75rem",
+          fontSize: "0.7rem",
           whiteSpace: "nowrap",
+          overflow: "visible",
+          textOverflow: "clip",
         }}
       >
         {item.label}
@@ -185,38 +187,7 @@ export default function Menu({ navigateToPage, openLandingPage }) {
   return (
     <Box sx={{ mb: 1 }}>
       {/* Announcement Bar */}
-      <Box
-        sx={{
-          backgroundColor: "#f5f5f5",
-          borderBottom: "1px solid #e0e0e0",
-          py: 1,
-          px: 2,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <Campaign
-            sx={{
-              fontSize: 20,
-              color: "#703331",
-            }}
-          />
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#666",
-              fontSize: "0.875rem",
-            }}
-          >
-            Check out our latest features and updates!
-          </Typography>
-        </Box>
-      </Box>
+      <AnnouncementBar />
 
       <AppBar
         position="static"
@@ -243,26 +214,36 @@ export default function Menu({ navigateToPage, openLandingPage }) {
               display: "flex",
               alignItems: "center",
               padding: "4px 4px",
+              textTransform: "none",
               "&:hover": {
                 backgroundColor: "#f0f0f0",
-              },
-              "&:hover::after, &.active::after": {
-                backgroundColor: "#703331",
-                width: "calc(100% - 8px)",
+                "& .MuiSvgIcon-root": {
+                  color: "#703331",
+                },
+                "&::after": {
+                  backgroundColor: "#703331 !important",
+                  width: "100% !important",
+                },
               },
               "&::after": {
-                content: '""',
+                content: '"" !important',
                 position: "absolute",
                 bottom: -2,
-                left: "4px",
+                left: 0,
+                right: 0,
                 height: "2px",
                 width: 0,
                 backgroundColor: "transparent",
                 transition: "background-color 0.3s, width 0.3s",
+                zIndex: 1,
               },
+              ...(activeMenu === "home" && {
+                "&::after": {
+                  backgroundColor: "#703331 !important",
+                  width: "100% !important",
+                },
+              }),
               whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
             }}
             onClick={() => {
               setActiveMenu("home");
@@ -299,22 +280,40 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                 minWidth: "auto",
                 padding: "4px 12px",
                 color: "#703331",
-                fontSize: "0.75rem",
                 display: "flex",
                 alignItems: "center",
                 gap: 1,
                 borderRadius: "4px",
+                position: "relative",
                 "&:hover": {
                   backgroundColor: "#f0f0f0",
+                  "& .MuiSvgIcon-root": {
+                    color: "#703331",
+                  },
+                  "&::after": {
+                    backgroundColor: "#703331",
+                    width: "100%",
+                  },
+                },
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -2,
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  width: 0,
+                  backgroundColor: "transparent",
+                  transition: "background-color 0.3s, width 0.3s",
                 },
               }}
             >
               <Typography
                 variant="body2"
                 sx={{
-                  fontSize: "0.75rem",
+                  fontSize: { xs: "0.9rem", sm: "1rem" },
                   color: "#703331",
-                  fontWeight: "medium",
+                  fontWeight: "bold",
                 }}
               >
                 Menu
@@ -420,8 +419,11 @@ export default function Menu({ navigateToPage, openLandingPage }) {
           <Box
             sx={{
               backgroundColor: "#fafafa",
-              borderTop: "1px solid #e0e0e0",
-              p: 2,
+              borderTop: "2px solid #d1d1d1",
+              py: 1,
+              px: 2,
+              maxWidth: "500px",
+              mx: "auto",
             }}
           >
             {/* All Navigation Buttons */}
@@ -431,7 +433,8 @@ export default function Menu({ navigateToPage, openLandingPage }) {
                 gap: 1.5,
                 flexWrap: "wrap",
                 alignItems: "flex-start",
-                justifyContent: "space-evenly",
+                justifyContent: "center",
+                rowGap: 0.5,
               }}
             >
               {[...topRowItems, ...bottomRowItems].map((item) => renderMenuButton(item, true))}

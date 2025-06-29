@@ -5,6 +5,8 @@ import Preferences from "../components/pageComponents/preferences";
 import Menu from "../components/Menu";
 import Friends from "../components/pageComponents/friends";
 import Profile from "../components/pageComponents/profile";
+import SettingsPage from "../components/pageComponents/settings";
+import CoursePlannerPage from "../components/pageComponents/courseplanner";
 
 export default function Home() {
   const [activePage, setActivePage] = useState("main");
@@ -50,6 +52,8 @@ export default function Home() {
         {activePage === "preferences" && <Preferences />}
         {activePage === "friends" && <Friends />}
         {activePage === "profile" && <Profile />}
+        {activePage === "settings" && <SettingsPage />}
+        {activePage === "courseplanner" && <CoursePlannerPage />}
       </Box>
     </Box>
   );
