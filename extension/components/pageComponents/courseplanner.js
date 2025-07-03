@@ -2,6 +2,8 @@ import React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { CalendarMonth } from "@mui/icons-material";
+import ShareCourseDataButton from "../plannerComponents/ShareCourseDataButton";
+import GenerateCourseScheduleButton from "../plannerComponents/GenerateCourseScheduleButton";
 
 export default function CoursePlannerPage() {
   return (
@@ -38,10 +40,15 @@ export default function CoursePlannerPage() {
         sx={{
           color: "#666",
           maxWidth: "300px",
+          marginBottom: 3,
         }}
       >
         Course Planner feature coming soon! Plan your academic journey with our upcoming scheduling tools.
       </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
+        <ShareCourseDataButton />
+        <GenerateCourseScheduleButton />
+      </Box>
     </Box>
   );
 } 
